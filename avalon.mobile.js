@@ -1620,7 +1620,7 @@ function VElement(element, parentNode) {
     this.attributes = []
     this.childNodes = []
     this.parentNode = parentNode
-    this.isVirtualdom = true
+    //   this.isVirtualdom = true 直接判定有没有queryVID方法就行了
     try {
         if (parentNode) {
             parentNode.appendChild(this)
@@ -1736,6 +1736,11 @@ VElement.prototype = {
         }
         return ret
     },
+    setText: function (str) {
+        var node = new VText(str)
+        this.childNodes.length = 0
+        this.appendChild(node)
+    },
     getValue: function () {
         var blank = ""
         var value = this.getAttribute("value")
@@ -1795,13 +1800,13 @@ VElement.prototype = {
 function VComment(nodeValue) {
     this.nodeType = 8
     this.nodeName = "#comment"
-    this.nodeValue = nodeValue
+    this.nodeValue = nodeValue + ""
 }
 
 function VText(nodeValue) {
     this.nodeType = 3
     this.nodeName = "#text"
-    this.nodeValue = nodeValue
+    this.nodeValue = nodeValue + ""
 }
 
 function VDocumentFragment() {
@@ -1841,20 +1846,30 @@ function querySelector(tag, vid, root) {
     }
 }
 function updateTree(node) {
-    var diff = node.diffText || node.diffAttr || node.diffStyle
+    var diff = node.diffText || node.diffAttr || node.diffStyle || node.diffContent
     if (diff) {
         var rnode = querySelector(node.nodeName, node.vid)
+
         if (!rnode)
             return
         if (node.diffText) {
-            //    console.log("更新{{}}")
             var rnodes = rnode.childNodes
             var vnodes = node.childNodes, vnode
             for (var i = 0, el; el = rnodes[i]; i++) {
                 vnode = vnodes[i]
                 if (el.nodeType === 3 && vnode.nodeType === 3 && el.nodeValue !== vnode.nodeValue) {
+                    log("更新{{}}")
                     el.nodeValue = vnode.nodeValue
                 }
+            }
+        }
+        if (node.diffContent) {
+            var method = "textContent" in root ? "textContent" : "innerText"
+            var oldValue = rnode[method]
+            var newValue = node.childNodes[0] ? node.childNodes[0].nodeValue : ""
+            if (oldValue !== newValue) {
+                log("更新ms-text")
+                rnode[method] = newValue
             }
         }
     }

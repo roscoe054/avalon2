@@ -2001,7 +2001,7 @@ function VElement(element, parentNode) {
     this.attributes = []
     this.childNodes = []
     this.parentNode = parentNode
-    this.isVirtualdom = true
+    //   this.isVirtualdom = true 直接判定有没有queryVID方法就行了
     try {
         if (parentNode) {
             parentNode.appendChild(this)
@@ -2117,6 +2117,11 @@ VElement.prototype = {
         }
         return ret
     },
+    setText: function (str) {
+        var node = new VText(str)
+        this.childNodes.length = 0
+        this.appendChild(node)
+    },
     getValue: function () {
         var blank = ""
         var value = this.getAttribute("value")
@@ -2176,13 +2181,13 @@ VElement.prototype = {
 function VComment(nodeValue) {
     this.nodeType = 8
     this.nodeName = "#comment"
-    this.nodeValue = nodeValue
+    this.nodeValue = nodeValue + ""
 }
 
 function VText(nodeValue) {
     this.nodeType = 3
     this.nodeName = "#text"
-    this.nodeValue = nodeValue
+    this.nodeValue = nodeValue + ""
 }
 
 function VDocumentFragment() {
@@ -2222,20 +2227,30 @@ function querySelector(tag, vid, root) {
     }
 }
 function updateTree(node) {
-    var diff = node.diffText || node.diffAttr || node.diffStyle
+    var diff = node.diffText || node.diffAttr || node.diffStyle || node.diffContent
     if (diff) {
         var rnode = querySelector(node.nodeName, node.vid)
+
         if (!rnode)
             return
         if (node.diffText) {
-            //    console.log("更新{{}}")
             var rnodes = rnode.childNodes
             var vnodes = node.childNodes, vnode
             for (var i = 0, el; el = rnodes[i]; i++) {
                 vnode = vnodes[i]
                 if (el.nodeType === 3 && vnode.nodeType === 3 && el.nodeValue !== vnode.nodeValue) {
+                    log("更新{{}}")
                     el.nodeValue = vnode.nodeValue
                 }
+            }
+        }
+        if (node.diffContent) {
+            var method = "textContent" in root ? "textContent" : "innerText"
+            var oldValue = rnode[method]
+            var newValue = node.childNodes[0] ? node.childNodes[0].nodeValue : ""
+            if (oldValue !== newValue) {
+                log("更新ms-text")
+                rnode[method] = newValue
             }
         }
     }
@@ -4754,8 +4769,6 @@ function proxyRecycler(proxy, proxyPool) {
 bindingExecutors.text = function (val, elem, data) {
     val = val == null ? "" : val //不在页面上显示undefined null
     if (elem.nodeType === 3) { //绑定在文本节点上
-
-
         if (!data.vnode) {
             var parent = elem.parentNode
             var vid = getUid(parent)
@@ -4764,19 +4777,28 @@ bindingExecutors.text = function (val, elem, data) {
             data.vnode = vparent.childNodes[index]
         }
         data.vnode.nodeValue = val
-        globalRender()
-
 //        try { //IE对游离于DOM树外的节点赋值会报错
 //            elem.data = val
 //        } catch (e) {
-
     } else { //绑定在特性节点上
-        if ("textContent" in elem) {
-            elem.textContent = val
-        } else {
-            elem.innerText = val
+         if (!data.vnode) {
+            var vid = getUid(elem)
+            var velem = VTree.queryVID(vid)
+            if(!velem){
+                var velem = new VElement(elem, VTree)
+                velem.diffContent = true
+                data.vnode = velem
+            }
         }
+         data.vnode.setText(val) 
+         globalRender()
+//        if ("textContent" in elem) {
+//            elem.textContent = val
+//        } else {
+//            elem.innerText = val
+//        }
     }
+     globalRender()
 }
 function parseDisplay(nodeName, val) {
     //用于取得此类标签的默认display值

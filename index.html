@@ -9,7 +9,8 @@
            var vm = avalon.define({
                 $id: "test",
                 aaa: 222,
-                bbb: 111
+                bbb: 111,
+                ccc: 444
             })
             setTimeout(function(){
                 vm.aaa = 33
@@ -19,5 +20,6 @@
     </head>
     <body ms-controller="test">
         <div>{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
+        <div ms-text="ccc">ccc</div>
     </body>
 </html>
