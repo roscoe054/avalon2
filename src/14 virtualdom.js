@@ -10,15 +10,16 @@ function VElement(element, parentNode) {
     this.isVirtualdom = true
     try {
         if (parentNode) {
-            //    if(parentNode.childNodes.indexOf())
             parentNode.appendChild(this)
-            //  console.log(parentNode)
-            //   avalon.Array.ensure(parentNode.childNodes, this)
         }
     } catch (e) {
-        console.log(e)
+        log(e)
     }
     // this.style = {}
+    // this.diffText
+    // this.diffAttr
+    // this.diffNode
+    // this.diffStyle
 }
 //属性,类名,样式,子节点
 function forEachElements(dom, callback) {
@@ -38,16 +39,6 @@ VElement.prototype = {
         var ret = null
         forEachElements(this, function (el) {
             if (el.vid === vid) {
-                ret = el
-                return false
-            }
-        })
-        return ret
-    },
-    queryID: function (id) {
-        var ret = null
-        forEachElements(this, function (el) {
-            if (el.id === id) {
                 ret = el
                 return false
             }
@@ -153,7 +144,7 @@ VElement.prototype = {
     },
     setAttribute: function (name, value) {
         // zilong@2015-5-15: 在parse5序列化dom的attribute时，对于tabindex、colspan这类数字类型的属性，如果不转换为字符串，程序会崩溃
-        if (typeof value != 'string') {
+        if (typeof value !== 'string') {
             value = String(1);
         }
         var attrs = this.attributes
@@ -200,10 +191,10 @@ function VText(nodeValue) {
     this.nodeValue = nodeValue
 }
 
-function VDocumentFragment(nodeValue, parentNode) {
+function VDocumentFragment() {
     this.nodeType = 11
     this.nodeName = "#document-fragment"
-    this.parentNode = parentNode
+    this.childNodes = []
 }
 
 VDocumentFragment.prototype = {
