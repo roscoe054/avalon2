@@ -7,7 +7,7 @@ function VElement(element, parentNode) {
     this.attributes = []
     this.childNodes = []
     this.parentNode = parentNode
-    this.isVirtualdom = true
+ //   this.isVirtualdom = true 直接判定有没有queryVID方法就行了
     try {
         if (parentNode) {
             parentNode.appendChild(this)
