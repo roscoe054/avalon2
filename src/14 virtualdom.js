@@ -1,7 +1,7 @@
 function VElement(element, parentNode) {
     this.nodeType = 1
     var vid = getUid(element)
-    this.vid = element.vid = String(vid)
+    this.vid = element.vid = vid
     this.nodeName = element.nodeName
     this.className = element.className
     this.attributes = []
@@ -220,7 +220,7 @@ var VTree = avalon.VTree = new VElement(root)
 var reID
 function globalRender() {
     clearTimeout(reID)
-    reID = setTimeout(function () {
+    reID = setTimeout(function () {//以后这里改为Promise
         refreshTree()
     }, 4)
 }
@@ -230,28 +230,21 @@ function refreshTree() {
 }
 function querySelector(tag, vid, root) {
     root = root || document
-//    if (root.querySelector) {
-//        console.log(tag + "[vid='" + vid + "']")
-//        root.querySelector(tag + "[vid=" + vid + "]")
-//    } else {
     var nodes = root.getElementsByTagName(tag)
     for (var i = 0, node; node = nodes[i++]; ) {
         if (node.vid === vid)
             return node
     }
-    //   }
 }
 function updateTree(node) {
     var diff = node.diffText || node.diffAttr || node.diffStyle
     if (diff) {
         var rnode = querySelector(node.nodeName, node.vid)
-    //    console.log("rnode", rnode, node.diffText)
         if (!rnode)
             return
         if (node.diffText) {
             //    console.log("更新{{}}")
             var rnodes = rnode.childNodes
-            //    console.log(rnodes)
             var vnodes = node.childNodes, vnode
             for (var i = 0, el; el = rnodes[i]; i++) {
                 vnode = vnodes[i]

@@ -1,6 +1,4 @@
 // bindingHandlers.text 定义在if.js
-
-
 bindingExecutors.text = function (val, elem, data) {
     val = val == null ? "" : val //不在页面上显示undefined null
     if (elem.nodeType === 3) { //绑定在文本节点上
@@ -8,7 +6,7 @@ bindingExecutors.text = function (val, elem, data) {
 
         if (!data.vnode) {
             var parent = elem.parentNode
-            var vid = getUid(parent) + ""
+            var vid = getUid(parent)
             var vparent = VTree.queryVID(vid)
             var index = getTextOrder(elem, parent)
             data.vnode = vparent.childNodes[index]

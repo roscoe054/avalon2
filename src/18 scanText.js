@@ -74,7 +74,6 @@ function scanText(textNode, vmodels) {
     }
     var parent = textNode.parentNode
     if (tokens.length) {
-
         for (var i = 0; token = tokens[i++]; ) {
             var node = DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
             if (token.expr) {
@@ -92,11 +91,8 @@ function scanText(textNode, vmodels) {
         }
         parent.replaceChild(hyperspace, textNode)
         if (bindings.length) {
-
             new function () {
-              //  var parent = textNode.parentNode
-                console.log(parent, "!")
-                var vid = getUid(parent) + ""
+                var vid =  getUid(parent) 
                 if (!VTree.queryVID(vid)) {
                     var vparent = new VElement(parent, VTree)
                     if (!vparent.diffText) {

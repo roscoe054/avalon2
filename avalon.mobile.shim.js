@@ -1613,7 +1613,7 @@ function shouldDispose(el) {
 function VElement(element, parentNode) {
     this.nodeType = 1
     var vid = getUid(element)
-    this.vid = element.vid = String(vid)
+    this.vid = element.vid = vid
     this.nodeName = element.nodeName
     this.className = element.className
     this.attributes = []
@@ -1832,7 +1832,7 @@ var VTree = avalon.VTree = new VElement(root)
 var reID
 function globalRender() {
     clearTimeout(reID)
-    reID = setTimeout(function () {
+    reID = setTimeout(function () {//以后这里改为Promise
         refreshTree()
     }, 4)
 }
@@ -1842,22 +1842,17 @@ function refreshTree() {
 }
 function querySelector(tag, vid, root) {
     root = root || document
-//    if (root.querySelector) {
-//        console.log(tag + "[vid='" + vid + "']")
-//        root.querySelector(tag + "[vid=" + vid + "]")
-//    } else {
     var nodes = root.getElementsByTagName(tag)
     for (var i = 0, node; node = nodes[i++]; ) {
         if (node.vid === vid)
             return node
     }
-    //   }
 }
 function updateTree(node) {
     var diff = node.diffText || node.diffAttr || node.diffStyle
     if (diff) {
         var rnode = querySelector(node.nodeName, node.vid)
-    //    console.log("rnode", rnode, node.diffText)
+        //    console.log("rnode", rnode, node.diffText)
         if (!rnode)
             return
         if (node.diffText) {
@@ -2940,7 +2935,6 @@ function scanText(textNode, vmodels) {
     }
     var parent = textNode.parentNode
     if (tokens.length) {
-
         for (var i = 0; token = tokens[i++]; ) {
             var node = DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
             if (token.expr) {
@@ -2958,11 +2952,8 @@ function scanText(textNode, vmodels) {
         }
         parent.replaceChild(hyperspace, textNode)
         if (bindings.length) {
-
             new function () {
-              //  var parent = textNode.parentNode
-                console.log(parent, "!")
-                var vid = getUid(parent) + ""
+                var vid =  getUid(parent) 
                 if (!VTree.queryVID(vid)) {
                     var vparent = new VElement(parent, VTree)
                     if (!vparent.diffText) {
