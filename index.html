@@ -10,16 +10,20 @@
                 $id: "test",
                 aaa: 222,
                 bbb: 111,
-                ccc: 444
+                ccc: 444,
+                ddd: "<span>11</span><span>22</span><span>33</span>"
             })
             setTimeout(function(){
                 vm.aaa = 33
                 vm.bbb = 66
+                vm.ddd = "<b>111</b><b>111</b><b>111</b><b>111</b>"
             }, 3000)
         </script>
     </head>
     <body ms-controller="test">
         <div>{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
         <div ms-text="ccc">ccc</div>
+         <div>222{{ddd|html}}333</div>
+          <div ms-html="ddd">sdfdfdf</div>
     </body>
 </html>

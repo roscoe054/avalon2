@@ -43,9 +43,15 @@ function scanAttr(elem, vmodels, match) {
                             avalon.mix(binding, token)
                             binding.filters = binding.filters.replace(rhasHtml, function () {
                                 binding.type = "html"
-                                binding.group = 1
                                 return ""
                             })// jshint ignore:line
+                            if( binding.type === "html"){
+                                avalon.clearHTML(elem)
+                                var signature = generateID(type)
+                                elem.appendChild( DOC.createComment(signature ))
+                                binding.element = elem.appendChild(DOC.createComment(signature + ":end"))
+                            }
+                            
                         } else if (type === "duplex") {
                             var hasDuplex = name
                         } else if (name === "ms-if-loop") {
@@ -99,7 +105,7 @@ var rnoscanNodeBinding = /^each|with|html|include$/
 //但如果我们去掉scanAttr中的attr.specified检测，一个元素会有80+个特性节点（因为它不区分固有属性与自定义属性），很容易卡死页面
 if (!"1" [0]) {
     var cacheAttrs = new Cache(512)
-    var rattrs = /\s+(ms-[^=\s]+)(?:=("[^"]*"|'[^']*'|[^\s>]+))?/g,
+    var rattrs = /\s+([^=\s]+)(?:=("[^"]*"|'[^']*'|[^\s>]+))?/g,
             rquote = /^['"]/,
             rtag = /<\w+\b(?:(["'])[^"]*?(\1)|[^>])*>/i,
             ramp = /&amp;/g

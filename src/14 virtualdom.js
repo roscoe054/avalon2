@@ -15,11 +15,44 @@ function VElement(element, parentNode) {
     } catch (e) {
         log(e)
     }
-    // this.style = {}
-    // this.diffText
-    // this.diffAttr
-    // this.diffNode
-    // this.diffStyle
+// this.style = {}
+// this.diffText
+// this.diffAttr
+// this.diffNode
+// this.diffStyle
+}
+
+function VNode(element) {
+    var ret
+    switch (element.nodeType) {
+        case 11:
+            ret = new VDocumentFragment()
+            ap.forEach.call(element.childNodes, function (node) {//添加属性
+                var vnode = new VNode(node)
+                ret.appendChild(vnode)
+            })
+            return ret
+        case 1:
+            ret = new VElement(element)
+            var attributes = getAttributes ? getAttributes(element) : element.attributes
+            ap.forEach.call(attributes, function (attr) {//添加属性
+                if (attr.name !== "class") {
+                    ret.attributes.push({
+                        name: attr.name,
+                        value: attr.value
+                    })
+                }
+            })
+            ap.forEach.call(element.childNodes, function (node) {
+                var vnode = new VNode(node)
+                ret.appendChild(vnode)
+            })
+            return ret
+        case 3:
+            return new VText(node.nodeValue)
+        case 8:
+            return new VComment(node.nodeValue)
+    }
 }
 //属性,类名,样式,子节点
 function forEachElements(dom, callback) {

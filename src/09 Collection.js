@@ -160,9 +160,12 @@ var arrayPrototype = {
     },
     removeAll: function (all) { //移除N个元素
         if (Array.isArray(all)) {
-            all.forEach(function (el) {
-                this.remove(el)
-            }, this)
+            for (var i = this.length - 1; i >= 0; i--) {
+                var el = this[i]
+                if (all.indexOf(el) !== -1) {
+                    this.removeAt(i)
+                }
+            }
         } else if (typeof all === "function") {
             for (var i = this.length - 1; i >= 0; i--) {
                 var el = this[i]
@@ -269,7 +272,7 @@ function eachProxyFactory() {
         $first: NaN,
         $last: NaN,
         $map: {},
-        $host:{},
+        $host: {},
         $outer: {},
         $remove: avalon.noop,
         el: {

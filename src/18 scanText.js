@@ -79,10 +79,8 @@ function scanText(textNode, vmodels) {
             if (token.expr) {
                 token.type = "text"
                 token.element = node
-             //   node.name = 
                 token.filters = token.filters.replace(rhasHtml, function () {
                     token.type = "html"
-                    token.group = 1
                     return ""
                 })// jshint ignore:line
                 bindings.push(token) //收集带有插值表达式的文本
@@ -92,7 +90,7 @@ function scanText(textNode, vmodels) {
         parent.replaceChild(hyperspace, textNode)
         if (bindings.length) {
             new function () {
-                var vid =  getUid(parent) 
+                var vid = getUid(parent)
                 if (!VTree.queryVID(vid)) {
                     var vparent = new VElement(parent, VTree)
                     if (!vparent.diffText) {

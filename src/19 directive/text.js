@@ -14,7 +14,7 @@ bindingExecutors.text = function (val, elem, data) {
 //            elem.data = val
 //        } catch (e) {
     } else { //绑定在特性节点上
-         if (!data.vnode) {
+       if (!data.vnode) {
             var vid = getUid(elem)
             var velem = VTree.queryVID(vid)
             if(!velem){

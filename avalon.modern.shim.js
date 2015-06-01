@@ -1278,9 +1278,12 @@ var arrayPrototype = {
     },
     removeAll: function (all) { //移除N个元素
         if (Array.isArray(all)) {
-            all.forEach(function (el) {
-                this.remove(el)
-            }, this)
+            for (var i = this.length - 1; i >= 0; i--) {
+                var el = this[i]
+                if (all.indexOf(el) !== -1) {
+                    this.removeAt(i)
+                }
+            }
         } else if (typeof all === "function") {
             for (var i = this.length - 1; i >= 0; i--) {
                 var el = this[i]
@@ -1387,7 +1390,7 @@ function eachProxyFactory() {
         $first: NaN,
         $last: NaN,
         $map: {},
-        $host:{},
+        $host: {},
         $outer: {},
         $remove: avalon.noop,
         el: {
@@ -2945,20 +2948,26 @@ function scanText(textNode, vmodels) {
             if (token.expr) {
                 token.type = "text"
                 token.element = node
-             //   node.name = 
                 token.filters = token.filters.replace(rhasHtml, function () {
                     token.type = "html"
-                    token.group = 1
                     return ""
                 })// jshint ignore:line
                 bindings.push(token) //收集带有插值表达式的文本
             }
-            hyperspace.appendChild(node)
+            if (token.type === "html") {
+                var signature = generateID("html")
+                hyperspace.appendChild(DOC.createComment(signature))
+                hyperspace.appendChild(token.element = DOC.createComment(signature + ":end"))
+            } else {
+                hyperspace.appendChild(node)
+            }
+
+
         }
         parent.replaceChild(hyperspace, textNode)
         if (bindings.length) {
             new function () {
-                var vid =  getUid(parent) 
+                var vid = getUid(parent)
                 if (!VTree.queryVID(vid)) {
                     var vparent = new VElement(parent, VTree)
                     if (!vparent.diffText) {
@@ -3640,13 +3649,12 @@ duplexBinding.SELECT = function(element, evaluator, data) {
     }
 }
 // bindingHandlers.html 定义在if.js
-bindingExecutors.html = function(val, elem, data) {
+bindingExecutors.html = function (val, elem, data) {
     val = val == null ? "" : val
-    var isHtmlFilter = "group" in data
-    var parent = isHtmlFilter ? elem.parentNode : elem
+    var parent = elem.parentNode
     if (!parent)
         return
-     if (typeof val !== "object") {//string, number, boolean
+    if (typeof val !== "object") {//string, number, boolean
         var fragment = avalon.parseHTML(String(val))
     } else if (val.nodeType === 11) { //将val转换为文档碎片
         fragment = val
@@ -3657,29 +3665,17 @@ bindingExecutors.html = function(val, elem, data) {
             fragment.appendChild(nodes[0])
         }
     }
-    if (!fragment.firstChild) {
-        fragment.appendChild(DOC.createComment("ms-html"))
-    }
     nodes = avalon.slice(fragment.childNodes)
-    //插入占位符, 如果是过滤器,需要有节制地移除指定的数量,如果是html指令,直接清空
-    if (isHtmlFilter) {
-        var n = data.group,
-            i = 1
-
-            data.group = nodes.length
-            data.element = nodes[0]
-
-        while (i < n) {
-            var node = elem.nextSibling
-            if (node) {
-                parent.removeChild(node)
-                i++
-            }
+    var endValue = elem.nodeValue.slice(0,-4)
+    while (true) {
+        var node = elem.previousSibling
+        if (!node || node.nodeType === 8 && node.nodeValue === endValue) {
+            break
+        } else {
+            parent.removeChild(node)
         }
-        parent.replaceChild(fragment, elem)
-    } else {
-        avalon.clearHTML(parent).appendChild(fragment)
     }
+    parent.insertBefore(fragment, elem)
     scanNodeArray(nodes, data.vmodels)
 }
 bindingHandlers["if"] =
