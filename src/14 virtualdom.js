@@ -23,7 +23,24 @@ function VElement(element, parentNode) {
 }
 
 
-
+function addVnodeToData(elem, data) {
+    if (data.vnode) {
+        return data.vnode
+    } else if (elem.nodeType === 1) {
+        var vid = getUid(elem)
+        var vnode = VTree.queryVID(vid)
+        if (!vnode) {
+            vnode = new VElement(elem, VTree)
+        }
+        return data.vnode = vnode
+    } else {
+        var vid = elem.vid || getUid(elem.parentNode)
+        var vparent = VTree.queryVID(vid)
+        var index = getTextOrder(elem, elem.parentNode)
+        return data.vnode = vparent.childNodes[index]
+    }
+}
+//将一组节点转换为虚拟DOM
 function VNodes(nodes) {
     var ret = []
     for (var i = 0, n = nodes.length; i < n; i++) {
@@ -75,8 +92,8 @@ function forEachElements(dom, callback) {
     }
 }
 VTasks = {
-    textFilter: function (vnode, rnode) {
-        var rnodes = rnode.childNodes
+    textFilter: function (vnode, elem) {
+        var rnodes = elem.childNodes
         var vnodes = vnode.childNodes
         var skip = false
         for (var i = 0, node; node = vnodes[i]; i++) {
@@ -95,9 +112,9 @@ VTasks = {
                         } else {
                             var neo = DOC.createTextNode(node.nodeValue)
                             if (rnodes[i]) {
-                                rnode.insertBefore(neo, rnodes[i])
+                                elem.insertBefore(neo, rnodes[i])
                             } else {
-                                rnode.appendChild(neo)
+                                elem.appendChild(neo)
                             }
                         }
                     }
@@ -111,7 +128,6 @@ VTasks = {
         for (var attrName in vnode.props) {
             if (vnode.props.hasOwnProperty(attrName)) {
                 var val = vnode.props[attrName]
-
                 var toRemove = (val === false) || (val === null) || (val === void 0)
                 if (val && typeof val === "object") {
                     elem[attrName] = val
@@ -142,23 +158,92 @@ VTasks = {
         }
 
     },
-    css: function (vnode, rnode) {
+    html: function (vnode, elem) {
+        if (!elem)
+            return
+        var data = vnode.htmlData
+        var val = vnode.htmlValue
+        //转换成文档碎片
+        if (typeof val !== "object") {//string, number, boolean
+            var fragment = avalon.parseHTML(String(val))
+        } else if (val.nodeType === 11) { //将val转换为文档碎片
+            fragment = val
+        } else if (val.nodeType === 1 || val.item) {
+            var nodes = val.nodeType === 1 ? val.childNodes : val.item
+            fragment = hyperspace.cloneNode(true)
+            while (nodes[0]) {
+                fragment.appendChild(nodes[0])
+            }
+        }
+        nodes = avalon.slice(fragment.childNodes)
+        
+        var comments = []
+        console.log(elem)
+        for (var i = 0, el; el = elem.childNodes[i++]; ) {
+            if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
+                comments.push(el)
+            }
+        }
+        //移除两个注释节点间的节点
+        while (true) {
+            var node = comments[1].previousSibling
+            if (!node || node === comments[0]) {
+                break
+            } else {
+                elem.removeChild(node)
+            }
+        }
+        elem.insertBefore(fragment, comments[1])
+        scanNodeArray(nodes, data.vmodels)
+        delete vnode.htmlData
+        delete vnode.htmlValue
+    },
+    css: function (vnode, elem) {
         for (var i in vnode.style) {
-            if (rnode.style[i] !== vnode.style[i]) {
-                avalon(rnode).css(i, vnode.style[i])
+            if (elem.style[i] !== vnode.style[i]) {
+                avalon(elem).css(i, vnode.style[i])
             }
         }
         vnode.style = {}
     },
-    text: function (vnode, rnode) {
+    text: function (vnode, elem) {
         var newValue = vnode.childNodes[0].nodeValue || ""
-        var oldValue = rnode[textContent]
+        var oldValue = elem[textContent]
         if (oldValue !== newValue) {
             log("更新ms-text")
-            rnode[textContent] = newValue
+            elem[textContent] = newValue
         }
     },
-    html: function () {
+    "if": function (vnode, elem) {
+        var data = vnode.ifData
+        elem = data.element
+        if (vnode.ifValue) {
+            if (elem.nodeType === 8) {
+                elem.parentNode.replaceChild(data.template, elem)
+                elem = data.element = data.template //这时可能为null
+            }
+            if (elem.getAttribute(data.name)) {
+                elem.removeAttribute(data.name)
+                scanAttr(elem, data.vmodels)
+            }
+            data.rollback = null
+        } else { //移出DOM树，并用注释节点占据原位置
+            if (elem.nodeType === 1) {
+                var node = data.element = DOC.createComment("ms-if")
+                //在IE6-8中不能对注释节点添加uniqueNumber属性
+                node.vid = elem.uniqueNumber
+                elem.parentNode.replaceChild(node, elem)
+                data.template = elem //元素节点
+                ifGroup.appendChild(elem)
+                data.rollback = function () {
+                    if (elem.parentNode === ifGroup) {
+                        ifGroup.removeChild(elem)
+                    }
+                }
+            }
+        }
+        delete vnode.ifValue
+        delete vnode.ifData
     }
 }
 var textContent = "textContent" in root ? "textContent" : "innerText"

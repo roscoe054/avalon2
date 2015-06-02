@@ -1,41 +1,25 @@
 // bindingHandlers.html 定义在if.js
 bindingExecutors.html = function (val, elem, data) {
-   var isHtmlFilter = elem.nodeType !== 1
-    var parent = isHtmlFilter ? elem.parentNode : elem
+    var parent = elem.nodeType !== 1 ? elem.parentNode : elem
     if (!parent)
         return
+    if (!data.signature) {
+        var signature = data.signature = generateID("v-html")
+        var start = DOC.createComment(signature)
+        var end = DOC.createComment(signature + ":end")
+        if (elem.nodeType === 1) {//ms-html
+            avalon.clearHTML(elem)
+            elem.appendChild(start)
+            elem.appendChild(end)
+        } else {//{{expr|html}}
+            parent.insertBefore(start, elem)
+            parent.replaceChild(end, elem)
+            data.element = end
+        }
+    }
+    var vnode = addVnodeToData(parent, data)
     val = val == null ? "" : val
-
-    if (elem.nodeType === 3) {
-        var signature = generateID("html")
-        parent.insertBefore(DOC.createComment(signature), elem)
-        data.element = DOC.createComment(signature + ":end")
-        parent.replaceChild(data.element, elem)
-        elem = data.element
-    }
-    if (typeof val !== "object") {//string, number, boolean
-        var fragment = avalon.parseHTML(String(val))
-    } else if (val.nodeType === 11) { //将val转换为文档碎片
-        fragment = val
-    } else if (val.nodeType === 1 || val.item) {
-        var nodes = val.nodeType === 1 ? val.childNodes : val.item
-        fragment = hyperspace.cloneNode(true)
-        while (nodes[0]) {
-            fragment.appendChild(nodes[0])
-        }
-    }
-    
-    
-    nodes = avalon.slice(fragment.childNodes)
-    var endValue = elem.nodeValue.slice(0,-4)
-    while (true) {
-        var node = elem.previousSibling
-        if (!node || node.nodeType === 8 && node.nodeValue === endValue) {
-            break
-        } else {
-            parent.removeChild(node)
-        }
-    }
-    parent.insertBefore(fragment, elem)
-    scanNodeArray(nodes, data.vmodels)
+    vnode.htmlValue = val
+    vnode.htmlData = data
+    vnode.addTask("html")
 }

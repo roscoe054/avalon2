@@ -12,21 +12,3 @@ bindingExecutors.text = function (val, elem, data) {
    
 }
 
-function addVnodeToData(elem, data) {
-    if (data.vnode) {
-        return data.vnode
-    } else if (elem.nodeType === 1) {
-        var vid = getUid(elem)
-        var vnode = VTree.queryVID(vid)
-        if (!vnode) {
-            vnode = new VElement(elem, VTree)
-        }
-        return data.vnode = vnode
-    } else {
-        var vid = getUid(elem.parentNode)
-        var vparent = VTree.queryVID(vid)
-        var index = getTextOrder(elem, elem.parentNode)
-        console.log(index)
-        return data.vnode = vparent.childNodes[index]
-    }
-}

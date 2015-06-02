@@ -6,28 +6,29 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
         <script>
-           var vm = avalon.define({
+            var vm = avalon.define({
                 $id: "test",
                 aaa: 222,
                 bbb: 111,
                 ccc: 444,
-                toggle:false,
+                toggle: false,
                 ddd: "<span>11</span><span>22</span><span>33</span>"
             })
-            setTimeout(function(){
+            setTimeout(function () {
                 vm.aaa = 33
                 vm.bbb = 66
                 vm.toggle = true
                 vm.ccc = 999
-//                vm.ddd = "<b>111</b><b>111</b><b>111</b><b>111</b>"
+                vm.ddd = "<b>111</b><b>111</b><b>111</b><b>111</b>"
             }, 3000)
         </script>
     </head>
     <body ms-controller="test">
         <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
         <div ms-text="ccc">ccc</div>
-        <div ms-visible="toggle">ccc</div>
-<!--         <div>222{{ddd|html}}333</div>
-          <div ms-html="ddd">sdfdfdf</div>-->
+        <div ms-visible="toggle">visible</div>
+        <div ms-if="toggle">if</div>
+        <div>222{{ddd|html}}333</div>
+        <div ms-html="ddd">sdfdfdf</div>
     </body>
 </html>

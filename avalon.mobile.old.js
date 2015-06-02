@@ -2001,7 +2001,6 @@ function VElement(element, parentNode) {
     this.vid = element.vid = vid
     this.nodeName = element.nodeName
     this.className = element.className
-    this.attributes = []
     this.childNodes = []
     this.style = {}
     this.tasks = []
@@ -2021,7 +2020,24 @@ function VElement(element, parentNode) {
 }
 
 
-
+function addVnodeToData(elem, data) {
+    if (data.vnode) {
+        return data.vnode
+    } else if (elem.nodeType === 1) {
+        var vid = getUid(elem)
+        var vnode = VTree.queryVID(vid)
+        if (!vnode) {
+            vnode = new VElement(elem, VTree)
+        }
+        return data.vnode = vnode
+    } else {
+        var vid = elem.vid || getUid(elem.parentNode)
+        var vparent = VTree.queryVID(vid)
+        var index = getTextOrder(elem, elem.parentNode)
+        return data.vnode = vparent.childNodes[index]
+    }
+}
+//将一组节点转换为虚拟DOM
 function VNodes(nodes) {
     var ret = []
     for (var i = 0, n = nodes.length; i < n; i++) {
@@ -2045,10 +2061,7 @@ function VNode(element, deep) {
                 var attributes = getAttributes ? getAttributes(element) : element.attributes
                 ap.forEach.call(attributes, function (attr) {//添加属性
                     if (attr.name !== "class") {
-                        ret.attributes.push({
-                            name: attr.name,
-                            value: attr.value
-                        })
+                        ret.props[attr.name] = attr.value
                     }
                 })
                 ap.forEach.call(element.childNodes, function (node) {
@@ -2076,8 +2089,8 @@ function forEachElements(dom, callback) {
     }
 }
 VTasks = {
-    textFilter: function (vnode, rnode) {
-        var rnodes = rnode.childNodes
+    textFilter: function (vnode, elem) {
+        var rnodes = elem.childNodes
         var vnodes = vnode.childNodes
         var skip = false
         for (var i = 0, node; node = vnodes[i]; i++) {
@@ -2096,9 +2109,9 @@ VTasks = {
                         } else {
                             var neo = DOC.createTextNode(node.nodeValue)
                             if (rnodes[i]) {
-                                rnode.insertBefore(neo, rnodes[i])
+                                elem.insertBefore(neo, rnodes[i])
                             } else {
-                                rnode.appendChild(neo)
+                                elem.appendChild(neo)
                             }
                         }
                     }
@@ -2112,7 +2125,6 @@ VTasks = {
         for (var attrName in vnode.props) {
             if (vnode.props.hasOwnProperty(attrName)) {
                 var val = vnode.props[attrName]
-
                 var toRemove = (val === false) || (val === null) || (val === void 0)
                 if (val && typeof val === "object") {
                     elem[attrName] = val
@@ -2143,23 +2155,92 @@ VTasks = {
         }
 
     },
-    css: function (vnode, rnode) {
+    html: function (vnode, elem) {
+        if (!elem)
+            return
+        var data = vnode.htmlData
+        var val = vnode.htmlValue
+        //转换成文档碎片
+        if (typeof val !== "object") {//string, number, boolean
+            var fragment = avalon.parseHTML(String(val))
+        } else if (val.nodeType === 11) { //将val转换为文档碎片
+            fragment = val
+        } else if (val.nodeType === 1 || val.item) {
+            var nodes = val.nodeType === 1 ? val.childNodes : val.item
+            fragment = hyperspace.cloneNode(true)
+            while (nodes[0]) {
+                fragment.appendChild(nodes[0])
+            }
+        }
+        nodes = avalon.slice(fragment.childNodes)
+        
+        var comments = []
+        console.log(elem)
+        for (var i = 0, el; el = elem.childNodes[i++]; ) {
+            if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
+                comments.push(el)
+            }
+        }
+        //移除两个注释节点间的节点
+        while (true) {
+            var node = comments[1].previousSibling
+            if (!node || node === comments[0]) {
+                break
+            } else {
+                elem.removeChild(node)
+            }
+        }
+        elem.insertBefore(fragment, comments[1])
+        scanNodeArray(nodes, data.vmodels)
+        delete vnode.htmlData
+        delete vnode.htmlValue
+    },
+    css: function (vnode, elem) {
         for (var i in vnode.style) {
-            if (rnode.style[i] !== vnode.style[i]) {
-                avalon(rnode).css(i, vnode.style[i])
+            if (elem.style[i] !== vnode.style[i]) {
+                avalon(elem).css(i, vnode.style[i])
             }
         }
         vnode.style = {}
     },
-    text: function (vnode, rnode) {
+    text: function (vnode, elem) {
         var newValue = vnode.childNodes[0].nodeValue || ""
-        var oldValue = rnode[textContent]
+        var oldValue = elem[textContent]
         if (oldValue !== newValue) {
             log("更新ms-text")
-            rnode[textContent] = newValue
+            elem[textContent] = newValue
         }
     },
-    html: function () {
+    "if": function (vnode, elem) {
+        var data = vnode.ifData
+        elem = data.element
+        if (vnode.ifValue) {
+            if (elem.nodeType === 8) {
+                elem.parentNode.replaceChild(data.template, elem)
+                elem = data.element = data.template //这时可能为null
+            }
+            if (elem.getAttribute(data.name)) {
+                elem.removeAttribute(data.name)
+                scanAttr(elem, data.vmodels)
+            }
+            data.rollback = null
+        } else { //移出DOM树，并用注释节点占据原位置
+            if (elem.nodeType === 1) {
+                var node = data.element = DOC.createComment("ms-if")
+                //在IE6-8中不能对注释节点添加uniqueNumber属性
+                node.vid = elem.uniqueNumber
+                elem.parentNode.replaceChild(node, elem)
+                data.template = elem //元素节点
+                ifGroup.appendChild(elem)
+                data.rollback = function () {
+                    if (elem.parentNode === ifGroup) {
+                        ifGroup.removeChild(elem)
+                    }
+                }
+            }
+        }
+        delete vnode.ifValue
+        delete vnode.ifData
     }
 }
 var textContent = "textContent" in root ? "textContent" : "innerText"
@@ -2170,6 +2251,14 @@ function isFlag(node) {
 }
 VElement.prototype = {
     constructor: VElement,
+    addTask: function (name) {//通过一个个刷新任务同步到真正的DOM树上
+        var task = VTasks[name]
+        if (task) {
+            this.dirty = true
+            avalon.Array.ensure(this.tasks, task)
+            globalRender()
+        }
+    },
     queryVID: function (vid) {
         var ret = null
         forEachElements(this, function (el) {
@@ -2207,14 +2296,6 @@ VElement.prototype = {
         }
         return nodes
     },
-    addTask: function (name) {
-        var task = VTasks[name]
-        if (task) {
-            this.dirty = true
-            avalon.Array.ensure(this.tasks, task)
-            globalRender()
-        }
-    },
     insertBefore: function (node, before) {//node可以是元素节点,文档碎片或数组
         var nodes = node.nodeType === 11 ? node.childNodes : Array.isArray(node) ? node : [node]
         var index = this.childNodes.indexOf(before)
@@ -2248,15 +2329,10 @@ VElement.prototype = {
         return elem
     },
     getAttribute: function (name) {
-        var attrs = this.attributes
-        for (var i = 0, attr; attr = attrs[i++]; ) {
-            if (attr.name === name)
-                return attr.value
-        }
+        return this.props[name]
     },
     hasAttribute: function (name) {
-        var value = this.getAttribute(el, name)
-        return typeof value === "string"
+        return typeof this.props[name] === "string"
     },
     getText: function () {
         var ret = ""
@@ -2286,44 +2362,16 @@ VElement.prototype = {
         }
         return value
     },
-    setStyle: function (name, value) {
-        var style = this.style || (this.style = {})
-        style[camelize(name)] = value
-    },
     setAttribute: function (name, value) {
-        // zilong@2015-5-15: 在parse5序列化dom的attribute时，对于tabindex、colspan这类数字类型的属性，如果不转换为字符串，程序会崩溃
-        if (typeof value !== 'string') {
-            value = String(1);
-        }
-        var attrs = this.attributes
-        for (var i = 0, attr; attr = attrs[i++]; ) {
-            if (attr.name === name) {
-                attr.value = value
-                return this
-            }
-        }
-        attrs.push({
-            name: name,
-            value: value
-        })
+        this.props[name] = String(value)
         return this
     },
     removeAttribute: function (name) {
-        var attrs = this.attributes
-        for (var i = attrs.length, attr; attr = attrs[--i]; ) {
-            if (attr.name === name) {
-                attrs.splice(i, 1)
-                break
-            }
-        }
+        this.props[name] = void 0
         return this
     },
     setBoolAttribute: function (name, value) {
-        if (value) {
-            this.setAttribute(name, name)
-        } else {
-            this.removeAttribute(name)
-        }
+        this.props[name] = !!value
     }
 }
 
@@ -4421,44 +4469,29 @@ duplexBinding.SELECT = function(element, evaluator, data) {
 }
 // bindingHandlers.html 定义在if.js
 bindingExecutors.html = function (val, elem, data) {
-   var isHtmlFilter = elem.nodeType !== 1
-    var parent = isHtmlFilter ? elem.parentNode : elem
+    var parent = elem.nodeType !== 1 ? elem.parentNode : elem
     if (!parent)
         return
-    val = val == null ? "" : val
-
-    if (elem.nodeType === 3) {
-        var signature = generateID("html")
-        parent.insertBefore(DOC.createComment(signature), elem)
-        data.element = DOC.createComment(signature + ":end")
-        parent.replaceChild(data.element, elem)
-        elem = data.element
-    }
-    if (typeof val !== "object") {//string, number, boolean
-        var fragment = avalon.parseHTML(String(val))
-    } else if (val.nodeType === 11) { //将val转换为文档碎片
-        fragment = val
-    } else if (val.nodeType === 1 || val.item) {
-        var nodes = val.nodeType === 1 ? val.childNodes : val.item
-        fragment = hyperspace.cloneNode(true)
-        while (nodes[0]) {
-            fragment.appendChild(nodes[0])
-        }
-    }
-    
-    
-    nodes = avalon.slice(fragment.childNodes)
-    var endValue = elem.nodeValue.slice(0,-4)
-    while (true) {
-        var node = elem.previousSibling
-        if (!node || node.nodeType === 8 && node.nodeValue === endValue) {
-            break
+    if (!data.signature) {
+        var signature = data.signature = generateID("v-html")
+        var start = DOC.createComment(signature)
+        var end = DOC.createComment(signature + ":end")
+        if (elem.nodeType === 1) {
+            avalon.clearHTML(elem)
+            elem.appendChild(start)
+            console.log(end.nodeValue)
+            elem.appendChild(end)
         } else {
-            parent.removeChild(node)
+            parent.insertBefore(start, elem)
+            parent.replaceChild(end, elem)
+            data.element = end
         }
     }
-    parent.insertBefore(fragment, elem)
-    scanNodeArray(nodes, data.vmodels)
+    var vnode = addVnodeToData(parent, data)
+    val = val == null ? "" : val
+    vnode.htmlValue = val
+    vnode.htmlData = data
+    vnode.addTask("html")
 }
 bindingHandlers["if"] =
     bindingHandlers.data =
@@ -4469,31 +4502,10 @@ bindingHandlers["if"] =
 }
 
 bindingExecutors["if"] = function(val, elem, data) {
-    if (val) { //插回DOM树
-        if (elem.nodeType === 8) {
-            elem.parentNode.replaceChild(data.template, elem)
-         //   animate.enter(data.template, elem.parentNode)
-            elem = data.element = data.template //这时可能为null
-        }
-        if (elem.getAttribute(data.name)) {
-            elem.removeAttribute(data.name)
-            scanAttr(elem, data.vmodels)
-        }
-        data.rollback = null
-    } else { //移出DOM树，并用注释节点占据原位置
-        if (elem.nodeType === 1) {
-            var node = data.element = DOC.createComment("ms-if")
-            elem.parentNode.replaceChild(node, elem)
-       //     animate.leave(elem, node.parentNode, node)
-            data.template = elem //元素节点
-            ifGroup.appendChild(elem)
-            data.rollback = function() {
-                if (elem.parentNode === ifGroup) {
-                    ifGroup.removeChild(elem)
-                }
-            }
-        }
-    }
+      var vnode = addVnodeToData(elem, data)
+      vnode.ifValue = !!val
+      vnode.ifData = data
+      vnode.addTask("if")
 }
 //ms-important绑定已经在scanTag 方法中实现
 //ms-include绑定已由ms-attr绑定实现
@@ -4873,24 +4885,7 @@ bindingExecutors.text = function (val, elem, data) {
    
 }
 
-function addVnodeToData(elem, data) {
-    if (data.vnode) {
-        return data.vnode
-    } else if (elem.nodeType === 1) {
-        var vid = getUid(elem)
-        var vnode = VTree.queryVID(vid)
-        if (!vnode) {
-            vnode = new VElement(elem, VTree)
-        }
-        return data.vnode = vnode
-    } else {
-        var vid = getUid(elem.parentNode)
-        var vparent = VTree.queryVID(vid)
-        var index = getTextOrder(elem, elem.parentNode)
-        console.log(index)
-        return data.vnode = vparent.childNodes[index]
-    }
-}
+
 function parseDisplay(nodeName, val) {
     //用于取得此类标签的默认display值
     var key = "_" + nodeName
