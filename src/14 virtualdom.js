@@ -178,7 +178,6 @@ VTasks = {
         nodes = avalon.slice(fragment.childNodes)
         
         var comments = []
-        console.log(elem)
         for (var i = 0, el; el = elem.childNodes[i++]; ) {
             if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
                 comments.push(el)
