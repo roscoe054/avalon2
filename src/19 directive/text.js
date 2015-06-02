@@ -7,7 +7,7 @@ bindingExecutors.text = function (val, elem, data) {
         vnode.parentNode.addTask("textFilter")
     } else { //绑定在特性节点上
         vnode.setText(val)
-        vnode.parentNode.addTask("text")
+        vnode.addTask("text")
     }
    
 }
