@@ -3687,35 +3687,23 @@ duplexBinding.SELECT = function(element, evaluator, data) {
         data.changed.call(element, evaluator(), data)
     }
 }
-// bindingHandlers.html 定义在if.js
+// bindingHandlers.html 定义在text.js
 bindingExecutors.html = function (val, elem, data) {
     var parent = elem.nodeType !== 1 ? elem.parentNode : elem
     if (!parent)
         return
-    if (!data.signature) {
-        var signature = data.signature = generateID("v-html")
-        var start = DOC.createComment(signature)
-        var end = DOC.createComment(signature + ":end")
-        if (elem.nodeType === 1) {//ms-html
-            avalon.clearHTML(elem)
-            elem.appendChild(start)
-            elem.appendChild(end)
-        } else {//{{expr|html}}
-            parent.insertBefore(start, elem)
-            parent.replaceChild(end, elem)
-            data.element = end
-        }
-    }
-    var vnode = addVnodeToData(parent, data)
     val = val == null ? "" : val
-    vnode.htmlValue = val
-    vnode.htmlData = data
-    vnode.addTask("html")
+    var fill = avalon.parseHTML(val)
+    var nodes = avalon.slice(fill.childNodes)
+    fillSignatures(parent, data, fill)
+    scanNodeArray(nodes, data.vmodels)
+//    var vnode = addVnodeToData(parent, data)
+//    vnode.htmlValue = val
+//    vnode.htmlData = data
+//    vnode.addTask("html")
 }
 bindingHandlers["if"] =
     bindingHandlers.data =
-    bindingHandlers.text =
-    bindingHandlers.html =
     function(data, vmodels) {
         parseExprProxy(data.value, vmodels, data)
 }
@@ -3779,30 +3767,12 @@ function includeExecutor(val, elem, data) {
         //获取注释节点
         var fill = getTemplateNodes(data, val, text)
         var nodes = avalon.slice(fill.childNodes)
+        
         fillSignatures(target, data, fill, function (node) {
             if (lastTemplate)
                 lastTemplate.appendChild(node)
         })
-//        var comments = []
-//        for (var i = 0, el; el = elem.childNodes[i++]; ) {
-//            if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
-//                comments.push(el)
-//            }
-//        }
-        //移除两个注释节点间的节点
-//        while (true) {
-//            var node = comments[0].nextSibling
-//            if (node && node !== comments[1]) {
-//                target.removeChild(node)
-//                if (lastTemplate)
-//                    lastTemplate.appendChild(node)
-//            } else {
-//                break
-//            }
-//        }
-//      
-//      
-//        target.insertBefore(dom, comments[1])
+
         scanNodeArray(nodes, vmodels)
     }
     if (data.param === "src") {

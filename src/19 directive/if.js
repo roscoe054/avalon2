@@ -1,7 +1,5 @@
 bindingHandlers["if"] =
     bindingHandlers.data =
-    bindingHandlers.text =
-    bindingHandlers.html =
     function(data, vmodels) {
         parseExprProxy(data.value, vmodels, data)
 }
