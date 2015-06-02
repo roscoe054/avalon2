@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.js 1.44 built in 2015.6.2
+ avalon.mobile.js 1.44 built in 2015.6.3
  support IE10+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1649,12 +1649,13 @@ function addVnodeToData(elem, data) {
             vnode = new VElement(elem, VTree)
         }
         return data.vnode = vnode
-    } else {
-        var vid = elem.vid || getUid(elem.parentNode)
-        var vparent = VTree.queryVID(vid)
-        var index = getTextOrder(elem, elem.parentNode)
-        return data.vnode = vparent.childNodes[index]
     }
+//    else {
+//        var vid = elem.vid || getUid(elem.parentNode)
+//        var vparent = VTree.queryVID(vid)
+//        var index = getTextOrder(elem, elem.parentNode)
+//        return data.vnode = vparent.childNodes[index]
+//    }
 }
 //将一组节点转换为虚拟DOM
 function VNodes(nodes) {
@@ -1822,12 +1823,53 @@ VTasks = {
         vnode.style = {}
     },
     text: function (vnode, elem) {
-        var newValue = vnode.childNodes[0].nodeValue || ""
-        var oldValue = elem[textContent]
-        if (oldValue !== newValue) {
-            log("更新ms-text")
-            elem[textContent] = newValue
+        var data = vnode.textData
+        if (!vnode.childNodes.length) {
+
+
+            var array = VNodes(elem.childNodes)
+            vnode.appendChild(array)
+        } else {
+            array = VNodes(elem.childNodes)
+            array = collectTextNode(array, vnode.childNodes)
+            vnode.childNodes.length = 0
+            vnode.appendChild(array)
+
         }
+        //收集两个注释节点间的文本节点
+        function collectTextNode(aaa, bbb) {//aaa为新的， bbb为旧的
+            var k = false
+            var array = []
+            while (aaa.length) {
+                var neo = aaa.shift()
+                array.push(neo)
+                if (neo.nodeType === 8 && /^v-\w+\d+/.test(neo.nodeValue)) {
+                    k = !k
+                    if (k) {
+                        var arr = getSignature(bbb, neo.nodeValue)
+                        array = array.concat(arr)
+                    }
+                } else {
+                    if (k) {
+                        array.pop()
+                    }
+                }
+
+            }
+            return array
+        }
+
+        fillSignatures(vnode, data, new VText(vnode.textValue))
+
+        //  console.log(elem)
+        //      elem = data.element
+
+//        var newValue = vnode.childNodes[0].nodeValue || ""
+//        var oldValue = elem[textContent]
+//        if (oldValue !== newValue) {
+//            log("更新ms-text")
+//            elem[textContent] = newValue
+//        }
     },
     "if": function (vnode, elem) {
         var data = vnode.ifData
@@ -1920,7 +1962,13 @@ VElement.prototype = {
         if (index === -1) {
             this.appendChild(nodes)
         } else {
-            this.replaceChild(node, before, true)
+            nodes.forEach(function (child) {
+                child.parentNode = before.parentNode
+            })
+            var args = [index, 0].concat(nodes)
+            //  console.log(index, this.childNodes.length, nodes.length)
+            ap.splice.apply(this.childNodes, args)
+            //   console.log(this.childNodes.length)
         }
         return nodes
     },
@@ -2080,6 +2128,20 @@ function getSignatures(elem, signature) {
     return comments
 }
 
+function getSignature(array, signature) {
+    var collect = false, ret = []
+    for (var i = 0, el; el = array[i++]; ) {
+        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
+            collect = !collect
+            continue
+        }
+        if (collect) {
+            ret.push(el)
+        }
+    }
+    return ret
+}
+
 function appendSignatures(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时
@@ -2104,8 +2166,15 @@ function fillSignatures(elem, data, fill, callback) {
     callback = callback || function () {
     }
     //移除两个注释节点间的节点
+    //console.log(comments)
+    if (!comments.length) {
+        console.log(data.signature + "!找不到元素")
+        return
+    }
+    var index = indexElement(comments[0], elem.childNodes)
+
     while (true) {
-        var node = comments[0].nextSibling
+        var node = elem.childNodes[index + 1]
         if (node && node !== comments[1]) {
             elem.removeChild(node)
             callback(node, comments[0], comments[1])
@@ -2113,7 +2182,15 @@ function fillSignatures(elem, data, fill, callback) {
             break
         }
     }
+    console.log(elem.childNodes.length, comments[1], "c")
     elem.insertBefore(fill, comments[1])
+}
+function indexElement(target, array) {
+    for (var i = 0, el; el = array[i]; i++) {
+        if (el === target)
+            return i
+    }
+    return -1
 }
 
 /************************************************************************
@@ -3165,15 +3242,15 @@ function scanText(textNode, vmodels) {
         }
         parent.replaceChild(hyperspace, textNode)
         if (bindings.length) {
-            new function () {
-               var vid = getUid(parent)
-                var vparent = VTree.queryVID(vid) ||  new VElement(parent, VTree)
-                if (!vparent.childNodes.length) {
-                    var array = VNodes(parent.childNodes)
-                    vparent.appendChild(array)
-                }
+//            new function () {
+//               var vid = getUid(parent)
+//                var vparent = VTree.queryVID(vid) ||  new VElement(parent, VTree)
+//                if (!vparent.childNodes.length) {
+//                    var array = VNodes(parent.childNodes)
+//                    vparent.appendChild(array)
+//                }
                 executeBindings(bindings, vmodels)
-            }
+//            }
         }
     }
 }

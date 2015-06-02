@@ -17,24 +17,25 @@
                 tmpl: "aa.html",
                 ddd: "<span>11</span><span>22</span><span>33</span>"
             })
-            setTimeout(function () {
-                vm.aaa = 33
-                vm.bbb = 66
-                vm.toggle = true
-                vm.ccc = 999
-                vm.ddd = "<b>111</b><b>111</b><b>111</b><b>111</b>"
-                vm.tmpl = "bb.html"
-            }, 3000)
+//            setTimeout(function () {
+//                vm.aaa = 33
+//                vm.bbb = 66
+//                vm.toggle = true
+//                vm.ccc = 999
+//                vm.ddd = "<b>111</b><b>111</b><b>111</b><b>111</b>"
+//                vm.tmpl = "bb.html"
+//            }, 3000)
         </script>
     </head>
     <body ms-controller="test">
-<!--        <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
-        <div ms-text="ccc">ccc</div>
-        <div ms-visible="toggle">visible</div>
-        <div ms-if="toggle">if</div>-->
+        11111111111
+        <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
+<!--        <div ms-text="ccc">ccc</div>-->
+<!--        <div ms-visible="toggle">visible</div>
+        <div ms-if="toggle">if</div>
         <div>222{{ddd|html}}333</div>
         <div ms-html="ddd">sdfdfdf</div>
-<!--        <div id="include1" ms-include-src="tmpl"></div>
+        <div id="include1" ms-include-src="tmpl"></div>
         <div id="include2" ms-include-src="tmpl" data-include-replace="true"></div>-->
     </body>
 </html>
