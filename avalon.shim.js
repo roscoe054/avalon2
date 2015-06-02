@@ -2001,7 +2001,6 @@ function VElement(element, parentNode) {
     this.vid = element.vid = vid
     this.nodeName = element.nodeName
     this.className = element.className
-    this.attributes = []
     this.childNodes = []
     this.style = {}
     this.tasks = []
@@ -2045,10 +2044,7 @@ function VNode(element, deep) {
                 var attributes = getAttributes ? getAttributes(element) : element.attributes
                 ap.forEach.call(attributes, function (attr) {//添加属性
                     if (attr.name !== "class") {
-                        ret.attributes.push({
-                            name: attr.name,
-                            value: attr.value
-                        })
+                        ret.props[attr.name] = attr.value
                     }
                 })
                 ap.forEach.call(element.childNodes, function (node) {
@@ -2170,6 +2166,14 @@ function isFlag(node) {
 }
 VElement.prototype = {
     constructor: VElement,
+    addTask: function (name) {//通过一个个刷新任务同步到真正的DOM树上
+        var task = VTasks[name]
+        if (task) {
+            this.dirty = true
+            avalon.Array.ensure(this.tasks, task)
+            globalRender()
+        }
+    },
     queryVID: function (vid) {
         var ret = null
         forEachElements(this, function (el) {
@@ -2207,14 +2211,6 @@ VElement.prototype = {
         }
         return nodes
     },
-    addTask: function (name) {
-        var task = VTasks[name]
-        if (task) {
-            this.dirty = true
-            avalon.Array.ensure(this.tasks, task)
-            globalRender()
-        }
-    },
     insertBefore: function (node, before) {//node可以是元素节点,文档碎片或数组
         var nodes = node.nodeType === 11 ? node.childNodes : Array.isArray(node) ? node : [node]
         var index = this.childNodes.indexOf(before)
@@ -2248,15 +2244,10 @@ VElement.prototype = {
         return elem
     },
     getAttribute: function (name) {
-        var attrs = this.attributes
-        for (var i = 0, attr; attr = attrs[i++]; ) {
-            if (attr.name === name)
-                return attr.value
-        }
+        return this.props[name]
     },
     hasAttribute: function (name) {
-        var value = this.getAttribute(el, name)
-        return typeof value === "string"
+        return typeof this.props[name] === "string"
     },
     getText: function () {
         var ret = ""
@@ -2286,44 +2277,16 @@ VElement.prototype = {
         }
         return value
     },
-    setStyle: function (name, value) {
-        var style = this.style || (this.style = {})
-        style[camelize(name)] = value
-    },
     setAttribute: function (name, value) {
-        // zilong@2015-5-15: 在parse5序列化dom的attribute时，对于tabindex、colspan这类数字类型的属性，如果不转换为字符串，程序会崩溃
-        if (typeof value !== 'string') {
-            value = String(1);
-        }
-        var attrs = this.attributes
-        for (var i = 0, attr; attr = attrs[i++]; ) {
-            if (attr.name === name) {
-                attr.value = value
-                return this
-            }
-        }
-        attrs.push({
-            name: name,
-            value: value
-        })
+        this.props[name] = String(value)
         return this
     },
     removeAttribute: function (name) {
-        var attrs = this.attributes
-        for (var i = attrs.length, attr; attr = attrs[--i]; ) {
-            if (attr.name === name) {
-                attrs.splice(i, 1)
-                break
-            }
-        }
+        this.props[name] = void 0
         return this
     },
     setBoolAttribute: function (name, value) {
-        if (value) {
-            this.setAttribute(name, name)
-        } else {
-            this.removeAttribute(name)
-        }
+        this.props[name] = !!value
     }
 }
 
@@ -4910,7 +4873,7 @@ function parseDisplay(nodeName, val) {
 
 avalon.parseDisplay = parseDisplay
 
-bindingHandlers.visible = function(data, vmodels) {
+bindingHandlers.visible = function (data, vmodels) {
     var elem = avalon(data.element)
     var display = elem.css("display")
     if (display === "none") {
@@ -4929,8 +4892,11 @@ bindingHandlers.visible = function(data, vmodels) {
     parseExprProxy(data.value, vmodels, data)
 }
 
-bindingExecutors.visible = function(val, elem, data) {
-    elem.style.display = val ? data.display : "none"
+bindingExecutors.visible = function (val, elem, data) {
+    var vnode = addVnodeToData(elem, data)
+    vnode.style.display = val ? data.display : "none"
+    vnode.addTask("css")
+    //  elem.style.display = val ? data.display : "none"
 }
 bindingHandlers.widget = function(data, vmodels) {
     var args = data.value.match(rword)
