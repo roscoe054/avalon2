@@ -90,14 +90,11 @@ function scanText(textNode, vmodels) {
         parent.replaceChild(hyperspace, textNode)
         if (bindings.length) {
             new function () {
-                var vid = getUid(parent)
-                if (!VTree.queryVID(vid)) {
-                    var vparent = new VElement(parent, VTree)
-                    if (!vparent.diffText) {
-                        vparent.diffText = true
-                        var array = createVChild(parent)
-                        vparent.appendChild(array)
-                    }
+               var vid = getUid(parent)
+                var vparent = VTree.queryVID(vid) ||  new VElement(parent, VTree)
+                if (!vparent.childNodes.length) {
+                    var array = VNodes(parent.childNodes)
+                    vparent.appendChild(array)
                 }
                 executeBindings(bindings, vmodels)
             }

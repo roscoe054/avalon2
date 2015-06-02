@@ -6,7 +6,9 @@ function VElement(element, parentNode) {
     this.className = element.className
     this.attributes = []
     this.childNodes = []
+    this.style = {}
     this.tasks = []
+    this.props = {}
     this.parentNode = parentNode
     //   this.isVirtualdom = true 直接判定有没有queryVID方法就行了
     try {
@@ -17,36 +19,15 @@ function VElement(element, parentNode) {
         log(e)
     }
 // this.style = {}
-// this.diffText
-// this.diffAttr
-// this.diffNode
-// this.diffStyle
+// this.dirty
+
 }
-function addVNodeInData(elem, data) {
-    if (!data.vnode) {
-        if (elem.nodeType === 1) {
-            var vid = getUid(elem)
-            var velem = VTree.queryVID(vid)
-            if (!velem) {
-                velem = new VElement(elem, VTree)
-                data.vnode = velem
-            }
-        } else {
-            var parent = elem.parentNode
-            var vid = getUid(parent)
-            var vparent = VTree.queryVID(vid)
-            if (!vparent) {
-                vparent = new VElement(elem, VTree)
-                vparent.appendChild( VNodes(elem.childNodes) )
-            }
-            var index = getTextOrder(elem, parent)
-            data.vnode = vparent.childNodes[index]
-        }
-    }
-}
-function VNodes(nodes){
+
+
+
+function VNodes(nodes) {
     var ret = []
-    for(var i = 0, n = nodes.length; i < n; i++){
+    for (var i = 0, n = nodes.length; i < n; i++) {
         ret.push(new VNode(nodes[i], false))
     }
     return ret
@@ -80,9 +61,9 @@ function VNode(element, deep) {
             }
             return ret
         case 3:
-            return new VText(node.nodeValue)
+            return new VText(element.nodeValue)
         case 8:
-            return new VComment(node.nodeValue)
+            return new VComment(element.nodeValue)
     }
 }
 //属性,类名,样式,子节点
@@ -98,14 +79,97 @@ function forEachElements(dom, callback) {
     }
 }
 VTasks = {
-    textFilter: function () {
+    textFilter: function (vnode, rnode) {
+        var rnodes = rnode.childNodes
+        var vnodes = vnode.childNodes
+        var skip = false
+        for (var i = 0, node; node = vnodes[i]; i++) {
+            node = vnodes[i]
+            if (node.nodeType !== 1) {//跳过所有元素节点
+                if (skip) {
+                    if (isFlag(vnode))
+                        skip = false
+                } else {
+                    if (isFlag(vnode)) {
+                        skip = true
+                    } else {
+
+                        if (rnodes[i] && rnodes[i].nodeType === 3) {
+                            rnodes[i].nodeValue = node.nodeValue
+                        } else {
+                            var neo = DOC.createTextNode(node.nodeValue)
+                            if (rnodes[i]) {
+                                rnode.insertBefore(neo, rnodes[i])
+                            } else {
+                                rnode.appendChild(neo)
+                            }
+                        }
+                    }
+                }
+            }
+        }
     },
     htmlFilter: function () {
     },
-    text: function () {
+    attr: function (vnode, elem) {
+        for (var attrName in vnode.props) {
+            if (vnode.props.hasOwnProperty(attrName)) {
+                var val = vnode.props[attrName]
+
+                var toRemove = (val === false) || (val === null) || (val === void 0)
+                if (val && typeof val === "object") {
+                    elem[attrName] = val
+                    continue
+                }
+                if (!W3C && propMap[attrName]) { //旧式IE下需要进行名字映射
+                    attrName = propMap[attrName]
+                }
+                var bool = boolMap[attrName]
+                if (typeof elem[bool] === "boolean") {
+                    elem[bool] = !!val //布尔属性必须使用el.xxx = true|false方式设值
+                    if (!val) { //如果为false, IE全系列下相当于setAttribute(xxx,''),会影响到样式,需要进一步处理
+                        toRemove = true
+                    }
+                }
+                if (toRemove) {
+                    elem.removeAttribute(attrName)
+                    continue
+                }
+                //SVG只能使用setAttribute(xxx, yyy), VML只能使用elem.xxx = yyy ,HTML的固有属性必须elem.xxx = yyy
+                var isInnate = rsvg.test(elem) ? false : (DOC.namespaces && isVML(elem)) ? true : attrName in elem.cloneNode(false)
+                if (isInnate) {
+                    elem[attrName] = val
+                } else {
+                    elem.setAttribute(attrName, val)
+                }
+            }
+        }
+
+    },
+    css: function (vnode, rnode) {
+        for (var i in vnode.style) {
+            if (rnode.style[i] !== vnode.style[i]) {
+                avalon(rnode).css(i, vnode.style[i])
+            }
+        }
+        vnode.style = {}
+    },
+    text: function (vnode, rnode) {
+        var newValue = vnode.childNodes[0].nodeValue || ""
+        var oldValue = rnode[textContent]
+        if (oldValue !== newValue) {
+            log("更新ms-text")
+            rnode[textContent] = newValue
+        }
     },
     html: function () {
     }
+}
+var textContent = "textContent" in root ? "textContent" : "innerText"
+var rcommentmask = /^(\d+)\w+\1+/
+//两个注释点的节点当作一个独立的单元
+function isFlag(node) {
+    return node.nodeType === 8 && rcommentmask.test(node.nodeValue)
 }
 VElement.prototype = {
     constructor: VElement,
@@ -145,6 +209,14 @@ VElement.prototype = {
             this.childNodes.push(node)
         }
         return nodes
+    },
+    addTask: function (name) {
+        var task = VTasks[name]
+        if (task) {
+            this.dirty = true
+            avalon.Array.ensure(this.tasks, task)
+            globalRender()
+        }
     },
     insertBefore: function (node, before) {//node可以是元素节点,文档碎片或数组
         var nodes = node.nodeType === 11 ? node.childNodes : Array.isArray(node) ? node : [node]
@@ -307,32 +379,15 @@ function querySelector(tag, vid, root) {
     }
 }
 function updateTree(node) {
-    var diff = node.diffText || node.diffAttr || node.diffStyle || node.diffContent
-    if (diff) {
+    if (node.dirty) {
         var rnode = querySelector(node.nodeName, node.vid)
-
         if (!rnode)
             return
-        if (node.diffText) {
-            var rnodes = rnode.childNodes
-            var vnodes = node.childNodes, vnode
-            for (var i = 0, el; el = rnodes[i]; i++) {
-                vnode = vnodes[i]
-                if (el.nodeType === 3 && vnode.nodeType === 3 && el.nodeValue !== vnode.nodeValue) {
-                    log("更新{{}}")
-                    el.nodeValue = vnode.nodeValue
-                }
-            }
-        }
-        if (node.diffContent) {
-            var method = "textContent" in root ? "textContent" : "innerText"
-            var oldValue = rnode[method]
-            var newValue = node.childNodes[0] ? node.childNodes[0].nodeValue : ""
-            if (oldValue !== newValue) {
-                log("更新ms-text")
-                rnode[method] = newValue
-            }
-        }
+        node.tasks.forEach(function (task) {
+            task(node, rnode)
+        })
+        node.tasks.length = 0
+        node.dirty = false
     }
     if (node.childNodes && node.childNodes.length) {
         for (var i = 0, el; el = node.childNodes[i++]; ) {
