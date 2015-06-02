@@ -6,6 +6,7 @@ function VElement(element, parentNode) {
     this.className = element.className
     this.attributes = []
     this.childNodes = []
+    this.tasks = []
     this.parentNode = parentNode
     //   this.isVirtualdom = true 直接判定有没有queryVID方法就行了
     try {
@@ -21,32 +22,62 @@ function VElement(element, parentNode) {
 // this.diffNode
 // this.diffStyle
 }
-
-function VNode(element) {
+function addVNodeInData(elem, data) {
+    if (!data.vnode) {
+        if (elem.nodeType === 1) {
+            var vid = getUid(elem)
+            var velem = VTree.queryVID(vid)
+            if (!velem) {
+                velem = new VElement(elem, VTree)
+                data.vnode = velem
+            }
+        } else {
+            var parent = elem.parentNode
+            var vid = getUid(parent)
+            var vparent = VTree.queryVID(vid)
+            if (!vparent) {
+                vparent = new VElement(elem, VTree)
+                vparent.appendChild( VNodes(elem.childNodes) )
+            }
+            var index = getTextOrder(elem, parent)
+            data.vnode = vparent.childNodes[index]
+        }
+    }
+}
+function VNodes(nodes){
+    var ret = []
+    for(var i = 0, n = nodes.length; i < n; i++){
+        ret.push(new VNode(nodes[i], false))
+    }
+    return ret
+}
+function VNode(element, deep) {
     var ret
     switch (element.nodeType) {
         case 11:
             ret = new VDocumentFragment()
-            ap.forEach.call(element.childNodes, function (node) {//添加属性
+            deep && ap.forEach.call(element.childNodes, function (node) {//添加属性
                 var vnode = new VNode(node)
                 ret.appendChild(vnode)
             })
             return ret
         case 1:
             ret = new VElement(element)
-            var attributes = getAttributes ? getAttributes(element) : element.attributes
-            ap.forEach.call(attributes, function (attr) {//添加属性
-                if (attr.name !== "class") {
-                    ret.attributes.push({
-                        name: attr.name,
-                        value: attr.value
-                    })
-                }
-            })
-            ap.forEach.call(element.childNodes, function (node) {
-                var vnode = new VNode(node)
-                ret.appendChild(vnode)
-            })
+            if (deep) {
+                var attributes = getAttributes ? getAttributes(element) : element.attributes
+                ap.forEach.call(attributes, function (attr) {//添加属性
+                    if (attr.name !== "class") {
+                        ret.attributes.push({
+                            name: attr.name,
+                            value: attr.value
+                        })
+                    }
+                })
+                ap.forEach.call(element.childNodes, function (node) {
+                    var vnode = new VNode(node)
+                    ret.appendChild(vnode)
+                })
+            }
             return ret
         case 3:
             return new VText(node.nodeValue)
@@ -64,6 +95,16 @@ function forEachElements(dom, callback) {
                 forEachElements(el, callback)
             }
         }
+    }
+}
+VTasks = {
+    textFilter: function () {
+    },
+    htmlFilter: function () {
+    },
+    text: function () {
+    },
+    html: function () {
     }
 }
 VElement.prototype = {
@@ -301,23 +342,7 @@ function updateTree(node) {
         }
     }
 }
-function createVChild(realNode) {
-    var array = []
-    for (var i = 0, el; el = realNode.childNodes[i++]; ) {
-        switch (el.nodeType) {
-            case 1:
-                array.push(new VElement(el))
-                break
-            case 3:
-                array.push(new VText(el.nodeValue))
-                break
-            case 8:
-                array.push(new VComment(el.nodeValue))
-                break
-        }
-    }
-    return array
-}
+
 
 function getTextOrder(node, parent, el) {
     for (var i = 0; el = parent.childNodes[i]; i++) {
