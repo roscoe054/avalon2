@@ -25,7 +25,6 @@ anomaly.replace(rword, function (name) {
     propMap[name.toLowerCase()] = name
 })
 
-
 bindingHandlers.attr = function (data, vmodels) {
     var text = data.value.trim(),
             simple = true
@@ -36,6 +35,7 @@ bindingHandlers.attr = function (data, vmodels) {
             text = RegExp.$1
         }
     }
+    data.handlerName = "attr" 
     parseExprProxy(text, vmodels, data, (simple ? 0 : scanExpr(data.value)))
 }
 
@@ -52,7 +52,8 @@ bindingExecutors.attr = function (val, elem, data) {
         // ms-attr-name="yyy"  vm.yyy="ooo" 为元素设置name属性
         vnode.props[attrName] = val
         vnode.addTask("attr")
-
+    } else if(method === "include"){
+        includeExecutor(val, elem, data)
     } else {
         if (!root.hasAttribute && typeof val === "string" && (method === "src" || method === "href")) {
             val = val.replace(/&amp;/g, "&") //处理IE67自动转义的问题
@@ -70,5 +71,4 @@ bindingExecutors.attr = function (val, elem, data) {
 //这几个指令都可以使用插值表达式，如ms-src="aaa/{{b}}/{{c}}.html"
 "title,alt,src,value,css,href".replace(rword, function (name) {
     bindingHandlers[name] = bindingHandlers.attr
-    bindingExecutors[name] = bindingExecutors.attr
 })

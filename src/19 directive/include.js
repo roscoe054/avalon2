@@ -1,37 +1,28 @@
 //ms-include绑定已由ms-attr绑定实现
-bindingHandlers.include = bindingHandlers.attr
-bindingExecutors.include = function (val, elem, data) {
-    var vmodels = data.vmodels
+bindingHandlers.include = function (data, vmodels) {
     if (!data.signature) {
         //保持回调到data
+        var elem = data.element
         data.includeRendered = getBindingCallback(elem, "data-include-rendered", vmodels)
         data.includeLoaded = getBindingCallback(elem, "data-include-loaded", vmodels)
         var replace = data.includeReplace = !!avalon(elem).data("includeReplace")
-        var parent = replace ? elem.parentNode : elem
         if (avalon(elem).data("includeCache")) {
             data.templateCache = {}
         }
         //下面的逻辑与html绑定差不多
-        var signature = data.signature = generateID("v-include")
-        var start = DOC.createComment(signature)
-        var end = DOC.createComment(signature + ":end")
-        if (replace) {
-            parent.insertBefore(start, elem)
-            parent.replaceChild(end, elem)
-            data.element = end
-        } else {
-            avalon.clearHTML(parent)
-            parent.appendChild(start)
-            parent.appendChild(end)
-        }
+        data.signature = generateID("v-include")
+        appendSignatures(elem, data, replace)
     }
+    bindingHandlers.attr(data, vmodels)
+}
 
+
+function includeExecutor(val, elem, data) {
     var vmodels = data.vmodels
     var rendered = data.includeRendered
     var loaded = data.includeLoaded
     var replace = data.includeReplace
     var target = replace ? elem.parentNode : elem
-
 
     var scanTemplate = function (text) {
         if (loaded) {
@@ -46,7 +37,7 @@ bindingExecutors.include = function (val, elem, data) {
         }
 
         var lastID = data.includeLastID //上次的ID
-       
+
         if (data.templateCache && lastID && lastID !== val) {
             var lastTemplate = data.templateCache[lastID]
             if (!lastTemplate) { //上一次的内容没有被缓存，就创建一个DIV，然后在[移除两个注释节点间的节点]进行收集
@@ -57,26 +48,14 @@ bindingExecutors.include = function (val, elem, data) {
 
         data.includeLastID = val
         //获取注释节点
-        var comments = []
-        for (var i = 0, el; el = elem.childNodes[i++]; ) {
-            if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
-                comments.push(el)
-            }
-        }
-        //移除两个注释节点间的节点
-        while (true) {
-            var node = comments[0].nextSibling
-            if (node && node !== comments[1]) {
-                target.removeChild(node)
-                if (lastTemplate)
-                    lastTemplate.appendChild(node)
-            } else {
-                break
-            }
-        }
-        var dom = getTemplateNodes(data, val, text)
-        var nodes = avalon.slice(dom.childNodes)
-        target.insertBefore(dom, comments[1])
+        var fill = getTemplateNodes(data, val, text)
+        var nodes = avalon.slice(fill.childNodes)
+        
+        fillSignatures(target, data, fill, function (node) {
+            if (lastTemplate)
+                lastTemplate.appendChild(node)
+        })
+
         scanNodeArray(nodes, vmodels)
     }
     if (data.param === "src") {

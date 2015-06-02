@@ -45,13 +45,6 @@ function scanAttr(elem, vmodels, match) {
                                 binding.type = "html"
                                 return ""
                             })// jshint ignore:line
-                            if( binding.type === "html"){
-                                avalon.clearHTML(elem)
-                                var signature = generateID(type)
-                                elem.appendChild( DOC.createComment(signature ))
-                                binding.element = elem.appendChild(DOC.createComment(signature + ":end"))
-                            }
-                            
                         } else if (type === "duplex") {
                             var hasDuplex = name
                         } else if (name === "ms-if-loop") {

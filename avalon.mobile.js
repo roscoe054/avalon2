@@ -1792,7 +1792,7 @@ VTasks = {
             }
         }
         nodes = avalon.slice(fragment.childNodes)
-        
+
         var comments = []
         for (var i = 0, el; el = elem.childNodes[i++]; ) {
             if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
@@ -2069,6 +2069,53 @@ function getTextOrder(node, parent, el) {
     }
     return -1
 }
+//处理路标系统的三个重要方法
+function getSignatures(elem, signature) {
+    var comments = []
+    for (var i = 0, el; el = elem.childNodes[i++]; ) {
+        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
+            comments.push(el)
+        }
+    }
+    return comments
+}
+
+function appendSignatures(elem, data, replace) {
+    //文本绑定与html绑定当elem为文本节点
+    //或include绑定，当使用了data-duplex-replace辅助指令时
+    //其左右将插入两个注释节点，自身被替换
+    var start = DOC.createComment(data.signature)
+    var end = DOC.createComment(data.signature + ":end")
+    var parent = elem.parentNode
+    if (replace) {
+        parent.insertBefore(start, elem)
+        parent.replaceChild(end, elem)
+        data.element = end
+    } else {
+        avalon.clearHTML(elem)
+        elem.appendChild(start)
+        elem.appendChild(end)
+    }
+    return [start, end]
+}
+
+function fillSignatures(elem, data, fill, callback) {
+    var comments = getSignatures(elem, data.signature)
+    callback = callback || function () {
+    }
+    //移除两个注释节点间的节点
+    while (true) {
+        var node = comments[0].nextSibling
+        if (node && node !== comments[1]) {
+            elem.removeChild(node)
+            callback(node, comments[0], comments[1])
+        } else {
+            break
+        }
+    }
+    elem.insertBefore(fill, comments[1])
+}
+
 /************************************************************************
  *              HTML处理(parseHTML, innerHTML, clearHTML)                 *
  **************************************************************************/
@@ -3158,7 +3205,6 @@ anomaly.replace(rword, function (name) {
     propMap[name.toLowerCase()] = name
 })
 
-
 bindingHandlers.attr = function (data, vmodels) {
     var text = data.value.trim(),
             simple = true
@@ -3169,6 +3215,7 @@ bindingHandlers.attr = function (data, vmodels) {
             text = RegExp.$1
         }
     }
+    data.handlerName = "attr" 
     parseExprProxy(text, vmodels, data, (simple ? 0 : scanExpr(data.value)))
 }
 
@@ -3185,7 +3232,8 @@ bindingExecutors.attr = function (val, elem, data) {
         // ms-attr-name="yyy"  vm.yyy="ooo" 为元素设置name属性
         vnode.props[attrName] = val
         vnode.addTask("attr")
-
+    } else if(method === "include"){
+        includeExecutor(val, elem, data)
     } else {
         if (!root.hasAttribute && typeof val === "string" && (method === "src" || method === "href")) {
             val = val.replace(/&amp;/g, "&") //处理IE67自动转义的问题
@@ -3203,7 +3251,6 @@ bindingExecutors.attr = function (val, elem, data) {
 //这几个指令都可以使用插值表达式，如ms-src="aaa/{{b}}/{{c}}.html"
 "title,alt,src,value,css,href".replace(rword, function (name) {
     bindingHandlers[name] = bindingHandlers.attr
-    bindingExecutors[name] = bindingExecutors.attr
 })
 
 //根据VM的属性值或表达式的值切换类名，ms-class="xxx yyy zzz:flag" 
@@ -3682,39 +3729,30 @@ bindingExecutors["if"] = function(val, elem, data) {
 }
 //ms-important绑定已经在scanTag 方法中实现
 //ms-include绑定已由ms-attr绑定实现
-bindingHandlers.include = bindingHandlers.attr
-bindingExecutors.include = function (val, elem, data) {
-    var vmodels = data.vmodels
+bindingHandlers.include = function (data, vmodels) {
     if (!data.signature) {
         //保持回调到data
+        var elem = data.element
         data.includeRendered = getBindingCallback(elem, "data-include-rendered", vmodels)
         data.includeLoaded = getBindingCallback(elem, "data-include-loaded", vmodels)
         var replace = data.includeReplace = !!avalon(elem).data("includeReplace")
-        var parent = replace ? elem.parentNode : elem
         if (avalon(elem).data("includeCache")) {
             data.templateCache = {}
         }
         //下面的逻辑与html绑定差不多
-        var signature = data.signature = generateID("v-include")
-        var start = DOC.createComment(signature)
-        var end = DOC.createComment(signature + ":end")
-        if (replace) {
-            parent.insertBefore(start, elem)
-            parent.replaceChild(end, elem)
-            data.element = end
-        } else {
-            avalon.clearHTML(parent)
-            parent.appendChild(start)
-            parent.appendChild(end)
-        }
+        data.signature = generateID("v-include")
+        appendSignatures(elem, data, replace)
     }
+    bindingHandlers.attr(data, vmodels)
+}
 
+
+function includeExecutor(val, elem, data) {
     var vmodels = data.vmodels
     var rendered = data.includeRendered
     var loaded = data.includeLoaded
     var replace = data.includeReplace
     var target = replace ? elem.parentNode : elem
-
 
     var scanTemplate = function (text) {
         if (loaded) {
@@ -3729,7 +3767,7 @@ bindingExecutors.include = function (val, elem, data) {
         }
 
         var lastID = data.includeLastID //上次的ID
-       
+
         if (data.templateCache && lastID && lastID !== val) {
             var lastTemplate = data.templateCache[lastID]
             if (!lastTemplate) { //上一次的内容没有被缓存，就创建一个DIV，然后在[移除两个注释节点间的节点]进行收集
@@ -3740,31 +3778,34 @@ bindingExecutors.include = function (val, elem, data) {
 
         data.includeLastID = val
         //获取注释节点
-        var comments = []
-        for (var i = 0, el; el = elem.childNodes[i++]; ) {
-            if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
-                comments.push(el)
-            }
-        }
-        console.log(comments)
+        var fill = getTemplateNodes(data, val, text)
+        var nodes = avalon.slice(fill.childNodes)
+        fillSignatures(target, data, fill, function (node) {
+            if (lastTemplate)
+                lastTemplate.appendChild(node)
+        })
+//        var comments = []
+//        for (var i = 0, el; el = elem.childNodes[i++]; ) {
+//            if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
+//                comments.push(el)
+//            }
+//        }
         //移除两个注释节点间的节点
-        while (true) {
-            var node = comments[0].nextSibling
-            if (node && node !== comments[1]) {
-                target.removeChild(node)
-                if (lastTemplate)
-                    lastTemplate.appendChild(node)
-            } else {
-                break
-            }
-        }
-        var dom = getTemplateNodes(data, val, text)
-        var nodes = avalon.slice(dom.childNodes)
-        target.insertBefore(dom, comments[1])
+//        while (true) {
+//            var node = comments[0].nextSibling
+//            if (node && node !== comments[1]) {
+//                target.removeChild(node)
+//                if (lastTemplate)
+//                    lastTemplate.appendChild(node)
+//            } else {
+//                break
+//            }
+//        }
+//      
+//      
+//        target.insertBefore(dom, comments[1])
         scanNodeArray(nodes, vmodels)
     }
-
-console.log(val)
     if (data.param === "src") {
         if (typeof cacheTmpls[val] === "string") {
             avalon.nextTick(function () {
