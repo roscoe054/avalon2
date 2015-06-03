@@ -23,7 +23,7 @@ function injectDisposeQueue(data, list) {
     avalon.Array.ensure(lists, list)
     list.$uuid = list.$uuid || generateID()
 
-    if (!disposeQueue[data.uuid] && !elem.isVirtual) {
+    if (!disposeQueue[data.uuid]) {
         disposeQueue[data.uuid] = 1
         disposeQueue.push(data)
     }
@@ -74,6 +74,9 @@ function rejectDisposeQueue(data) {
 }
 
 function disposeData(data) {
+    console.log("dispose")
+    console.log(data.type)
+    console.log(data.element)
     data.element = null
     data.rollback && data.rollback()
     for (var key in data) {
@@ -89,6 +92,22 @@ function shouldDispose(el) {
     } catch (e) {
         return true
     }
-
-    return el.msRetain ? 0 : (el.nodeType === 1 ? !root.contains(el) : !avalon.contains(root, el))
+    if (el.isVirtual) {
+        if (el.nodeType === 1) {
+            return !VTree.queryVID(el.vid)
+        } else {
+            if (!VTree.queryVID(el.parentNode.vid)) {
+                var notInVTree = true//如果它父亲不在VTree
+            } else {
+                //如果它现在也不是它父亲的孩子
+                notInVTree = el.parentNode.childNodes.indexOf(el) === -1
+            }
+        }
+        if (notInVTree) {
+            el.parentNode = null
+            return true
+        }
+    } else {
+        return el.msRetain ? 0 : (el.nodeType === 1 ? !root.contains(el) : !avalon.contains(root, el))
+    }
 }

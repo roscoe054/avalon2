@@ -4,10 +4,10 @@
 var updateVTree = {
     text: function (vnode, elem, value, data) {
         if (!vnode.childNodes.length) {
-            var array = VNodes(elem.childNodes)
+            var array = new VNodes(elem.childNodes)
             vnode.appendChild(array)
         } else {
-            array = VNodes(elem.childNodes)
+            array = new VNodes(elem.childNodes)
             array = collectTextNode(array, vnode.childNodes)
             vnode.childNodes.length = 0
             vnode.appendChild(array)
@@ -15,13 +15,12 @@ var updateVTree = {
         fillSignatures(vnode, data, new VText(value))
     },
     html: function (vnode, elem, val, data) {
-        if (!elem)
-            return
+      
         if (!vnode.childNodes.length) {
-            var array = VNodes(elem.childNodes)
+            var array = new VNodes(elem.childNodes)
             vnode.appendChild(array)
         } else {
-            array = VNodes(elem.childNodes)
+            array = new VNodes(elem.childNodes)
             array = collectHTMLNode(array, vnode.childNodes)
             vnode.childNodes.length = 0
             vnode.appendChild(array)
@@ -181,6 +180,14 @@ function VNode(element, deep) {
             return new VComment(element.nodeValue)
     }
 }
+//将一组节点转换为虚拟DOM
+function VNodes(nodes) {
+    var ret = []
+    for (var i = 0, n = nodes.length; i < n; i++) {
+        ret.push(new VNode(nodes[i], false))
+    }
+    return ret
+}
 
 function DNode(element) {
     var ret
@@ -209,5 +216,102 @@ function DNode(element) {
             return  DOC.createComment(element.nodeValue)
     }
 }
+
+
+//处理路标系统的三个重要方法
+function getSignatures(elem, signature) {
+    var comments = []
+    for (var i = 0, el; el = elem.childNodes[i++]; ) {
+        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
+            comments.push(el)
+        }
+    }
+    return comments
+}
+
+function getSignature(array, signature) {
+    var collect = false, ret = []
+    for (var i = 0, el; el = array[i++]; ) {
+        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
+            collect = !collect
+            continue
+        }
+        if (collect) {
+            ret.push(el)
+        }
+    }
+    return ret
+}
+
+function appendSignatures(elem, data, replace) {
+    //文本绑定与html绑定当elem为文本节点
+    //或include绑定，当使用了data-duplex-replace辅助指令时
+    //其左右将插入两个注释节点，自身被替换
+    var parent = elem.parentNode
+    if (parent.queryVID) {
+        start = new VComment(data.signature)
+        end = new VComment(data.signature + ":end")
+    } else {
+        var start = DOC.createComment(data.signature)
+        var end = DOC.createComment(data.signature + ":end")
+    }
+
+    if (replace) {
+        parent.insertBefore(start, elem)
+        parent.replaceChild(end, elem)
+        data.element = end
+    } else {
+        avalon.clearHTML(elem)
+        elem.appendChild(start)
+        elem.appendChild(end)
+    }
+    return [start, end]
+}
+
+function fillSignatures(elem, data, fill, callback) {
+    var comments = getSignatures(elem, data.signature)
+    callback = callback || function () {
+    }
+    //移除两个注释节点间的节点
+    //console.log(comments)
+    if (!comments.length) {
+        log(data.signature + "!找不到元素")
+        return
+    }
+    var index = indexElement(comments[0], elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
+    while (true) {
+        var node = elem.childNodes[index + 1]
+        if (node && node !== comments[1]) {
+            elem.removeChild(node)
+            callback(node, comments[0], comments[1])
+        } else {
+            break
+        }
+    }
+    elem.insertBefore(fill, comments[1])
+}
+
+function addVnodeToData(elem, data) {
+    if (data.vnode) {
+        return data.vnode
+    } else if (elem.isVirtual) {
+        return data.vnode = elem
+    } else if (elem.nodeType === 1) {
+        var vid = getUid(elem)
+        var vnode = VTree.queryVID(vid)
+        if (!vnode) {
+            vnode = new VElement(elem, VTree)
+        }
+        return data.vnode = vnode
+    }
+}
+function indexElement(target, array) {
+    for (var i = 0, el; el = array[i]; i++) {
+        if (el === target)
+            return i
+    }
+    return -1
+}
+
 //include,duplex,
 //text,html,visible,css,attr,data,if,src,href
