@@ -37,18 +37,7 @@ var VElements = {
     }
 }
 
-function addVnodeToData(elem, data) {
-    if (data.vnode) {
-        return data.vnode
-    } else if (elem.nodeType === 1) {
-        var vid = getUid(elem)
-        var vnode = VTree.queryVID(vid)
-        if (!vnode) {
-            vnode = new VElement(elem, VTree)
-        }
-        return data.vnode = vnode
-    }
-}
+
 //将一组节点转换为虚拟DOM
 function VNodes(nodes) {
     var ret = []
@@ -308,13 +297,7 @@ String("appendChild, removeChild,insertBefore,replaceChild").replace(/\w+/g, fun
 
 
 
-function getTextOrder(node, parent, el) {
-    for (var i = 0; el = parent.childNodes[i]; i++) {
-        if (node === el)
-            return i
-    }
-    return -1
-}
+
 //处理路标系统的三个重要方法
 function getSignatures(elem, signature) {
     var comments = []
@@ -366,11 +349,10 @@ function fillSignatures(elem, data, fill, callback) {
     //移除两个注释节点间的节点
     //console.log(comments)
     if (!comments.length) {
-        console.log(data.signature + "!找不到元素")
+        log(data.signature + "!找不到元素")
         return
     }
-    var index = indexElement(comments[0], elem.childNodes)
-
+    var index = avalon.slice(elem.childNodes).indexOf(comments[0])
     while (true) {
         var node = elem.childNodes[index + 1]
         if (node && node !== comments[1]) {
@@ -380,8 +362,22 @@ function fillSignatures(elem, data, fill, callback) {
             break
         }
     }
-    console.log(elem.childNodes.length, comments[1], "c")
     elem.insertBefore(fill, comments[1])
+}
+
+function addVnodeToData(elem, data) {
+    if (data.vnode) {
+        return data.vnode
+    } else if (elem.queryVID) {
+        return data.vnode = elem
+    } else if (elem.nodeType === 1) {
+        var vid = getUid(elem)
+        var vnode = VTree.queryVID(vid)
+        if (!vnode) {
+            vnode = new VElement(elem, VTree)
+        }
+        return data.vnode = vnode
+    }
 }
 function indexElement(target, array) {
     for (var i = 0, el; el = array[i]; i++) {

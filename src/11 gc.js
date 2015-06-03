@@ -22,7 +22,7 @@ function injectDisposeQueue(data, list) {
     var lists = data.lists || (data.lists = [])
     avalon.Array.ensure(lists, list)
     list.$uuid = list.$uuid || generateID()
-    if (!disposeQueue[data.uuid]) {
+    if (!disposeQueue[data.uuid] && !elem.queryVID) {
         disposeQueue[data.uuid] = 1
         disposeQueue.push(data)
     }
