@@ -18,7 +18,7 @@ function scanNodeArray(nodes, vmodels) {
 }
 function scanNode(node, nodeType, vmodels) {
     if (nodeType === 1) {
-        if(node.queryVID){
+        if(node.isVirtual){
             scanVTag(node, vmodels) 
         }else{
             scanTag(node, vmodels) //扫描元素节点

@@ -1,7 +1,7 @@
 function scanAttr(elem, vmodels, match) {
     var scanNode = true
     if (vmodels.length) {
-        var attributes =  elem.queryVID ? getVAttributes(elem) : getAttributes ? getAttributes(elem) : elem.attributes
+        var attributes =  elem.isVirtual ? getVAttributes(elem) : getAttributes ? getAttributes(elem) : elem.attributes
         var bindings = []
         var fixAttrs = []
         var msData = {}

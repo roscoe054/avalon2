@@ -74,9 +74,9 @@ function scanText(textNode, vmodels) {
     }
     var parent = textNode.parentNode
     if (tokens.length) {
-        var fragment = parent.queryVID ? new VDocumentFragment() : DOC.createDocumentFragment()
+        var fragment = parent.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
         for (var i = 0; token = tokens[i++]; ) {
-            var node = parent.queryVID ? new VText(token.value) : DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
+            var node = parent.isVirtual ? new VText(token.value) : DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
             if (token.expr) {
                 token.type = "text"
                 token.element = node

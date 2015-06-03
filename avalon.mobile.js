@@ -1542,7 +1542,8 @@ function injectDisposeQueue(data, list) {
     var lists = data.lists || (data.lists = [])
     avalon.Array.ensure(lists, list)
     list.$uuid = list.$uuid || generateID()
-    if (!disposeQueue[data.uuid] && !elem.queryVID) {
+
+    if (!disposeQueue[data.uuid] && !elem.isVirtual) {
         disposeQueue[data.uuid] = 1
         disposeQueue.push(data)
     }
@@ -1628,7 +1629,7 @@ function VElement(element, parentNode) {
     if (typeof fix === "function") {
         fix(this)
     }
-    //   this.isVirtualdom = true 直接判定有没有queryVID方法就行了
+   this.isVirtual = true //直接判定有没有queryVID方法就行了
     try {
         if (parentNode) {
             parentNode.appendChild(this)
@@ -1809,17 +1810,20 @@ VElement.prototype = {
 function VComment(nodeValue) {
     this.nodeType = 8
     this.nodeName = "#comment"
+    this.isVirtual = true
     this.nodeValue = nodeValue + ""
 }
 
 function VText(nodeValue) {
     this.nodeType = 3
     this.nodeName = "#text"
+    this.isVirtual = true
     this.nodeValue = nodeValue + ""
 }
 
 function VDocumentFragment() {
     this.nodeType = 11
+    this.isVirtual = true
     this.nodeName = "#document-fragment"
     this.childNodes = []
 }
@@ -1911,7 +1915,7 @@ function fillSignatures(elem, data, fill, callback) {
 function addVnodeToData(elem, data) {
     if (data.vnode) {
         return data.vnode
-    } else if (elem.queryVID) {
+    } else if (elem.isVirtual) {
         return data.vnode = elem
     } else if (elem.nodeType === 1) {
         var vid = getUid(elem)
@@ -3117,7 +3121,7 @@ function executeBindings(bindings, vmodels) {
 
 //https://github.com/RubyLouvre/avalon/issues/636
 var mergeTextNodes = IEVersion && window.MutationObserver ? function (elem) {
-    if(elem.queryVID)
+    if(elem.isVirtual)
         return
     var node = elem.firstChild, text
     while (node) {
@@ -3157,7 +3161,7 @@ function bindingSorter(a, b) {
 function scanAttr(elem, vmodels, match) {
     var scanNode = true
     if (vmodels.length) {
-        var attributes = elem.queryVID ? getVAttributes(elem) : elem.attributes
+        var attributes = elem.isVirtual ? getVAttributes(elem) : elem.attributes
         var bindings = []
         var fixAttrs = []
         var msData = createMap()
@@ -3270,7 +3274,7 @@ function scanNodeArray(nodes, vmodels) {
 }
 function scanNode(node, nodeType, vmodels) {
     if (nodeType === 1) {
-        if(node.queryVID){
+        if(node.isVirtual){
             scanVTag(node, vmodels) 
         }else{
             scanTag(node, vmodels) //扫描元素节点
@@ -3385,9 +3389,9 @@ function scanText(textNode, vmodels) {
     }
     var parent = textNode.parentNode
     if (tokens.length) {
-        var fragment = parent.queryVID ? new VDocumentFragment() : DOC.createDocumentFragment()
+        var fragment = parent.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
         for (var i = 0; token = tokens[i++]; ) {
-            var node = parent.queryVID ? new VText(token.value) : DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
+            var node = parent.isVirtual ? new VText(token.value) : DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
             if (token.expr) {
                 token.type = "text"
                 token.element = node

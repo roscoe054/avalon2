@@ -17,21 +17,22 @@
                 tmpl: "aa.html",
                 ddd: "<b>{{bbb}}</b><span>avalon</span>"
             })
-//            setTimeout(function () {
-//                console.log(avalon.VTree)
-//                vm.aaa = 33
-//                vm.bbb = 66
-//                vm.toggle = true
-//                vm.ccc = 999
-//                vm.ddd = "<b>111</b><b>111</b><b>111</b><b>111</b>"
-//                vm.tmpl = "bb.html"
-//            }, 3000)
+            setTimeout(function () {
+                console.log("=====")
+                console.log(avalon.VTree)
+                vm.aaa = 33
+                vm.bbb = 66
+                vm.toggle = true
+                vm.ccc = 999
+            //    vm.ddd = "<b>111</b><b>111</b><b>111</b><b>111</b>"
+                vm.tmpl = "bb.html"
+            }, 3000)
         </script>
     </head>
     <body ms-controller="test">
         <h1>测试虚拟DOM</h1>
-<!--        <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
-        <div ms-text="ccc">ccc</div>
+      <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
+     <!--   <div ms-text="ccc">ccc</div>
         <div ms-visible="toggle">visible</div>
         <div ms-if="toggle">if</div>-->
         <div>222{{ddd|html}}333</div>

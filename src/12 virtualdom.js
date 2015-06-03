@@ -14,7 +14,7 @@ function VElement(element, parentNode) {
     if (typeof fix === "function") {
         fix(this)
     }
-    //   this.isVirtualdom = true 直接判定有没有queryVID方法就行了
+   this.isVirtual = true //直接判定有没有queryVID方法就行了
     try {
         if (parentNode) {
             parentNode.appendChild(this)
@@ -195,17 +195,20 @@ VElement.prototype = {
 function VComment(nodeValue) {
     this.nodeType = 8
     this.nodeName = "#comment"
+    this.isVirtual = true
     this.nodeValue = nodeValue + ""
 }
 
 function VText(nodeValue) {
     this.nodeType = 3
     this.nodeName = "#text"
+    this.isVirtual = true
     this.nodeValue = nodeValue + ""
 }
 
 function VDocumentFragment() {
     this.nodeType = 11
+    this.isVirtual = true
     this.nodeName = "#document-fragment"
     this.childNodes = []
 }
@@ -297,7 +300,7 @@ function fillSignatures(elem, data, fill, callback) {
 function addVnodeToData(elem, data) {
     if (data.vnode) {
         return data.vnode
-    } else if (elem.queryVID) {
+    } else if (elem.isVirtual) {
         return data.vnode = elem
     } else if (elem.nodeType === 1) {
         var vid = getUid(elem)

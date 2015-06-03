@@ -12,32 +12,21 @@ bindingHandlers.text = bindingHandlers.html = function (data, vmodels) {
    
     if (!isAppend) {
         var signature = bigNumber > 1000 ? maybe : generateID("v-" + data.type)
-         console.log(isAppend, signature, data.type, elem, elem.nodeType )
         data.signature = signature
         appendSignatures(elem, data, elem.nodeType !== 1)
     }
-    console.log("data.type "+data.type)
+   // console.log("data.type "+data.type)
     parseExprProxy(data.value, vmodels, data)
 }
 
 bindingExecutors.text = function (val, elem, data) {
+    console.log(data, val)
     var parent = elem.nodeType !== 1 ? elem.parentNode : elem
-    console.log("text")
-    console.log(parent)
     if (!parent)
         return
     val = val == null ? "" : val //不在页面上显示undefined null
     var vnode = addVnodeToData(parent, data)
     updateVTree.text(vnode, parent, val, data)
-  //  textup
     vnode.addTask("text", parent)
- // fillSignatures(parent, data, DOC.createTextNode(val))
-//    var vnode = addVnodeToData(parent, data)
-//    if (vnode.nodeType === 3) { //绑定在文本节点上
-//        vnode.nodeValue = val
-//        vnode.parentNode.addTask("textFilter")
-//    } else { //绑定在特性节点上
-//        vnode.setText(val)
-//        vnode.addTask("text")
-//    }
+
 }
