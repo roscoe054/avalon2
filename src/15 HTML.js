@@ -123,6 +123,7 @@ avalon.innerHTML = function (node, html) {
     this.clearHTML(node).appendChild(a)
 }
 avalon.clearHTML = function (node) {
+    node.childNodes.length = 0
     node.textContent = ""
     while (node.firstChild) {
         node.removeChild(node.firstChild)

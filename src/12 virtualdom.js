@@ -250,9 +250,15 @@ function appendSignatures(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时
     //其左右将插入两个注释节点，自身被替换
-    var start = DOC.createComment(data.signature)
-    var end = DOC.createComment(data.signature + ":end")
     var parent = elem.parentNode
+    if (parent.queryVID) {
+        start = new VComment(data.signature)
+        end = new VComment(data.signature + ":end")
+    } else {
+        var start = DOC.createComment(data.signature)
+        var end = DOC.createComment(data.signature + ":end")
+    }
+   
     if (replace) {
         parent.insertBefore(start, elem)
         parent.replaceChild(end, elem)
@@ -275,7 +281,7 @@ function fillSignatures(elem, data, fill, callback) {
         log(data.signature + "!找不到元素")
         return
     }
-    var index = indexElement(comments[0],elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
+    var index = indexElement(comments[0], elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
     while (true) {
         var node = elem.childNodes[index + 1]
         if (node && node !== comments[1]) {

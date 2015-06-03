@@ -18,6 +18,6 @@ bindingExecutors.html = function (val, elem, data) {
     }
     var vnode = addVnodeToData(parent, data)
     updateVTree.html(vnode, parent, fragment, data)
-//    scanNodeArray(nodes, data.vmodels)
+   
     vnode.addTask("html")
 }

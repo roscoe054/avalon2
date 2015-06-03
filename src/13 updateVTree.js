@@ -29,7 +29,7 @@ var updateVTree = {
         //转换成文档碎片
         var fill = new VNode(val, true)
         fillSignatures(vnode, data, fill)
-//        scanNodeArray(fill.childNodes, data.vmodels)
+        scanNodeArray(fill.childNodes, data.vmodels)
     }
     //if 直接实现在bindingExecutors.attr
     //css 直接实现在bindingExecutors.attr
@@ -146,7 +146,7 @@ function getVAttributes(elem) {
             })
         }
     }
-    elem.innerHTML = elem.textContent = "<ms-attr-fix=1>"
+    elem.innerHTML = elem.textContent = "<ms ms-if=bbb>"
     return attrs
 }
 

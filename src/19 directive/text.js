@@ -4,20 +4,26 @@ bindingHandlers.text = bindingHandlers.html = function (data, vmodels) {
     var elem = data.element
     var isAppend = false
     var maybe = "v-" + data.type + bigNumber
+  
     if (elem.nodeType === 1 && bigNumber > 1000) {
         var comments = getSignatures(elem, maybe)
         isAppend = comments.length
     }
+   
     if (!isAppend) {
         var signature = bigNumber > 1000 ? maybe : generateID("v-" + data.type)
+         console.log(isAppend, signature, data.type, elem, elem.nodeType )
         data.signature = signature
         appendSignatures(elem, data, elem.nodeType !== 1)
     }
+    console.log("data.type "+data.type)
     parseExprProxy(data.value, vmodels, data)
 }
 
 bindingExecutors.text = function (val, elem, data) {
     var parent = elem.nodeType !== 1 ? elem.parentNode : elem
+    console.log("text")
+    console.log(parent)
     if (!parent)
         return
     val = val == null ? "" : val //不在页面上显示undefined null

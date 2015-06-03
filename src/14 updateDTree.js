@@ -176,9 +176,10 @@ function querySelector(tag, vid, root) {
             return node
     }
 }
-function updateTree(node) {
+function updateTree(node, element) {
     if (node.dirty) {
-        var rnode = querySelector(node.nodeName, node.vid)
+        var rnode = querySelector(node.nodeName, node.vid, element)
+        element = rnode
         if (!rnode)
             return
         node.tasks.forEach(function (task) {
@@ -190,7 +191,7 @@ function updateTree(node) {
     if (node.childNodes && node.childNodes.length) {
         for (var i = 0, el; el = node.childNodes[i++]; ) {
             if (el.nodeType === 1) {
-                updateTree(el)
+                updateTree(el, element)
             }
         }
     }

@@ -18,7 +18,11 @@ function scanNodeArray(nodes, vmodels) {
 }
 function scanNode(node, nodeType, vmodels) {
     if (nodeType === 1) {
-        scanTag(node, vmodels) //扫描元素节点
+        if(node.queryVID){
+            scanVTag(node, vmodels) 
+        }else{
+            scanTag(node, vmodels) //扫描元素节点
+        }
         if( node.msCallback){
             node.msCallback()
             node.msCallback = void 0

@@ -2245,9 +2245,15 @@ function appendSignatures(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时
     //其左右将插入两个注释节点，自身被替换
-    var start = DOC.createComment(data.signature)
-    var end = DOC.createComment(data.signature + ":end")
     var parent = elem.parentNode
+    if (parent.queryVID) {
+        start = new VComment(data.signature)
+        end = new VComment(data.signature + ":end")
+    } else {
+        var start = DOC.createComment(data.signature)
+        var end = DOC.createComment(data.signature + ":end")
+    }
+   
     if (replace) {
         parent.insertBefore(start, elem)
         parent.replaceChild(end, elem)
@@ -2270,7 +2276,7 @@ function fillSignatures(elem, data, fill, callback) {
         log(data.signature + "!找不到元素")
         return
     }
-    var index = indexElement(comments[0],elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
+    var index = indexElement(comments[0], elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
     while (true) {
         var node = elem.childNodes[index + 1]
         if (node && node !== comments[1]) {
@@ -2336,7 +2342,7 @@ var updateVTree = {
         //转换成文档碎片
         var fill = new VNode(val, true)
         fillSignatures(vnode, data, fill)
-//        scanNodeArray(fill.childNodes, data.vmodels)
+        scanNodeArray(fill.childNodes, data.vmodels)
     }
     //if 直接实现在bindingExecutors.attr
     //css 直接实现在bindingExecutors.attr
@@ -2453,7 +2459,7 @@ function getVAttributes(elem) {
             })
         }
     }
-    elem.innerHTML = elem.textContent = "<ms-attr-fix=1>"
+    elem.innerHTML = elem.textContent = "<ms ms-if=bbb>"
     return attrs
 }
 
@@ -2516,8 +2522,8 @@ function DNode(element) {
             return  DOC.createComment(element.nodeValue)
     }
 }
-
-//text,html,visible,css,attr,data,if,include
+//include,duplex,
+//text,html,visible,css,attr,data,if,src,href
 /* 
  将VTree中的数据同步到DTree 
  */
@@ -2696,9 +2702,10 @@ function querySelector(tag, vid, root) {
             return node
     }
 }
-function updateTree(node) {
+function updateTree(node, element) {
     if (node.dirty) {
-        var rnode = querySelector(node.nodeName, node.vid)
+        var rnode = querySelector(node.nodeName, node.vid, element)
+        element = rnode
         if (!rnode)
             return
         node.tasks.forEach(function (task) {
@@ -2710,7 +2717,7 @@ function updateTree(node) {
     if (node.childNodes && node.childNodes.length) {
         for (var i = 0, el; el = node.childNodes[i++]; ) {
             if (el.nodeType === 1) {
-                updateTree(el)
+                updateTree(el, element)
             }
         }
     }
@@ -2840,6 +2847,7 @@ avalon.innerHTML = function (node, html) {
     this.clearHTML(node).appendChild(a)
 }
 avalon.clearHTML = function (node) {
+    node.childNodes.length = 0
     node.textContent = ""
     while (node.firstChild) {
         node.removeChild(node.firstChild)
@@ -3816,7 +3824,7 @@ function scanAttr(elem, vmodels, match) {
             executeBindings(bindings, vmodels)
         }
     }
-    if (scanNode && !stopScan[elem.tagName] && rbind.test(elem.innerHTML.replace(rlt, "<").replace(rgt, ">"))) {
+    if (scanNode && !stopScan[elem.nodeName] && rbind.test(elem.innerHTML.replace(rlt, "<").replace(rgt, ">"))) {
         mergeTextNodes && mergeTextNodes(elem)
         scanNodeList(elem, vmodels) //扫描子孙元素
     }
@@ -3893,7 +3901,11 @@ function scanNodeArray(nodes, vmodels) {
 }
 function scanNode(node, nodeType, vmodels) {
     if (nodeType === 1) {
-        scanTag(node, vmodels) //扫描元素节点
+        if(node.queryVID){
+            scanVTag(node, vmodels) 
+        }else{
+            scanTag(node, vmodels) //扫描元素节点
+        }
         if( node.msCallback){
             node.msCallback()
             node.msCallback = void 0
@@ -4603,7 +4615,7 @@ bindingExecutors.html = function (val, elem, data) {
     }
     var vnode = addVnodeToData(parent, data)
     updateVTree.html(vnode, parent, fragment, data)
-//    scanNodeArray(nodes, data.vmodels)
+   
     vnode.addTask("html")
 }
 bindingHandlers["if"] =
@@ -5125,20 +5137,26 @@ bindingHandlers.text = bindingHandlers.html = function (data, vmodels) {
     var elem = data.element
     var isAppend = false
     var maybe = "v-" + data.type + bigNumber
+  
     if (elem.nodeType === 1 && bigNumber > 1000) {
         var comments = getSignatures(elem, maybe)
         isAppend = comments.length
     }
+   
     if (!isAppend) {
         var signature = bigNumber > 1000 ? maybe : generateID("v-" + data.type)
+         console.log(isAppend, signature, data.type, elem, elem.nodeType )
         data.signature = signature
         appendSignatures(elem, data, elem.nodeType !== 1)
     }
+    console.log("data.type "+data.type)
     parseExprProxy(data.value, vmodels, data)
 }
 
 bindingExecutors.text = function (val, elem, data) {
     var parent = elem.nodeType !== 1 ? elem.parentNode : elem
+    console.log("text")
+    console.log(parent)
     if (!parent)
         return
     val = val == null ? "" : val //不在页面上显示undefined null

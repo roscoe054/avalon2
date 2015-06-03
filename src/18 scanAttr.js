@@ -86,7 +86,7 @@ function scanAttr(elem, vmodels, match) {
             executeBindings(bindings, vmodels)
         }
     }
-    if (scanNode && !stopScan[elem.tagName] && rbind.test(elem.innerHTML.replace(rlt, "<").replace(rgt, ">"))) {
+    if (scanNode && !stopScan[elem.nodeName] && rbind.test(elem.innerHTML.replace(rlt, "<").replace(rgt, ">"))) {
         mergeTextNodes && mergeTextNodes(elem)
         scanNodeList(elem, vmodels) //扫描子孙元素
     }
