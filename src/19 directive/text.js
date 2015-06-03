@@ -20,7 +20,6 @@ bindingHandlers.text = bindingHandlers.html = function (data, vmodels) {
 }
 
 bindingExecutors.text = function (val, elem, data) {
-    console.log(data, val)
     var parent = elem.nodeType !== 1 ? elem.parentNode : elem
     if (!parent)
         return

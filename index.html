@@ -18,13 +18,14 @@
                 ddd: "<b>{{bbb}}</b><span>avalon</span>"
             })
             setTimeout(function () {
-                console.log("=====")
+              
                 console.log(avalon.VTree)
                 vm.aaa = 33
-                vm.bbb = 66
+              
                 vm.toggle = true
                 vm.ccc = 999
-            //    vm.ddd = "<b>111</b><b>111</b><b>111</b><b>111</b>"
+                vm.ddd = "<b>{{bbb}}</b><b>333</b><b>111</b><b>111</b>"
+                vm.bbb = 66
                 vm.tmpl = "bb.html"
             }, 3000)
         </script>
