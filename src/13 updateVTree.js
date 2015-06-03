@@ -27,14 +27,9 @@ var updateVTree = {
             vnode.appendChild(array)
         }
         //转换成文档碎片
-
         var fill = new VNode(val, true)
-        console.log(fill)
         fillSignatures(vnode, data, fill)
-//        elem.insertBefore(fragment, comments[1])
 //        scanNodeArray(fill.childNodes, data.vmodels)
-//        delete vnode.htmlData
-//        delete vnode.htmlValue
     }
     //if 直接实现在bindingExecutors.attr
     //css 直接实现在bindingExecutors.attr
@@ -77,7 +72,7 @@ function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
         array.push(neo)
         if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") == 0) {
             if (!k) {
-               token = neo.nodeValue+":end"
+                token = neo.nodeValue + ":end"
                 k = true
             } else {
                 k = neo.nodeValue.indexOf(token) === 0
@@ -215,3 +210,5 @@ function DNode(element) {
             return  DOC.createComment(element.nodeValue)
     }
 }
+
+//text,html,visible,css,attr,data,if,include
