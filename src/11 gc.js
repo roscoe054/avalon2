@@ -6,7 +6,7 @@ var disposeQueue = avalon.$$subscribers = []
 var beginTime = new Date()
 var oldInfo = {}
 function getUid(obj) { //IE9+,标准浏览器
-    return obj.uniqueNumber || (obj.uniqueNumber = ++disposeCount)
+    return obj.vid || (obj.vid = ++disposeCount)
 }
 
 //添加到回收列队中

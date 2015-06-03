@@ -1907,7 +1907,7 @@ var disposeQueue = avalon.$$subscribers = []
 var beginTime = new Date()
 var oldInfo = {}
 function getUid(obj) { //IE9+,标准浏览器
-    return obj.uniqueNumber || (obj.uniqueNumber = ++disposeCount)
+    return obj.vid || (obj.vid = ++disposeCount)
 }
 
 //添加到回收列队中
@@ -1923,7 +1923,7 @@ function injectDisposeQueue(data, list) {
     var lists = data.lists || (data.lists = [])
     avalon.Array.ensure(lists, list)
     list.$uuid = list.$uuid || generateID()
-    if (!disposeQueue[data.uuid]) {
+    if (!disposeQueue[data.uuid] && !elem.queryVID) {
         disposeQueue[data.uuid] = 1
         disposeQueue.push(data)
     }
@@ -1995,8 +1995,8 @@ function shouldDispose(el) {
 
 function VElement(element, parentNode) {
     this.nodeType = 1
-    var vid = getUid(element)
-    this.vid = element.vid = vid
+
+    this.vid = getUid(element)
     this.nodeName = element.nodeName
     this.className = element.className
     this.childNodes = []
@@ -2004,6 +2004,11 @@ function VElement(element, parentNode) {
     this.tasks = []
     this.props = {}
     this.parentNode = parentNode
+    // this.dirty
+    var fix = VElements[this.nodeName.toLowerCase()]
+    if (typeof fix === "function") {
+        fix(this)
+    }
     //   this.isVirtualdom = true 直接判定有没有queryVID方法就行了
     try {
         if (parentNode) {
@@ -2012,24 +2017,22 @@ function VElement(element, parentNode) {
     } catch (e) {
         log(e)
     }
-// this.style = {}
-// this.dirty
+
 
 }
-
-
-function addVnodeToData(elem, data) {
-    if (data.vnode) {
-        return data.vnode
-    } else if (elem.nodeType === 1) {
-        var vid = getUid(elem)
-        var vnode = VTree.queryVID(vid)
-        if (!vnode) {
-            vnode = new VElement(elem, VTree)
-        }
-        return data.vnode = vnode
+var VElements = {
+    input: function (elem) {
+        elem.type = elem.props.type || "text"
+    },
+    button: function (elem) {
+        elem.type = elem.props.type || "submit"
+    },
+    select: function (elem) {
+        elem.type = elem.props.multiple ? "select-multiple" : "select-one"
     }
 }
+
+
 //将一组节点转换为虚拟DOM
 function VNodes(nodes) {
     var ret = []
@@ -2038,37 +2041,7 @@ function VNodes(nodes) {
     }
     return ret
 }
-function VNode(element, deep) {
-    var ret
-    switch (element.nodeType) {
-        case 11:
-            ret = new VDocumentFragment()
-            deep && ap.forEach.call(element.childNodes, function (node) {//添加属性
-                var vnode = new VNode(node)
-                ret.appendChild(vnode)
-            })
-            return ret
-        case 1:
-            ret = new VElement(element)
-            if (deep) {
-                var attributes = getAttributes ? getAttributes(element) : element.attributes
-                ap.forEach.call(attributes, function (attr) {//添加属性
-                    if (attr.name !== "class") {
-                        ret.props[attr.name] = attr.value
-                    }
-                })
-                ap.forEach.call(element.childNodes, function (node) {
-                    var vnode = new VNode(node)
-                    ret.appendChild(vnode)
-                })
-            }
-            return ret
-        case 3:
-            return new VText(element.nodeValue)
-        case 8:
-            return new VComment(element.nodeValue)
-    }
-}
+
 //属性,类名,样式,子节点
 function forEachElements(dom, callback) {
     for (var i = 0, el; el = dom.childNodes[i++]; ) {
@@ -2081,53 +2054,6 @@ function forEachElements(dom, callback) {
         }
     }
 }
-//
-//
-//VTasks = {
-// 
-//    html: function (vnode, elem) {
-//        if (!elem)
-//            return
-//        var data = vnode.htmlData
-//        var val = vnode.htmlValue
-//        //转换成文档碎片
-//        if (typeof val !== "object") {//string, number, boolean
-//            var fragment = avalon.parseHTML(String(val))
-//        } else if (val.nodeType === 11) { //将val转换为文档碎片
-//            fragment = val
-//        } else if (val.nodeType === 1 || val.item) {
-//            var nodes = val.nodeType === 1 ? val.childNodes : val.item
-//            fragment = hyperspace.cloneNode(true)
-//            while (nodes[0]) {
-//                fragment.appendChild(nodes[0])
-//            }
-//        }
-//        nodes = avalon.slice(fragment.childNodes)
-//
-//        var comments = []
-//        for (var i = 0, el; el = elem.childNodes[i++]; ) {
-//            if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
-//                comments.push(el)
-//            }
-//        }
-//        //移除两个注释节点间的节点
-//        while (true) {
-//            var node = comments[1].previousSibling
-//            if (!node || node === comments[0]) {
-//                break
-//            } else {
-//                elem.removeChild(node)
-//            }
-//        }
-//        elem.insertBefore(fragment, comments[1])
-//        scanNodeArray(nodes, data.vmodels)
-//        delete vnode.htmlData
-//        delete vnode.htmlValue
-//    },
-// 
-//
-//
-//}
 
 VElement.prototype = {
     constructor: VElement,
@@ -2289,13 +2215,7 @@ String("appendChild, removeChild,insertBefore,replaceChild").replace(/\w+/g, fun
 
 
 
-function getTextOrder(node, parent, el) {
-    for (var i = 0; el = parent.childNodes[i]; i++) {
-        if (node === el)
-            return i
-    }
-    return -1
-}
+
 //处理路标系统的三个重要方法
 function getSignatures(elem, signature) {
     var comments = []
@@ -2347,11 +2267,10 @@ function fillSignatures(elem, data, fill, callback) {
     //移除两个注释节点间的节点
     //console.log(comments)
     if (!comments.length) {
-        console.log(data.signature + "!找不到元素")
+        log(data.signature + "!找不到元素")
         return
     }
-    var index = indexElement(comments[0], elem.childNodes)
-
+    var index = indexElement(comments[0],elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
     while (true) {
         var node = elem.childNodes[index + 1]
         if (node && node !== comments[1]) {
@@ -2361,8 +2280,22 @@ function fillSignatures(elem, data, fill, callback) {
             break
         }
     }
-    console.log(elem.childNodes.length, comments[1], "c")
     elem.insertBefore(fill, comments[1])
+}
+
+function addVnodeToData(elem, data) {
+    if (data.vnode) {
+        return data.vnode
+    } else if (elem.queryVID) {
+        return data.vnode = elem
+    } else if (elem.nodeType === 1) {
+        var vid = getUid(elem)
+        var vnode = VTree.queryVID(vid)
+        if (!vnode) {
+            vnode = new VElement(elem, VTree)
+        }
+        return data.vnode = vnode
+    }
 }
 function indexElement(target, array) {
     for (var i = 0, el; el = array[i]; i++) {
@@ -2375,8 +2308,6 @@ function indexElement(target, array) {
 /* 
  更新到VTree
  */
-
-
 var updateVTree = {
     text: function (vnode, elem, value, data) {
         if (!vnode.childNodes.length) {
@@ -2389,6 +2320,28 @@ var updateVTree = {
             vnode.appendChild(array)
         }
         fillSignatures(vnode, data, new VText(value))
+    },
+    html: function (vnode, elem, val, data) {
+        if (!elem)
+            return
+        if (!vnode.childNodes.length) {
+            var array = VNodes(elem.childNodes)
+            vnode.appendChild(array)
+        } else {
+            array = VNodes(elem.childNodes)
+            array = collectHTMLNode(array, vnode.childNodes)
+            vnode.childNodes.length = 0
+            vnode.appendChild(array)
+        }
+        //转换成文档碎片
+
+        var fill = new VNode(val, true)
+        console.log(fill)
+        fillSignatures(vnode, data, fill)
+//        elem.insertBefore(fragment, comments[1])
+//        scanNodeArray(fill.childNodes, data.vmodels)
+//        delete vnode.htmlData
+//        delete vnode.htmlValue
     }
     //if 直接实现在bindingExecutors.attr
     //css 直接实现在bindingExecutors.attr
@@ -2398,13 +2351,45 @@ var updateVTree = {
 
 //收集两个注释节点间的文本节点
 function collectTextNode(aaa, bbb) {//aaa为新的， bbb为旧的
-    var k = false
+    var collect = false
     var array = []
     while (aaa.length) {
         var neo = aaa.shift()
         array.push(neo)
-        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-text") == 0) {
-            k = !k
+        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-text") === 0) {
+            collect = !collect
+            if (collect) {
+                var arr = getSignature(bbb, neo.nodeValue)
+                if (arr.length) {
+                    array = array.concat(arr)
+                }
+            }
+        } else {
+            if (collect) {
+                array.pop()
+            }
+        }
+    }
+    return array
+}
+
+function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
+    var k = false
+    var array = []
+    var token
+    // 新 1111 <!v-html1234> 2222 <!v-html2222> 3333 <!v-html2222> 4444 <!v-html1234> 5555
+    // 旧 1111 <!v-html1234>  <!v-html1234> 5555
+    while (aaa.length) {
+        var neo = aaa.shift()
+        array.push(neo)
+        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") == 0) {
+            if (!k) {
+               token = neo.nodeValue+":end"
+                k = true
+            } else {
+                k = neo.nodeValue.indexOf(token) === 0
+            }
+            //   k = !k
             if (k) {
                 var arr = getSignature(bbb, neo.nodeValue)
                 if (arr.length) {
@@ -2418,6 +2403,124 @@ function collectTextNode(aaa, bbb) {//aaa为新的， bbb为旧的
         }
     }
     return array
+}
+/*
+ <div ms-controller="test">{{aaa|html}}</div>
+ 
+ avalon.define({
+ $id: "test",
+ aaa: <span>{{bbb}}</span>,
+ bbb: "111"
+ })
+ */
+
+function scanVTree(elem, vmodel) {
+    var vmodels = vmodel ? [].concat(vmodel) : []
+    scanVTag(elem, vmodels)
+}
+
+function scanVTag(elem, vmodels) {
+    //扫描顺序  ms-skip(0) --> ms-important(1) --> ms-controller(2) --> ms-if(10) --> ms-repeat(100) 
+    //--> ms-if-loop(110) --> ms-attr(970) ...--> ms-each(1400)-->ms-with(1500)--〉ms-duplex(2000)垫后
+    var props = elem.props
+    var a = props["ms-skip"]
+    //#360 在旧式IE中 Object标签在引入Flash等资源时,可能出现没有getAttributeNode,innerHTML的情形
+    if (typeof a === "string") {
+        return
+    } else if (b) {
+        var b = props["ms-important"]
+        var c = props["ms-controller"]
+        var bvm = avalon.vmodels[b]
+        var cvm = avalon.vmodels[c]
+        if (bvm) {
+            //ms-important不包含父VM，ms-controller相反
+            delete props["ms-important"]
+            vmodels = [bvm]
+            avalon(elem).removeClass("ms-important")
+        } else if (cvm) {
+            delete props["ms-controller"]
+            vmodels = [cvm].concat(vmodels)
+            avalon(elem).removeClass("ms-controller")
+        }
+    }
+    scanAttr(elem, vmodels) //扫描特性节点
+}
+
+//让avalon的VNode能顺利在scanAttr中运作
+function getVAttributes(elem) {
+    var attrs = []
+    for (var i in elem.props) {
+        if (elem.props.hasOwnProperty(i)) {
+            attrs.push({
+                name: i,
+                value: elem.props[i],
+                specified: true
+            })
+        }
+    }
+    elem.innerHTML = elem.textContent = "<ms-attr-fix=1>"
+    return attrs
+}
+
+function VNode(element, deep) {
+    var ret
+    switch (element.nodeType) {
+        case 11:
+            ret = new VDocumentFragment()
+            deep && ap.forEach.call(element.childNodes, function (node) {//添加属性
+                var vnode = new VNode(node, deep)
+                console.log("111")
+                ret.appendChild(vnode)
+            })
+            return ret
+        case 1:
+            ret = new VElement(element)
+            if (deep) {
+                var attributes = getAttributes ? getAttributes(element) : element.attributes
+                ap.forEach.call(attributes, function (attr) {//添加属性
+                    if (attr.name !== "class") {
+                        ret.props[attr.name] = attr.value
+                    }
+                })
+                ap.forEach.call(element.childNodes, function (node) {
+                    var vnode = new VNode(node, deep)
+                    ret.appendChild(vnode)
+                })
+            }
+            return ret
+        case 3:
+            return new VText(element.nodeValue)
+        case 8:
+            return new VComment(element.nodeValue)
+    }
+}
+
+function DNode(element) {
+    var ret
+    switch (element.nodeType) {
+        case 11:
+            ret = DOC.createDocumentFragment()
+            ap.forEach.call(element.childNodes, function (node) {//添加属性
+                ret.appendChild(new DNode(node))
+            })
+            return ret
+        case 1:
+            ret = DOC.createElement(element.nodeName)
+            if (element.className.trim()) {
+                ret.className = element.className
+            }
+            updateDTree.attr(element, ret)
+            updateDTree.css(element, ret)
+            ret.vid = element.vid
+            ap.forEach.call(element.childNodes, function (node) {//添加属性
+                ret.appendChild(new DNode(node))
+            })
+            return ret
+        case 3:
+            return  DOC.createTextNode(element.nodeValue)
+        case 8:
+            return  DOC.createComment(element.nodeValue)
+    }
 }
 /* 
  将VTree中的数据同步到DTree 
@@ -2477,6 +2580,46 @@ var updateDTree = {
                     real.parentNode.insertBefore(DOC.createTextNode(virtual.nodeValue), real)
                 } else {
                     real.nodeValue = virtual.nodeValue
+                }
+            }
+        }
+    },
+    html: function (vnode, elem) {
+        var rnodes = elem.childNodes
+        var vnodes = vnode.childNodes
+        var modify = false, token
+        for (var i = 0, node; node = vnodes[i]; i++) {
+            var virtual = vnodes[i]
+            var real = rnodes[i], parent = real.parentNode
+            if (virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
+                if (!modify) {
+                    token = virtual.nodeValue + ":end"
+                    modify = true
+                } else {
+                    modify = virtual.nodeValue.indexOf(token) === 0
+                }
+            }
+            if (modify) {
+                if (virtual.nodeType !== real.nodeType) {
+                    parent.insertBefore(new DNode(virtual), real)
+                    if (real && real.nodeValue !== token) {
+                        real.parentNode.removeChild(real)
+                    }
+                } else {
+                    switch (virtual.nodeType) {
+                        case 1:
+                            if (real.vid !== virtual.vid) {
+                                parent.insertBefore(new DNode(virtual), real)
+                                if (real && real.nodeValue !== token) {
+                                    real.parentNode.removeChild(real)
+                                }
+                            }
+                            break
+                        default:
+                            if (real.nodeValue !== virtual.nodeValue) {
+                                real.nodeValue = virtual.nodeValue
+                            }
+                    }
                 }
             }
         }
@@ -3542,6 +3685,8 @@ function executeBindings(bindings, vmodels) {
 
 //https://github.com/RubyLouvre/avalon/issues/636
 var mergeTextNodes = IEVersion && window.MutationObserver ? function (elem) {
+    if(elem.queryVID)
+        return
     var node = elem.firstChild, text
     while (node) {
         var aaa = node.nextSibling
@@ -3580,7 +3725,7 @@ function bindingSorter(a, b) {
 function scanAttr(elem, vmodels, match) {
     var scanNode = true
     if (vmodels.length) {
-        var attributes = getAttributes ? getAttributes(elem) : elem.attributes
+        var attributes =  elem.queryVID ? getVAttributes(elem) : getAttributes ? getAttributes(elem) : elem.attributes
         var bindings = []
         var fixAttrs = []
         var msData = {}
@@ -3722,15 +3867,19 @@ if (!"1" [0]) {
     }
 }
 
+//避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
-    var node = parent.firstChild
-    while (node) {
-        var nextNode = node.nextSibling
-        scanNode(node, node.nodeType, vmodels)
-        node = nextNode
-    }
+    var nodes = avalon.slice(parent.childNodes)
+    scanNodeArray(nodes, vmodels)
 }
-
+//function scanNodeList(parent, vmodels) {
+//    var node = parent.firstChild
+//    while (node) {
+//        var nextNode = node.nextSibling
+//        scanNode(node, node.nodeType, vmodels)
+//        node = nextNode
+//    }
+//}
 function scanNodeArray(nodes, vmodels) {
     for (var i = 0, node; node = nodes[i++]; ) {
         scanNode(node, node.nodeType, vmodels)
@@ -3743,7 +3892,7 @@ function scanNode(node, nodeType, vmodels) {
             node.msCallback()
             node.msCallback = void 0
        }
-    } else if (nodeType === 3 && rexpr.test(node.data)){
+    } else if (nodeType === 3 && rexpr.test(node.nodeValue)){
         scanText(node, vmodels) //扫描文本节点
     } else if (kernel.commentInterpolate && nodeType === 8 && !rexpr.test(node.nodeValue)) {
         scanText(node, vmodels) //扫描注释节点
@@ -3855,12 +4004,13 @@ function scanText(textNode, vmodels) {
         var token = getToken(textNode.nodeValue)
         var tokens = [token]
     } else {
-        tokens = scanExpr(textNode.data)
+        tokens = scanExpr(textNode.nodeValue)
     }
     var parent = textNode.parentNode
     if (tokens.length) {
+        var fragment = parent.queryVID ? new VDocumentFragment() : DOC.createDocumentFragment()
         for (var i = 0; token = tokens[i++]; ) {
-            var node = DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
+            var node = parent.queryVID ? new VText(token.value) : DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
             if (token.expr) {
                 token.type = "text"
                 token.element = node
@@ -3870,19 +4020,11 @@ function scanText(textNode, vmodels) {
                 })// jshint ignore:line
                 bindings.push(token) //收集带有插值表达式的文本
             }
-            hyperspace.appendChild(node)
+            fragment.appendChild(node)
         }
-        parent.replaceChild(hyperspace, textNode)
+        parent.replaceChild(fragment, textNode)
         if (bindings.length) {
-//            new function () {
-//               var vid = getUid(parent)
-//                var vparent = VTree.queryVID(vid) ||  new VElement(parent, VTree)
-//                if (!vparent.childNodes.length) {
-//                    var array = VNodes(parent.childNodes)
-//                    vparent.appendChild(array)
-//                }
-                executeBindings(bindings, vmodels)
-//            }
+            executeBindings(bindings, vmodels)
         }
     }
 }
@@ -4446,14 +4588,28 @@ bindingExecutors.html = function (val, elem, data) {
     if (!parent)
         return
     val = val == null ? "" : val
-    var fill = avalon.parseHTML(val)
-    var nodes = avalon.slice(fill.childNodes)
-    fillSignatures(parent, data, fill)
-    scanNodeArray(nodes, data.vmodels)
+
+    if (typeof val !== "object") {//string, number, boolean
+        var fragment = avalon.parseHTML(String(val))
+    } else if (val.nodeType === 11) { //将val转换为文档碎片
+        fragment = val.childNodes
+    } else if (val.nodeType === 1 || val.item) {
+        var nodes = val.nodeType === 1 ? val.childNodes : val.item
+        fragment = hyperspace.cloneNode(true)
+        while (nodes[0]) {
+            fragment.appendChild(nodes[0])
+        }
+    }
+    
+    var vnode = addVnodeToData(parent, data)
+    updateVTree.html(vnode, parent, fragment, data)
+//    var nodes = avalon.slice(fill.childNodes)
+//    fillSignatures(parent, data, fill)
+//    scanNodeArray(nodes, data.vmodels)
 //    var vnode = addVnodeToData(parent, data)
 //    vnode.htmlValue = val
 //    vnode.htmlData = data
-//    vnode.addTask("html")
+      vnode.addTask("html")
 }
 bindingHandlers["if"] =
     bindingHandlers.data =

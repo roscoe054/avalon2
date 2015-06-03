@@ -3,7 +3,14 @@ function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
     scanNodeArray(nodes, vmodels)
 }
-
+//function scanNodeList(parent, vmodels) {
+//    var node = parent.firstChild
+//    while (node) {
+//        var nextNode = node.nextSibling
+//        scanNode(node, node.nodeType, vmodels)
+//        node = nextNode
+//    }
+//}
 function scanNodeArray(nodes, vmodels) {
     for (var i = 0, node; node = nodes[i++]; ) {
         scanNode(node, node.nodeType, vmodels)

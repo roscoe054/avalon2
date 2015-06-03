@@ -4,12 +4,26 @@ bindingExecutors.html = function (val, elem, data) {
     if (!parent)
         return
     val = val == null ? "" : val
-    var fill = avalon.parseHTML(val)
-    var nodes = avalon.slice(fill.childNodes)
-    fillSignatures(parent, data, fill)
-    scanNodeArray(nodes, data.vmodels)
+
+    if (typeof val !== "object") {//string, number, boolean
+        var fragment = avalon.parseHTML(String(val))
+    } else if (val.nodeType === 11) { //将val转换为文档碎片
+        fragment = val.childNodes
+    } else if (val.nodeType === 1 || val.item) {
+        var nodes = val.nodeType === 1 ? val.childNodes : val.item
+        fragment = hyperspace.cloneNode(true)
+        while (nodes[0]) {
+            fragment.appendChild(nodes[0])
+        }
+    }
+    
+    var vnode = addVnodeToData(parent, data)
+    updateVTree.html(vnode, parent, fragment, data)
+//    var nodes = avalon.slice(fill.childNodes)
+//    fillSignatures(parent, data, fill)
+//    scanNodeArray(nodes, data.vmodels)
 //    var vnode = addVnodeToData(parent, data)
 //    vnode.htmlValue = val
 //    vnode.htmlData = data
-//    vnode.addTask("html")
+      vnode.addTask("html")
 }

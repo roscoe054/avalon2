@@ -60,6 +60,46 @@ var updateDTree = {
             }
         }
     },
+    html: function (vnode, elem) {
+        var rnodes = elem.childNodes
+        var vnodes = vnode.childNodes
+        var modify = false, token
+        for (var i = 0, node; node = vnodes[i]; i++) {
+            var virtual = vnodes[i]
+            var real = rnodes[i], parent = real.parentNode
+            if (virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
+                if (!modify) {
+                    token = virtual.nodeValue + ":end"
+                    modify = true
+                } else {
+                    modify = virtual.nodeValue.indexOf(token) === 0
+                }
+            }
+            if (modify) {
+                if (virtual.nodeType !== real.nodeType) {
+                    parent.insertBefore(new DNode(virtual), real)
+                    if (real && real.nodeValue !== token) {
+                        real.parentNode.removeChild(real)
+                    }
+                } else {
+                    switch (virtual.nodeType) {
+                        case 1:
+                            if (real.vid !== virtual.vid) {
+                                parent.insertBefore(new DNode(virtual), real)
+                                if (real && real.nodeValue !== token) {
+                                    real.parentNode.removeChild(real)
+                                }
+                            }
+                            break
+                        default:
+                            if (real.nodeValue !== virtual.nodeValue) {
+                                real.nodeValue = virtual.nodeValue
+                            }
+                    }
+                }
+            }
+        }
+    },
     css: function (vnode, elem) {
         for (var i in vnode.style) {
             if (elem.style[i] !== vnode.style[i]) {

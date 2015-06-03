@@ -1,7 +1,7 @@
 function VElement(element, parentNode) {
     this.nodeType = 1
-    var vid = getUid(element)
-    this.vid = element.vid = vid
+
+    this.vid = getUid(element)
     this.nodeName = element.nodeName
     this.className = element.className
     this.childNodes = []
@@ -46,37 +46,7 @@ function VNodes(nodes) {
     }
     return ret
 }
-function VNode(element, deep) {
-    var ret
-    switch (element.nodeType) {
-        case 11:
-            ret = new VDocumentFragment()
-            deep && ap.forEach.call(element.childNodes, function (node) {//添加属性
-                var vnode = new VNode(node)
-                ret.appendChild(vnode)
-            })
-            return ret
-        case 1:
-            ret = new VElement(element)
-            if (deep) {
-                var attributes = getAttributes ? getAttributes(element) : element.attributes
-                ap.forEach.call(attributes, function (attr) {//添加属性
-                    if (attr.name !== "class") {
-                        ret.props[attr.name] = attr.value
-                    }
-                })
-                ap.forEach.call(element.childNodes, function (node) {
-                    var vnode = new VNode(node)
-                    ret.appendChild(vnode)
-                })
-            }
-            return ret
-        case 3:
-            return new VText(element.nodeValue)
-        case 8:
-            return new VComment(element.nodeValue)
-    }
-}
+
 //属性,类名,样式,子节点
 function forEachElements(dom, callback) {
     for (var i = 0, el; el = dom.childNodes[i++]; ) {
@@ -89,53 +59,6 @@ function forEachElements(dom, callback) {
         }
     }
 }
-//
-//
-//VTasks = {
-// 
-//    html: function (vnode, elem) {
-//        if (!elem)
-//            return
-//        var data = vnode.htmlData
-//        var val = vnode.htmlValue
-//        //转换成文档碎片
-//        if (typeof val !== "object") {//string, number, boolean
-//            var fragment = avalon.parseHTML(String(val))
-//        } else if (val.nodeType === 11) { //将val转换为文档碎片
-//            fragment = val
-//        } else if (val.nodeType === 1 || val.item) {
-//            var nodes = val.nodeType === 1 ? val.childNodes : val.item
-//            fragment = hyperspace.cloneNode(true)
-//            while (nodes[0]) {
-//                fragment.appendChild(nodes[0])
-//            }
-//        }
-//        nodes = avalon.slice(fragment.childNodes)
-//
-//        var comments = []
-//        for (var i = 0, el; el = elem.childNodes[i++]; ) {
-//            if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
-//                comments.push(el)
-//            }
-//        }
-//        //移除两个注释节点间的节点
-//        while (true) {
-//            var node = comments[1].previousSibling
-//            if (!node || node === comments[0]) {
-//                break
-//            } else {
-//                elem.removeChild(node)
-//            }
-//        }
-//        elem.insertBefore(fragment, comments[1])
-//        scanNodeArray(nodes, data.vmodels)
-//        delete vnode.htmlData
-//        delete vnode.htmlValue
-//    },
-// 
-//
-//
-//}
 
 VElement.prototype = {
     constructor: VElement,
@@ -352,7 +275,7 @@ function fillSignatures(elem, data, fill, callback) {
         log(data.signature + "!找不到元素")
         return
     }
-    var index = avalon.slice(elem.childNodes).indexOf(comments[0])
+    var index = indexElement(comments[0],elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
     while (true) {
         var node = elem.childNodes[index + 1]
         if (node && node !== comments[1]) {

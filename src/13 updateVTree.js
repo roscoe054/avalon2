@@ -1,8 +1,6 @@
 /* 
  更新到VTree
  */
-
-
 var updateVTree = {
     text: function (vnode, elem, value, data) {
         if (!vnode.childNodes.length) {
@@ -29,39 +27,14 @@ var updateVTree = {
             vnode.appendChild(array)
         }
         //转换成文档碎片
-        if (typeof val !== "object") {//string, number, boolean
-            var fragment = avalon.parseHTML(String(val))
-        } else if (val.nodeType === 11) { //将val转换为文档碎片
-            fragment = val
-        } else if (val.nodeType === 1 || val.item) {
-            var nodes = val.nodeType === 1 ? val.childNodes : val.item
-            fragment = hyperspace.cloneNode(true)
-            while (nodes[0]) {
-                fragment.appendChild(nodes[0])
-            }
-        }
 
-        nodes = avalon.slice(fragment.childNodes)
-
-        var comments = []
-        for (var i = 0, el; el = elem.childNodes[i++]; ) {
-            if (el.nodeType === 8 && el.nodeValue.indexOf(data.signature) === 0) {
-                comments.push(el)
-            }
-        }
-        //移除两个注释节点间的节点
-        while (true) {
-            var node = comments[1].previousSibling
-            if (!node || node === comments[0]) {
-                break
-            } else {
-                elem.removeChild(node)
-            }
-        }
-        elem.insertBefore(fragment, comments[1])
-        scanNodeArray(nodes, data.vmodels)
-        delete vnode.htmlData
-        delete vnode.htmlValue
+        var fill = new VNode(val, true)
+        console.log(fill)
+        fillSignatures(vnode, data, fill)
+//        elem.insertBefore(fragment, comments[1])
+//        scanNodeArray(fill.childNodes, data.vmodels)
+//        delete vnode.htmlData
+//        delete vnode.htmlValue
     }
     //if 直接实现在bindingExecutors.attr
     //css 直接实现在bindingExecutors.attr
@@ -93,10 +66,10 @@ function collectTextNode(aaa, bbb) {//aaa为新的， bbb为旧的
     return array
 }
 
-function collectTextNode(aaa, bbb) {//aaa为新的， bbb为旧的
+function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
     var k = false
     var array = []
-    var c
+    var token
     // 新 1111 <!v-html1234> 2222 <!v-html2222> 3333 <!v-html2222> 4444 <!v-html1234> 5555
     // 旧 1111 <!v-html1234>  <!v-html1234> 5555
     while (aaa.length) {
@@ -104,10 +77,10 @@ function collectTextNode(aaa, bbb) {//aaa为新的， bbb为旧的
         array.push(neo)
         if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") == 0) {
             if (!k) {
-                c = neo.nodeValue
+               token = neo.nodeValue+":end"
                 k = true
             } else {
-                k = neo.nodeValue.indexOf(c) === 0
+                k = neo.nodeValue.indexOf(token) === 0
             }
             //   k = !k
             if (k) {
@@ -180,4 +153,65 @@ function getVAttributes(elem) {
     }
     elem.innerHTML = elem.textContent = "<ms-attr-fix=1>"
     return attrs
+}
+
+function VNode(element, deep) {
+    var ret
+    switch (element.nodeType) {
+        case 11:
+            ret = new VDocumentFragment()
+            deep && ap.forEach.call(element.childNodes, function (node) {//添加属性
+                var vnode = new VNode(node, deep)
+                console.log("111")
+                ret.appendChild(vnode)
+            })
+            return ret
+        case 1:
+            ret = new VElement(element)
+            if (deep) {
+                var attributes = getAttributes ? getAttributes(element) : element.attributes
+                ap.forEach.call(attributes, function (attr) {//添加属性
+                    if (attr.name !== "class") {
+                        ret.props[attr.name] = attr.value
+                    }
+                })
+                ap.forEach.call(element.childNodes, function (node) {
+                    var vnode = new VNode(node, deep)
+                    ret.appendChild(vnode)
+                })
+            }
+            return ret
+        case 3:
+            return new VText(element.nodeValue)
+        case 8:
+            return new VComment(element.nodeValue)
+    }
+}
+
+function DNode(element) {
+    var ret
+    switch (element.nodeType) {
+        case 11:
+            ret = DOC.createDocumentFragment()
+            ap.forEach.call(element.childNodes, function (node) {//添加属性
+                ret.appendChild(new DNode(node))
+            })
+            return ret
+        case 1:
+            ret = DOC.createElement(element.nodeName)
+            if (element.className.trim()) {
+                ret.className = element.className
+            }
+            updateDTree.attr(element, ret)
+            updateDTree.css(element, ret)
+            ret.vid = element.vid
+            ap.forEach.call(element.childNodes, function (node) {//添加属性
+                ret.appendChild(new DNode(node))
+            })
+            return ret
+        case 3:
+            return  DOC.createTextNode(element.nodeValue)
+        case 8:
+            return  DOC.createComment(element.nodeValue)
+    }
 }

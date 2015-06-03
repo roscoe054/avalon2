@@ -15,9 +15,10 @@
                 ccc: 444,
                 toggle: false,
                 tmpl: "aa.html",
-                ddd: "<span>11</span><span>22</span><span>33</span>"
+                ddd: "<b>11</b><span>avalon</span>"
             })
             setTimeout(function () {
+                console.log(avalon.VTree)
                 vm.aaa = 33
                 vm.bbb = 66
                 vm.toggle = true
@@ -28,14 +29,14 @@
         </script>
     </head>
     <body ms-controller="test">
-        11111111111
-        <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
-        <div ms-text="ccc">ccc</div>
+        <h1>测试虚拟DOM</h1>
+<!--        <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>-->
+<!--        <div ms-text="ccc">ccc</div>
         <div ms-visible="toggle">visible</div>
-        <div ms-if="toggle">if</div>
-<!--        <div>222{{ddd|html}}333</div>
+        <div ms-if="toggle">if</div>-->
+    <div>222{{ddd|html}}333</div>
         <div ms-html="ddd">sdfdfdf</div>
-        <div id="include1" ms-include-src="tmpl"></div>
+     <!--   <div id="include1" ms-include-src="tmpl"></div>
         <div id="include2" ms-include-src="tmpl" data-include-replace="true"></div>-->
     </body>
 </html>
