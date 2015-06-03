@@ -1952,14 +1952,9 @@ var updateVTree = {
             vnode.appendChild(array)
         }
         //转换成文档碎片
-
         var fill = new VNode(val, true)
-        console.log(fill)
         fillSignatures(vnode, data, fill)
-//        elem.insertBefore(fragment, comments[1])
 //        scanNodeArray(fill.childNodes, data.vmodels)
-//        delete vnode.htmlData
-//        delete vnode.htmlValue
     }
     //if 直接实现在bindingExecutors.attr
     //css 直接实现在bindingExecutors.attr
@@ -2002,7 +1997,7 @@ function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
         array.push(neo)
         if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") == 0) {
             if (!k) {
-               token = neo.nodeValue+":end"
+                token = neo.nodeValue + ":end"
                 k = true
             } else {
                 k = neo.nodeValue.indexOf(token) === 0
@@ -2087,7 +2082,6 @@ function VNode(element, deep) {
             ret = new VDocumentFragment()
             deep && ap.forEach.call(element.childNodes, function (node) {//添加属性
                 var vnode = new VNode(node, deep)
-                console.log("111")
                 ret.appendChild(vnode)
             })
             return ret
@@ -2140,6 +2134,8 @@ function DNode(element) {
             return  DOC.createComment(element.nodeValue)
     }
 }
+
+//text,html,visible,css,attr,data,if,include
 /* 
  将VTree中的数据同步到DTree 
  */
@@ -2255,7 +2251,7 @@ var updateDTree = {
             if (vnode.props.hasOwnProperty(attrName)) {
                 var val = vnode.props[attrName]
                 var toRemove = (val === false) || (val === null) || (val === void 0)
-                if (val && typeof val === "object") {
+                if (val && typeof val === "object") {//处理ms-data-xxx="[object]"
                     elem[attrName] = val
                     continue
                 }
@@ -2271,6 +2267,16 @@ var updateDTree = {
                 }
                 if (toRemove) {
                     elem.removeAttribute(attrName)
+                    continue
+                }
+                if (attrName === "src" || attrName === "href") {
+                    elem[attrName] = val
+                    if (window.chrome && elem.tagName === "EMBED") {
+                        var parent = elem.parentNode //#525  chrome1-37下embed标签动态设置src不能发生请求
+                        var comment = document.createComment("ms-src")
+                        parent.replaceChild(comment, elem)
+                        parent.replaceChild(elem, comment)
+                    }
                     continue
                 }
                 //SVG只能使用setAttribute(xxx, yyy), VML只能使用elem.xxx = yyy ,HTML的固有属性必须elem.xxx = yyy
@@ -3448,13 +3454,8 @@ bindingExecutors.attr = function (val, elem, data) {
         if (!root.hasAttribute && typeof val === "string" && (method === "src" || method === "href")) {
             val = val.replace(/&amp;/g, "&") //处理IE67自动转义的问题
         }
-        elem[method] = val
-        if (window.chrome && elem.tagName === "EMBED") {
-            var parent = elem.parentNode //#525  chrome1-37下embed标签动态设置src不能发生请求
-            var comment = document.createComment("ms-src")
-            parent.replaceChild(comment, elem)
-            parent.replaceChild(elem, comment)
-        }
+        vnode.props[method] = val
+        vnode.addTask("attr")
     }
 }
 
@@ -3916,16 +3917,10 @@ bindingExecutors.html = function (val, elem, data) {
             fragment.appendChild(nodes[0])
         }
     }
-    
     var vnode = addVnodeToData(parent, data)
     updateVTree.html(vnode, parent, fragment, data)
-//    var nodes = avalon.slice(fill.childNodes)
-//    fillSignatures(parent, data, fill)
 //    scanNodeArray(nodes, data.vmodels)
-//    var vnode = addVnodeToData(parent, data)
-//    vnode.htmlValue = val
-//    vnode.htmlData = data
-      vnode.addTask("html")
+    vnode.addTask("html")
 }
 bindingHandlers["if"] =
     bindingHandlers.data =

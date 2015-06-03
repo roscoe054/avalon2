@@ -113,7 +113,7 @@ var updateDTree = {
             if (vnode.props.hasOwnProperty(attrName)) {
                 var val = vnode.props[attrName]
                 var toRemove = (val === false) || (val === null) || (val === void 0)
-                if (val && typeof val === "object") {
+                if (val && typeof val === "object") {//处理ms-data-xxx="[object]"
                     elem[attrName] = val
                     continue
                 }
@@ -129,6 +129,16 @@ var updateDTree = {
                 }
                 if (toRemove) {
                     elem.removeAttribute(attrName)
+                    continue
+                }
+                if (attrName === "src" || attrName === "href") {
+                    elem[attrName] = val
+                    if (window.chrome && elem.tagName === "EMBED") {
+                        var parent = elem.parentNode //#525  chrome1-37下embed标签动态设置src不能发生请求
+                        var comment = document.createComment("ms-src")
+                        parent.replaceChild(comment, elem)
+                        parent.replaceChild(elem, comment)
+                    }
                     continue
                 }
                 //SVG只能使用setAttribute(xxx, yyy), VML只能使用elem.xxx = yyy ,HTML的固有属性必须elem.xxx = yyy

@@ -157,7 +157,6 @@ function VNode(element, deep) {
             ret = new VDocumentFragment()
             deep && ap.forEach.call(element.childNodes, function (node) {//添加属性
                 var vnode = new VNode(node, deep)
-                console.log("111")
                 ret.appendChild(vnode)
             })
             return ret

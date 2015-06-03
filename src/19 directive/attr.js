@@ -58,13 +58,8 @@ bindingExecutors.attr = function (val, elem, data) {
         if (!root.hasAttribute && typeof val === "string" && (method === "src" || method === "href")) {
             val = val.replace(/&amp;/g, "&") //处理IE67自动转义的问题
         }
-        elem[method] = val
-        if (window.chrome && elem.tagName === "EMBED") {
-            var parent = elem.parentNode //#525  chrome1-37下embed标签动态设置src不能发生请求
-            var comment = document.createComment("ms-src")
-            parent.replaceChild(comment, elem)
-            parent.replaceChild(elem, comment)
-        }
+        vnode.props[method] = val
+        vnode.addTask("attr")
     }
 }
 

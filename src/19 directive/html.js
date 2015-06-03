@@ -16,14 +16,8 @@ bindingExecutors.html = function (val, elem, data) {
             fragment.appendChild(nodes[0])
         }
     }
-    
     var vnode = addVnodeToData(parent, data)
     updateVTree.html(vnode, parent, fragment, data)
-//    var nodes = avalon.slice(fill.childNodes)
-//    fillSignatures(parent, data, fill)
 //    scanNodeArray(nodes, data.vmodels)
-//    var vnode = addVnodeToData(parent, data)
-//    vnode.htmlValue = val
-//    vnode.htmlData = data
-      vnode.addTask("html")
+    vnode.addTask("html")
 }
