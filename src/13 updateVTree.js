@@ -209,5 +209,5 @@ function DNode(element) {
             return  DOC.createComment(element.nodeValue)
     }
 }
-
-//text,html,visible,css,attr,data,if,include
+//include,duplex,
+//text,html,visible,css,attr,data,if,src,href
