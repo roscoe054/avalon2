@@ -9,6 +9,11 @@ function VElement(element, parentNode) {
     this.tasks = []
     this.props = {}
     this.parentNode = parentNode
+    // this.dirty
+    var fix = VElements[this.nodeName.toLowerCase()]
+    if (typeof fix === "function") {
+        fix(this)
+    }
     //   this.isVirtualdom = true 直接判定有没有queryVID方法就行了
     try {
         if (parentNode) {
@@ -17,11 +22,20 @@ function VElement(element, parentNode) {
     } catch (e) {
         log(e)
     }
-// this.style = {}
-// this.dirty
+
 
 }
-
+var VElements = {
+    input: function (elem) {
+        elem.type = elem.props.type || "text"
+    },
+    button: function (elem) {
+        elem.type = elem.props.type || "submit"
+    },
+    select: function (elem) {
+        elem.type = elem.props.multiple ? "select-multiple" : "select-one"
+    }
+}
 
 function addVnodeToData(elem, data) {
     if (data.vnode) {

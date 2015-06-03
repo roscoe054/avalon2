@@ -54,6 +54,8 @@ function executeBindings(bindings, vmodels) {
 
 //https://github.com/RubyLouvre/avalon/issues/636
 var mergeTextNodes = IEVersion && window.MutationObserver ? function (elem) {
+    if(elem.queryVID)
+        return
     var node = elem.firstChild, text
     while (node) {
         var aaa = node.nextSibling

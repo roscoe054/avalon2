@@ -1,10 +1,7 @@
+//避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
-    var node = parent.firstChild
-    while (node) {
-        var nextNode = node.nextSibling
-        scanNode(node, node.nodeType, vmodels)
-        node = nextNode
-    }
+    var nodes = avalon.slice(parent.childNodes)
+    scanNodeArray(nodes, vmodels)
 }
 
 function scanNodeArray(nodes, vmodels) {
@@ -19,7 +16,7 @@ function scanNode(node, nodeType, vmodels) {
             node.msCallback()
             node.msCallback = void 0
        }
-    } else if (nodeType === 3 && rexpr.test(node.data)){
+    } else if (nodeType === 3 && rexpr.test(node.nodeValue)){
         scanText(node, vmodels) //扫描文本节点
     } else if (kernel.commentInterpolate && nodeType === 8 && !rexpr.test(node.nodeValue)) {
         scanText(node, vmodels) //扫描注释节点

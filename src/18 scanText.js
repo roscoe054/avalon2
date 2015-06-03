@@ -70,12 +70,13 @@ function scanText(textNode, vmodels) {
         var token = getToken(textNode.nodeValue)
         var tokens = [token]
     } else {
-        tokens = scanExpr(textNode.data)
+        tokens = scanExpr(textNode.nodeValue)
     }
     var parent = textNode.parentNode
     if (tokens.length) {
+        var fragment = parent.queryVID ? new VDocumentFragment() : DOC.createDocumentFragment()
         for (var i = 0; token = tokens[i++]; ) {
-            var node = DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
+            var node = parent.queryVID ? new VText(token.value) : DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
             if (token.expr) {
                 token.type = "text"
                 token.element = node
@@ -85,19 +86,11 @@ function scanText(textNode, vmodels) {
                 })// jshint ignore:line
                 bindings.push(token) //收集带有插值表达式的文本
             }
-            hyperspace.appendChild(node)
+            fragment.appendChild(node)
         }
-        parent.replaceChild(hyperspace, textNode)
+        parent.replaceChild(fragment, textNode)
         if (bindings.length) {
-//            new function () {
-//               var vid = getUid(parent)
-//                var vparent = VTree.queryVID(vid) ||  new VElement(parent, VTree)
-//                if (!vparent.childNodes.length) {
-//                    var array = VNodes(parent.childNodes)
-//                    vparent.appendChild(array)
-//                }
-                executeBindings(bindings, vmodels)
-//            }
+            executeBindings(bindings, vmodels)
         }
     }
 }
