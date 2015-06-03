@@ -22,10 +22,9 @@ bindingExecutors.text = function (val, elem, data) {
         return
     val = val == null ? "" : val //不在页面上显示undefined null
     var vnode = addVnodeToData(parent, data)
-    vnode.textData = data
-    vnode.textValue = val
-    VTasks.text(vnode, parent)
-    // vnode.addTask("text")
+    updateVTree.text(vnode, parent, val, data)
+  //  textup
+    vnode.addTask("text", parent)
  // fillSignatures(parent, data, DOC.createTextNode(val))
 //    var vnode = addVnodeToData(parent, data)
 //    if (vnode.nodeType === 3) { //绑定在文本节点上
