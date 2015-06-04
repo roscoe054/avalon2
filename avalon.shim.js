@@ -2626,10 +2626,10 @@ var updateDTree = {
             var virtual = vnodes[i]
             var real = rnodes[i]
             if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-text") === 0) {
-                token =  virtual.nodeValue +":end"
+                token = virtual.nodeValue + ":end"
                 modify = true
                 continue
-             } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
+            } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
                 modify = false
                 continue
             }
@@ -2652,8 +2652,15 @@ var updateDTree = {
             if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
                 token = virtual.nodeValue + ":end"
                 modify = true
+                continue
             } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
                 modify = false
+                //<span>11</span><strong>222</strong><span>333</span> --> <b>000</b>
+                while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+                    parent.removeChild(real)
+                    real = rnodes[i]
+                }
+                continue
             }
             if (modify) {
                 if (virtual.nodeType !== real.nodeType) {
@@ -2664,15 +2671,16 @@ var updateDTree = {
                 } else {
                     switch (virtual.nodeType) {
                         case 1:
-//                            if(real.nodeName === virtual.nodeName  &&
-//                            (real.nodeName === "INPUT" ? real.type === virtual.type : true)){
-//                                
-//                            }
-                            if (real.vid !== virtual.vid) {
+                            if (real.nodeName !== virtual.nodeName) {//SPAN !== B
                                 parent.insertBefore(new DNode(virtual), real)
-                                if (real && real.nodeValue !== token) {
-                                    real.parentNode.removeChild(real)
-                                }
+                                parent.removeChild(real)
+                            } else if (real.nodeName === "INPUT" && real.type !== virtual.type) {
+                                parent.insertBefore(new DNode(virtual), real)//input[type=text] !== input[type=password]
+                                parent.removeChild(real)
+                            } else if (real.vid !== virtual.vid) {
+                                console.log("111")
+                                parent.insertBefore(new DNode(virtual), real)
+                                parent.removeChild(real)
                             }
                             break
                         default:

@@ -3,15 +3,6 @@
  */
 var updateVTree = {
     text: function (vnode, elem, value, data) {
-//        if (!vnode.childNodes.length) {
-//            var array = new VNodes(elem.childNodes)
-//            vnode.appendChild(array)
-//        } else {
-//            array = new VNodes(elem.childNodes)
-//            array = collectTextNode(array, vnode.childNodes)
-//            vnode.childNodes.length = 0
-//            vnode.appendChild(array)
-//        }
         var fill = new VDocumentFragment()
         fill.appendChild(new VText(value))
         fillSignatures(vnode, data, fill)
@@ -37,29 +28,7 @@ var updateVTree = {
 //data 直接实现在bindingExecutors.data 
 }
 
-//收集两个注释节点间的文本节点
-function collectTextNode(aaa, bbb) {//aaa为新的， bbb为旧的
-    var collect = false
-    var array = []
-    while (aaa.length) {
-        var neo = aaa.shift()
-        array.push(neo)
-        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-text") === 0) {
-            collect = !collect
-            if (collect) {
-                var arr = getSignature(bbb, neo.nodeValue)
-                if (arr.length) {
-                    array = array.concat(arr)
-                }
-            }
-        } else {
-            if (collect) {
-                array.pop()
-            }
-        }
-    }
-    return array
-}
+
 
 function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
     var k = false
