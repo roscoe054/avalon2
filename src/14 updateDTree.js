@@ -84,6 +84,10 @@ var updateDTree = {
                 } else {
                     switch (virtual.nodeType) {
                         case 1:
+//                            if(real.nodeName === virtual.nodeName  &&
+//                            (real.nodeName === "INPUT" ? real.type === virtual.type : true)){
+//                                
+//                            }
                             if (real.vid !== virtual.vid) {
                                 parent.insertBefore(new DNode(virtual), real)
                                 if (real && real.nodeValue !== token) {

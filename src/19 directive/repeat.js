@@ -30,19 +30,29 @@ bindingHandlers.repeat = function (data, vmodels) {
     elem.removeAttribute(data.name)
     data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
     data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
-    var signature = generateID(type)
-    var comment = data.element = DOC.createComment(signature + ":end")
-    data.clone = DOC.createComment(signature)
-    hyperspace.appendChild(comment)
-
+//    var signature = generateID(type)
+//    var comment = data.element = DOC.createComment(signature + ":end")
+//    data.clone = DOC.createComment(signature)
+//    hyperspace.appendChild(comment)
     if (type === "each" || type === "with") {
         data.template = elem.innerHTML.trim()
-        avalon.clearHTML(elem).appendChild(comment)
+      //  avalon.clearHTML(elem).appendChild(comment)
     } else {
         data.template = elem.outerHTML.trim()
-        elem.parentNode.replaceChild(comment, elem)
+      //  elem.parentNode.replaceChild(comment, elem)
     }
-    data.template = avalon.parseHTML(data.template)
+    var signature = generateID("v-" + data.type)
+        data.signature = signature
+        appendSignatures(elem, data, type === "each" || type === "with")
+
+//    if (type === "each" || type === "with") {
+//        data.template = elem.innerHTML.trim()
+//        avalon.clearHTML(elem).appendChild(comment)
+//    } else {
+//        data.template = elem.outerHTML.trim()
+//        elem.parentNode.replaceChild(comment, elem)
+//    }
+    data.template = new VNode(avalon.parseHTML(data.template), true)
     data.handler = bindingExecutors.repeat
     data.rollback = function () {
         var elem = data.element
@@ -100,26 +110,37 @@ bindingHandlers.repeat = function (data, vmodels) {
 
 bindingExecutors.repeat = function (method, pos, el) {
     if (method) {
-        var data = this, start, fragment
-        var end = data.element
-        var comments = getComments(data)
-        var parent = end.parentNode
-        var transation = hyperspace.cloneNode(false)
+         var data = this, start, fragment
+          var elem = data.element
+         var parent = data.type === "repeat" ? elem.parentNode : elem
+    if (!parent)
+        return
+  
+  
+    var vnode = addVnodeToData(parent, data)
+    
+//        var data = this, start, fragment
+//        var end = data.element
+//        var comments = getComments(data)
+//        var parent = end.parentNode
+     var transation = new VDocumentFragment()
         switch (method) {
             case "add": //在pos位置后添加el数组（pos为插入位置,el为要插入的个数）
+          //    console.log("aaaaaaaaaaaaaaaaa")
                 var n = pos + el
                 var fragments = []
                 var array = data.$repeat
                 for (var i = pos; i < n; i++) {
                     var proxy = array.$proxy[i]
                     proxy.$outer = data.$outer
-                    shimController(data, transation, proxy, fragments)
+                    shimController2(data, transation, proxy, fragments, i)
                 }
-                parent.insertBefore(transation, comments[pos] || end)
-                for (i = 0; fragment = fragments[i++]; ) {
-                    scanNodeArray(fragment.nodes, fragment.vmodels)
-                    fragment.nodes = fragment.vmodels = null
-                }
+                console.log(transation)
+         //  parent.insertBefore(transation, comments[pos] || end)
+//                for (i = 0; fragment = fragments[i++]; ) {
+//                    scanNodeArray(fragment.nodes, fragment.vmodels)
+//                    fragment.nodes = fragment.vmodels = null
+//                }
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
                 sweepNodes(comments[pos], comments[pos + el] || end)
@@ -222,7 +243,24 @@ function shimController(data, transation, proxy, fragments) {
     }
     fragments.push(fragment)
 }
-
+function shimController2(data, transation, proxy, fragments, index) {
+    var content = cloneVNode(data.template)//.cloneNode(true)
+    var nodes = avalon.slice(content.childNodes)
+    if (!data.$with && index) {
+        var comment = new VComment(data.signature)
+        comment.parentNode = content
+        content.childNodes.unshift(comment)
+      //  content.insertBefore(data.clone.cloneNode(false), content.firstChild)
+    }
+    console.log(content)
+    transation.appendChild(content)
+    var nv = [proxy].concat(data.vmodels)
+    var fragment = {
+        nodes: nodes,
+        vmodels: nv
+    }
+    fragments.push(fragment)
+}
 function getComments(data) {
     var end = data.element
     var signature = end.nodeValue.replace(":end", "")

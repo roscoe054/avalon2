@@ -12,10 +12,12 @@ var updateVTree = {
             vnode.childNodes.length = 0
             vnode.appendChild(array)
         }
-        fillSignatures(vnode, data, new VText(value))
+        var fill = new VDocumentFragment()
+        fill.appendChild(new VText(value))
+        fillSignatures(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
-      
+
         if (!vnode.childNodes.length) {
             var array = new VNodes(elem.childNodes)
             vnode.appendChild(array)
@@ -30,10 +32,10 @@ var updateVTree = {
         fillSignatures(vnode, data, fill)
         scanNodeArray(fill.childNodes, data.vmodels)
     }
-    //if 直接实现在bindingExecutors.attr
-    //css 直接实现在bindingExecutors.attr
-    //attr 直接实现在bindingExecutors.attr
-    //data 直接实现在bindingExecutors.data 
+//if 直接实现在bindingExecutors.attr
+//css 直接实现在bindingExecutors.attr
+//attr 直接实现在bindingExecutors.attr
+//data 直接实现在bindingExecutors.data 
 }
 
 //收集两个注释节点间的文本节点
@@ -76,7 +78,7 @@ function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
             } else {
                 k = neo.nodeValue.indexOf(token) === 0
             }
-            //   k = !k
+//   k = !k
             if (k) {
                 var arr = getSignature(bbb, neo.nodeValue)
                 if (arr.length) {
@@ -107,8 +109,8 @@ function scanVTree(elem, vmodel) {
 }
 
 function scanVTag(elem, vmodels) {
-    //扫描顺序  ms-skip(0) --> ms-important(1) --> ms-controller(2) --> ms-if(10) --> ms-repeat(100) 
-    //--> ms-if-loop(110) --> ms-attr(970) ...--> ms-each(1400)-->ms-with(1500)--〉ms-duplex(2000)垫后
+//扫描顺序  ms-skip(0) --> ms-important(1) --> ms-controller(2) --> ms-if(10) --> ms-repeat(100) 
+//--> ms-if-loop(110) --> ms-attr(970) ...--> ms-each(1400)-->ms-with(1500)--〉ms-duplex(2000)垫后
     var props = elem.props
     var a = props["ms-skip"]
     //#360 在旧式IE中 Object标签在引入Flash等资源时,可能出现没有getAttributeNode,innerHTML的情形
@@ -120,7 +122,7 @@ function scanVTag(elem, vmodels) {
         var bvm = avalon.vmodels[b]
         var cvm = avalon.vmodels[c]
         if (bvm) {
-            //ms-important不包含父VM，ms-controller相反
+//ms-important不包含父VM，ms-controller相反
             delete props["ms-important"]
             vmodels = [bvm]
             avalon(elem).removeClass("ms-important")
@@ -145,33 +147,35 @@ function getVAttributes(elem) {
             })
         }
     }
-    elem.innerHTML = elem.textContent = "<ms ms-if=bbb>"
+
     return attrs
 }
-
+//将真实DOM转换为虚拟DOM
 function VNode(element, deep) {
     var ret
     switch (element.nodeType) {
         case 11:
             ret = new VDocumentFragment()
-            deep && ap.forEach.call(element.childNodes, function (node) {//添加属性
-                var vnode = new VNode(node, deep)
-                ret.appendChild(vnode)
-            })
+            if (deep) {
+                avalon.each(element.childNodes, function (index, node) {
+                    ret.appendChild(new VNode(node, true))//添加孩子
+                })
+            }
             return ret
         case 1:
             ret = new VElement(element)
             if (deep) {
                 var attributes = getAttributes ? getAttributes(element) : element.attributes
-                ap.forEach.call(attributes, function (attr) {//添加属性
+                avalon.each(attributes, function (index, attr) {//添加属性
                     if (attr.name !== "class") {
                         ret.props[attr.name] = attr.value
                     }
                 })
-                ap.forEach.call(element.childNodes, function (node) {
-                    var vnode = new VNode(node, deep)
-                    ret.appendChild(vnode)
+                avalon.each(element.childNodes, function (index, node) {
+                    ret.appendChild(new VNode(node, true))
                 })
+                ret.className = element.className
+                ret.textContent = element.innerHTML
             }
             return ret
         case 3:
@@ -180,22 +184,14 @@ function VNode(element, deep) {
             return new VComment(element.nodeValue)
     }
 }
-//将一组节点转换为虚拟DOM
-function VNodes(nodes) {
-    var ret = []
-    for (var i = 0, n = nodes.length; i < n; i++) {
-        ret.push(new VNode(nodes[i], false))
-    }
-    return ret
-}
-
+//将虚拟DOM转换为真实DOM
 function DNode(element) {
     var ret
     switch (element.nodeType) {
         case 11:
             ret = DOC.createDocumentFragment()
-            ap.forEach.call(element.childNodes, function (node) {//添加属性
-                ret.appendChild(new DNode(node))
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new DNode(node))//添加孩子
             })
             return ret
         case 1:
@@ -206,8 +202,8 @@ function DNode(element) {
             updateDTree.attr(element, ret)
             updateDTree.css(element, ret)
             ret.vid = element.vid
-            ap.forEach.call(element.childNodes, function (node) {//添加属性
-                ret.appendChild(new DNode(node))
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new DNode(node))//添加孩子
             })
             return ret
         case 3:
@@ -217,78 +213,45 @@ function DNode(element) {
     }
 }
 
-
-//处理路标系统的三个重要方法
-function getSignatures(elem, signature) {
-    var comments = []
-    for (var i = 0, el; el = elem.childNodes[i++]; ) {
-        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
-            comments.push(el)
-        }
+function cloneVNode(element) {//克降虚拟DOM
+    var ret
+    switch (element.nodeType) {
+        case 11:
+            ret = new VDocumentFragment()
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(cloneVNode(node))
+            })
+            return ret
+        case 1:
+            ret = new VElement(element)
+            avalon.each(element.props, function (name, value) {
+                ret.props[name] = value//添加属性 
+            })
+            avalon.each(element.style, function (name, value) {
+                ret.style[name] = value//添加样式
+            })
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(cloneVNode(node))//添加孩子
+            })
+            ret.className = element.className
+            ret.textContent = element.innerHTML
+            delete ret.vid
+            getUid(ret)
+            return ret
+        case 3:
+            return new VText(element.nodeValue)
+        case 8:
+            return new VComment(element.nodeValue)
     }
-    return comments
 }
 
-function getSignature(array, signature) {
-    var collect = false, ret = []
-    for (var i = 0, el; el = array[i++]; ) {
-        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
-            collect = !collect
-            continue
-        }
-        if (collect) {
-            ret.push(el)
-        }
-    }
+//将一组节点转换为虚拟DOM
+function VNodes(nodes) {
+    var ret = []
+    avalon.each(nodes, function (i, node) {
+        ret.push(new VNode(node, false))
+    })
     return ret
-}
-
-function appendSignatures(elem, data, replace) {
-    //文本绑定与html绑定当elem为文本节点
-    //或include绑定，当使用了data-duplex-replace辅助指令时
-    //其左右将插入两个注释节点，自身被替换
-    var parent = elem.parentNode
-    if (parent.queryVID) {
-        start = new VComment(data.signature)
-        end = new VComment(data.signature + ":end")
-    } else {
-        var start = DOC.createComment(data.signature)
-        var end = DOC.createComment(data.signature + ":end")
-    }
-
-    if (replace) {
-        parent.insertBefore(start, elem)
-        parent.replaceChild(end, elem)
-        data.element = end
-    } else {
-        avalon.clearHTML(elem)
-        elem.appendChild(start)
-        elem.appendChild(end)
-    }
-    return [start, end]
-}
-
-function fillSignatures(elem, data, fill, callback) {
-    var comments = getSignatures(elem, data.signature)
-    callback = callback || function () {
-    }
-    //移除两个注释节点间的节点
-    //console.log(comments)
-    if (!comments.length) {
-        log(data.signature + "!找不到元素")
-        return
-    }
-    var index = indexElement(comments[0], elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
-    while (true) {
-        var node = elem.childNodes[index + 1]
-        if (node && node !== comments[1]) {
-            elem.removeChild(node)
-            callback(node, comments[0], comments[1])
-        } else {
-            break
-        }
-    }
-    elem.insertBefore(fill, comments[1])
 }
 
 function addVnodeToData(elem, data) {
@@ -305,13 +268,3 @@ function addVnodeToData(elem, data) {
         return data.vnode = vnode
     }
 }
-function indexElement(target, array) {
-    for (var i = 0, el; el = array[i]; i++) {
-        if (el === target)
-            return i
-    }
-    return -1
-}
-
-//include,duplex,
-//text,html,visible,css,attr,data,if,src,href

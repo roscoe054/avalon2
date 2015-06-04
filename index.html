@@ -15,17 +15,19 @@
                 ccc: 444,
                 toggle: false,
                 tmpl: "aa.html",
-                ddd: "<b>{{bbb}}</b><span>avalon</span>"
+                color:"red",
+                ddd: "<b>{{bbb}}</b><span ms-css-color='color'>avalon</span>",
+                array: [1,2,3,4]
             })
             setTimeout(function () {
 
-                console.log(avalon.VTree)
+             
                 console.log("=================")
                 vm.aaa = 33
-
+                vm.color = "blue"
                 vm.toggle = true
                 vm.ccc = 999
-                vm.ddd = "<b>{{bbb}}</b><b>333</b><b>111</b><b>111</b>"
+          //      vm.ddd = "<b>{{bbb}}</b><b>333</b><b>111</b><b>111</b>"
                 vm.bbb = 66
                 vm.tmpl = "bb.html"
             }, 300)
@@ -33,13 +35,14 @@
     </head>
     <body ms-controller="test">
         <h1>测试虚拟DOM</h1>
-        <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
+<!--        <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
         <div ms-text="ccc">ccc</div>
         <div ms-visible="toggle">visible</div>
-        <div ms-if="toggle">if</div>
+        <div ms-if="toggle">if</div>-->
         <div>222{{ddd|html}}333</div>
-        <a ms-href="{{aaa}}/{{bbb}}.html"><div ms-html="ddd">sdfdfdf</div></a>
+<!--        <a ms-href="{{aaa}}/{{bbb}}.html"><div ms-html="ddd">sdfdfdf</div></a>
         <div id="include1" ms-include-src="tmpl"></div>
-        <div id="include2" ms-include-src="tmpl" data-include-replace="true"></div>
+        <div id="include2" ms-include-src="tmpl" data-include-replace="true"></div>-->
+<ul><li ms-repeat="array"ms-repeat="array">{{el}}x{{$index}}</li></ul>
     </body>
 </html>

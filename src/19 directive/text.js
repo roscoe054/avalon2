@@ -15,7 +15,6 @@ bindingHandlers.text = bindingHandlers.html = function (data, vmodels) {
         data.signature = signature
         appendSignatures(elem, data, elem.nodeType !== 1)
     }
-   // console.log("data.type "+data.type)
     parseExprProxy(data.value, vmodels, data)
 }
 

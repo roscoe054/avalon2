@@ -9,6 +9,8 @@ function VElement(element, parentNode) {
     this.tasks = []
     this.props = {}
     this.parentNode = parentNode
+    this.innerHTML = "<ms ms-if=bbb>"
+    this.textContent = ""
     // this.dirty
     var fix = VElements[this.nodeName.toLowerCase()]
     if (typeof fix === "function") {
@@ -22,8 +24,6 @@ function VElement(element, parentNode) {
     } catch (e) {
         log(e)
     }
-
-
 }
 var VElements = {
     input: function (elem) {
