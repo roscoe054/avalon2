@@ -71,7 +71,7 @@ function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
     while (aaa.length) {
         var neo = aaa.shift()
         array.push(neo)
-        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") == 0) {
+        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") === 0) {
             if (!k) {
                 token = neo.nodeValue + ":end"
                 k = true
@@ -151,32 +151,30 @@ function getVAttributes(elem) {
     return attrs
 }
 //将真实DOM转换为虚拟DOM
-function VNode(element, deep) {
+function VNode(element) {
     var ret
     switch (element.nodeType) {
         case 11:
             ret = new VDocumentFragment()
-            if (deep) {
-                avalon.each(element.childNodes, function (index, node) {
-                    ret.appendChild(new VNode(node, true))//添加孩子
-                })
-            }
+
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new VNode(node))//添加孩子
+            })
             return ret
         case 1:
             ret = new VElement(element)
-            if (deep) {
-                var attributes = getAttributes ? getAttributes(element) : element.attributes
-                avalon.each(attributes, function (index, attr) {//添加属性
-                    if (attr.name !== "class") {
-                        ret.props[attr.name] = attr.value
-                    }
-                })
-                avalon.each(element.childNodes, function (index, node) {
-                    ret.appendChild(new VNode(node, true))
-                })
-                ret.className = element.className
-                ret.textContent = element.innerHTML
-            }
+            //只处理显示定义的属性
+            var attributes = getAttributes ? getAttributes(element) : element.attributes
+            avalon.each(attributes, function (index, attr) {//添加属性
+                if (attr.name !== "class") {
+                    ret.props[attr.name] = attr.value
+                }
+            })
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new VNode(node))
+            })
+            ret.className = element.className
+            ret.textContent = element.innerHTML
             return ret
         case 3:
             return new VText(element.nodeValue)
@@ -249,7 +247,7 @@ function cloneVNode(element) {//克降虚拟DOM
 function VNodes(nodes) {
     var ret = []
     avalon.each(nodes, function (i, node) {
-        ret.push(new VNode(node, false))
+        ret.push(new VNode(node))
     })
     return ret
 }
@@ -263,7 +261,13 @@ function addVnodeToData(elem, data) {
         var vid = getUid(elem)
         var vnode = VTree.queryVID(vid)
         if (!vnode) {
-            vnode = new VElement(elem, VTree)
+            vnode = new VNode(elem)
+            var vparent = VTree.queryVID(elem.parentNode.vid)
+            if (vparent) {
+                vparent.appendChild(vnode)
+            } else {
+                VTree.appendChild(vnode)
+            }
         }
         return data.vnode = vnode
     }

@@ -2207,7 +2207,7 @@ VElement.prototype = {
     },
     appendChild: function (node) {//node可以是元素节点,文档碎片或数组
         var nodes = node.nodeType === 11 ? node.childNodes : Array.isArray(node) ? node : [node]
-        for (var i = 0, node; node = nodes[i++]; ) {
+        for (var i = 0; node = nodes[i++]; ) {
             node.parentNode = this
             this.childNodes.push(node)
         }
@@ -2392,7 +2392,7 @@ function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
     while (aaa.length) {
         var neo = aaa.shift()
         array.push(neo)
-        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") == 0) {
+        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") === 0) {
             if (!k) {
                 token = neo.nodeValue + ":end"
                 k = true
@@ -2472,32 +2472,30 @@ function getVAttributes(elem) {
     return attrs
 }
 //将真实DOM转换为虚拟DOM
-function VNode(element, deep) {
+function VNode(element) {
     var ret
     switch (element.nodeType) {
         case 11:
             ret = new VDocumentFragment()
-            if (deep) {
-                avalon.each(element.childNodes, function (index, node) {
-                    ret.appendChild(new VNode(node, true))//添加孩子
-                })
-            }
+
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new VNode(node))//添加孩子
+            })
             return ret
         case 1:
             ret = new VElement(element)
-            if (deep) {
-                var attributes = getAttributes ? getAttributes(element) : element.attributes
-                avalon.each(attributes, function (index, attr) {//添加属性
-                    if (attr.name !== "class") {
-                        ret.props[attr.name] = attr.value
-                    }
-                })
-                avalon.each(element.childNodes, function (index, node) {
-                    ret.appendChild(new VNode(node, true))
-                })
-                ret.className = element.className
-                ret.textContent = element.innerHTML
-            }
+            //只处理显示定义的属性
+            var attributes = getAttributes ? getAttributes(element) : element.attributes
+            avalon.each(attributes, function (index, attr) {//添加属性
+                if (attr.name !== "class") {
+                    ret.props[attr.name] = attr.value
+                }
+            })
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new VNode(node))
+            })
+            ret.className = element.className
+            ret.textContent = element.innerHTML
             return ret
         case 3:
             return new VText(element.nodeValue)
@@ -2570,7 +2568,7 @@ function cloneVNode(element) {//克降虚拟DOM
 function VNodes(nodes) {
     var ret = []
     avalon.each(nodes, function (i, node) {
-        ret.push(new VNode(node, false))
+        ret.push(new VNode(node))
     })
     return ret
 }
@@ -2584,7 +2582,13 @@ function addVnodeToData(elem, data) {
         var vid = getUid(elem)
         var vnode = VTree.queryVID(vid)
         if (!vnode) {
-            vnode = new VElement(elem, VTree)
+            vnode = new VNode(elem)
+            var vparent = VTree.queryVID(elem.parentNode.vid)
+            if (vparent) {
+                vparent.appendChild(vnode)
+            } else {
+                VTree.appendChild(vnode)
+            }
         }
         return data.vnode = vnode
     }
@@ -4912,29 +4916,13 @@ bindingHandlers.repeat = function (data, vmodels) {
     elem.removeAttribute(data.name)
     data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
     data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
-//    var signature = generateID(type)
-//    var comment = data.element = DOC.createComment(signature + ":end")
-//    data.clone = DOC.createComment(signature)
-//    hyperspace.appendChild(comment)
-    if (type === "each" || type === "with") {
-        data.template = elem.innerHTML.trim()
-      //  avalon.clearHTML(elem).appendChild(comment)
-    } else {
-        data.template = elem.outerHTML.trim()
-      //  elem.parentNode.replaceChild(comment, elem)
-    }
+    
+    var innerHTML = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
     var signature = generateID("v-" + data.type)
         data.signature = signature
-        appendSignatures(elem, data, type === "each" || type === "with")
-
-//    if (type === "each" || type === "with") {
-//        data.template = elem.innerHTML.trim()
-//        avalon.clearHTML(elem).appendChild(comment)
-//    } else {
-//        data.template = elem.outerHTML.trim()
-//        elem.parentNode.replaceChild(comment, elem)
-//    }
-    data.template = new VNode(avalon.parseHTML(data.template), true)
+        appendSignatures(elem, data, type === "repeat" )
+    data.template = new VNode(avalon.parseHTML(innerHTML))
+    
     data.handler = bindingExecutors.repeat
     data.rollback = function () {
         var elem = data.element
@@ -4998,13 +4986,15 @@ bindingExecutors.repeat = function (method, pos, el) {
     if (!parent)
         return
   
-  
-    var vnode = addVnodeToData(parent, data)
+     var vnode = addVnodeToData(parent, data)
+    
+   
     
 //        var data = this, start, fragment
 //        var end = data.element
-//        var comments = getComments(data)
-//        var parent = end.parentNode
+
+       var comments = getSignatures(vnode, data.signature)
+
      var transation = new VDocumentFragment()
         switch (method) {
             case "add": //在pos位置后添加el数组（pos为插入位置,el为要插入的个数）
@@ -5015,10 +5005,9 @@ bindingExecutors.repeat = function (method, pos, el) {
                 for (var i = pos; i < n; i++) {
                     var proxy = array.$proxy[i]
                     proxy.$outer = data.$outer
-                    shimController2(data, transation, proxy, fragments, i)
+                    shimController2(data, transation, proxy, fragments)
                 }
-                console.log(transation)
-         //  parent.insertBefore(transation, comments[pos] || end)
+            vnode.replaceChild(transation, comments[pos])
 //                for (i = 0; fragment = fragments[i++]; ) {
 //                    scanNodeArray(fragment.nodes, fragment.vmodels)
 //                    fragment.nodes = fragment.vmodels = null
@@ -5128,13 +5117,13 @@ function shimController(data, transation, proxy, fragments) {
 function shimController2(data, transation, proxy, fragments, index) {
     var content = cloneVNode(data.template)//.cloneNode(true)
     var nodes = avalon.slice(content.childNodes)
-    if (!data.$with && index) {
+    if (!data.$with) {
         var comment = new VComment(data.signature)
         comment.parentNode = content
         content.childNodes.unshift(comment)
       //  content.insertBefore(data.clone.cloneNode(false), content.firstChild)
     }
-    console.log(content)
+
     transation.appendChild(content)
     var nv = [proxy].concat(data.vmodels)
     var fragment = {

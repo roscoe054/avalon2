@@ -92,7 +92,7 @@ VElement.prototype = {
     },
     appendChild: function (node) {//node可以是元素节点,文档碎片或数组
         var nodes = node.nodeType === 11 ? node.childNodes : Array.isArray(node) ? node : [node]
-        for (var i = 0, node; node = nodes[i++]; ) {
+        for (var i = 0; node = nodes[i++]; ) {
             node.parentNode = this
             this.childNodes.push(node)
         }
