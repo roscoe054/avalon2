@@ -925,11 +925,12 @@ var plugins = {
         closeTag = array[1]
         if (openTag === closeTag) {
             throw new SyntaxError("openTag!==closeTag")
-        } else if (array + "" === "<!--,-->") {
-            kernel.commentInterpolate = true
-        } else {
+        }else{
             var test = openTag + "test" + closeTag
             cinerator.innerHTML = test
+            if(cinerator.firstChild.nodeType === 8){
+                throw new SyntaxError("此定界符不合法")
+            }
             if (cinerator.innerHTML !== test && cinerator.innerHTML.indexOf("&lt;") > -1) {
                 throw new SyntaxError("此定界符不合法")
             }
@@ -3851,12 +3852,11 @@ function scanAttr(elem, vmodels, match) {
                             priority:  (priorityMap[type] || type.charCodeAt(0) * 10 )+ (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
-                            var token = getToken(value)
-                            avalon.mix(binding, token)
-                            binding.filters = binding.filters.replace(rhasHtml, function () {
-                                binding.type = "html"
-                                return ""
-                            })// jshint ignore:line
+                            var signature = generateID("v-" + type)
+                            var content = "<!--"+ signature + ":"+ value +"-->" +
+                            "<!--"+ signature + ":"+ value +":end-->"
+                            avalon(elem).innerHTML(content)
+                            continue
                         } else if (type === "duplex") {
                             var hasDuplex = name
                         } else if (name === "ms-if-loop") {
@@ -3968,29 +3968,85 @@ function scanNodeList(parent, vmodels) {
 //        node = nextNode
 //    }
 //}
+//ms-if --> <!--v-if-->
+//ms-if-loop --> <!--v-if-->
+//ms-include --> <!--v-include123123--><!--v-include123123:end-->
+//
+//{{expr}} --> <!--v-text123213:expr--><!--v-text123213:expr:end-->
+//{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
 function scanNodeArray(nodes, vmodels) {
-    for (var i = 0, node; node = nodes[i++]; ) {
-        scanNode(node, node.nodeType, vmodels)
-    }
-}
-function scanNode(node, nodeType, vmodels) {
-    if (nodeType === 1) {
-        if(node.isVirtual){
-            scanVTag(node, vmodels) 
-        }else{
-            scanTag(node, vmodels) //扫描元素节点
+    var bindings = []
+    var parent = nodes[0] ? nodes[0].parentNode : null
+    for (var i = 0, node; node = nodes[i]; i++) {
+        if (node.nodeType === 3) {
+            if (rexpr.test(node.nodeValue)) {
+                var tokens = scanExpr(node.nodeValue)
+                var generateSignatures = false
+                outerLoop:
+                        for (var k = 0, token; token = tokens[k++]; ) {
+                    if (token.expr) {
+                        generateSignatures = true
+                        break outerLoop
+                    }
+                }
+                if (generateSignatures) {
+                    var fragment = node.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
+                    for (k = 0; token = tokens[k++]; ) {
+                        if (token.expr) {
+                            var signature = generateID("v-" + token.type)
+                            token.signature = signature
+                            signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
+                            var start = node.isVirtual ? new VComment(signature) : DOC.createComment(signature)
+                            var end = node.isVirtual ? new VComment(signature + ":end") : DOC.createComment(signature + ":end")
+                            token.element = end
+                            bindings.push(token)
+                            fragment.appendChild(start)
+                            fragment.appendChild(end)
+                        } else {
+                            fragment.appendChild(node.isVirtual ? new VText(token.value) : DOC.createTextNode(token.value))
+                        }
+                    }
+                    parent.replaceChild(fragment, node)
+                }
+            }
+        } else if (node.nodeType === 8) {
+            var nodeValue = node.nodeValue
+            if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
+                var content = nodeValue.replace(rvtext, function (a) {
+                    signature = a
+                    return ""
+                })
+                token = getToken(content)
+                token.element = node
+                token.signature = signature
+                token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
+                bindings.push(token)
+            }
         }
-        if( node.msCallback){
-            node.msCallback()
-            node.msCallback = void 0
-       }
-    } else if (nodeType === 3 && rexpr.test(node.nodeValue)){
-        scanText(node, vmodels) //扫描文本节点
-    } else if (kernel.commentInterpolate && nodeType === 8 && !rexpr.test(node.nodeValue)) {
-        scanText(node, vmodels) //扫描注释节点
+    }
+    if (bindings.length) {
+        executeBindings(bindings, vmodels)
+    }
+
+    for (var i = 0, node; node = nodes[i++]; ) {
+        scanElement(node, node.nodeType, vmodels)
     }
 }
 
+function scanElement(node, nodeType, vmodels) {
+    if (nodeType === 1) {
+        if (node.isVirtual) {
+            scanVTag(node, vmodels)
+        } else {
+            scanTag(node, vmodels) //扫描元素节点
+        }
+        if (node.msCallback) {
+            node.msCallback()
+            node.msCallback = void 0
+        }
+    }
+}
+var rvtext = /^v-(w+)\d+\:/
 //实现一个能选择文本节点的选择器
 // tagName, vid@8
 function scanTag(elem, vmodels, node) {
@@ -4030,21 +4086,28 @@ var rhasHtml = /\|\s*html\s*/,
         rgt = /&gt;/g,
         rstringLiteral = /(['"])(\\\1|.)+?\1/g
 function getToken(value, pos) {
+     var type = "text"
     if (value.indexOf("|") > 0) {
         var scapegoat = value.replace(rstringLiteral, function (_) {
             return Array(_.length + 1).join("1")// jshint ignore:line
         })
         var index = scapegoat.replace(r11a, "\u1122\u3344").indexOf("|") //干掉所有短路或
         if (index > -1) {
+            var filters = value.slice(index).replace(rhasHtml, function () {
+                type = "html"
+                return ""
+            })
             return {
-                filters: value.slice(index),
+                type: type,
+                filters: filters,
                 value: value.slice(0, index),
-                pos: pos || 0,
+                pos: pos || 0, //???
                 expr: true
             }
         }
     }
     return {
+        type: type,
         value: value,
         filters: "",
         expr: true
@@ -4090,36 +4153,6 @@ function scanExpr(str) {
     return tokens
 }
 
-function scanText(textNode, vmodels) {
-    var bindings = []
-    if (textNode.nodeType === 8) {
-        var token = getToken(textNode.nodeValue)
-        var tokens = [token]
-    } else {
-        tokens = scanExpr(textNode.nodeValue)
-    }
-    var parent = textNode.parentNode
-    if (tokens.length) {
-        var fragment = parent.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
-        for (var i = 0; token = tokens[i++]; ) {
-            var node = parent.isVirtual ? new VText(token.value) : DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
-            if (token.expr) {
-                token.type = "text"
-                token.element = node
-                token.filters = token.filters.replace(rhasHtml, function () {
-                    token.type = "html"
-                    return ""
-                })// jshint ignore:line
-                bindings.push(token) //收集带有插值表达式的文本
-            }
-            fragment.appendChild(node)
-        }
-        parent.replaceChild(fragment, textNode)
-        if (bindings.length) {
-            executeBindings(bindings, vmodels)
-        }
-    }
-}
 
 var bools = ["autofocus,autoplay,async,allowTransparency,checked,controls",
     "declare,disabled,defer,defaultChecked,defaultSelected",
@@ -4694,6 +4727,8 @@ bindingExecutors.html = function (val, elem, data) {
 }
 bindingHandlers["if"] =
     bindingHandlers.data =
+    bindingHandlers.text =
+    bindingHandlers.html =
     function(data, vmodels) {
         parseExprProxy(data.value, vmodels, data)
 }
@@ -5006,7 +5041,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                 }
                 vnode.replaceChild(transation, comments[pos])
                 for (i = 0; fragment = fragments[i++]; ) {
-                    console.log(fragment.nodes)
+                
                     scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                 }
@@ -5227,33 +5262,12 @@ function proxyRecycler(proxy, proxyPool) {
  **********************************************************************/
 //ms-skip绑定已经在scanTag 方法中实现
 
-bindingHandlers.text = bindingHandlers.html = function (data, vmodels) {
-    var bigNumber = Number(data.param)
-    var elem = data.element
-    var isAppend = false
-    var maybe = "v-" + data.type + bigNumber
-  
-    if (elem.nodeType === 1 && bigNumber > 1000) {
-        var comments = getSignatures(elem, maybe)
-        isAppend = comments.length
-    }
-   
-    if (!isAppend) {
-        var signature = bigNumber > 1000 ? maybe : generateID("v-" + data.type)
-        data.signature = signature
-        appendSignatures(elem, data, elem.nodeType !== 1)
-    }
-    parseExprProxy(data.value, vmodels, data)
-}
-
 bindingExecutors.text = function (val, elem, data) {
     var parent = elem.nodeType !== 1 ? elem.parentNode : elem
-  //  console.log(parent)
     if (!parent)
         return
     val = val == null ? "" : val //不在页面上显示undefined null
     var vnode = addVnodeToData(parent, data)
- //   console.log(val, parent)
     updateVTree.text(vnode, parent, val, data)
     vnode.addTask("text", parent)
 
