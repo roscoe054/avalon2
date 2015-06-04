@@ -34,7 +34,9 @@ function scanNodeArray(nodes, vmodels) {
                     var fragment = node.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
                     for (k = 0; token = token[k++]; ) {
                         if (token.type === "text" || token.type === "html") {
-                            var signature = generateID("v-" + token.type) + ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
+                            var signature = generateID("v-" + token.type)
+                            token.signature = signature
+                            signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
                             var node = node.isVirtual ? new VComment(signature) : DOC.createComment(signature)
                             token.elements = node
                             bindings.push(token)
@@ -47,8 +49,20 @@ function scanNodeArray(nodes, vmodels) {
                     node.parentNode.removeChild(fragment, node)
                 }
             }
-        } else {
+        } else if (node.nodeType === 8) {
+            var nodeValue = node.nodeValue
+            if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
 
+                var content = nodeValue.replace(rvtext, function (a) {
+                    signature = a
+                    return ""
+                })
+                token = getToken(content)
+                token.elements = node
+                token.signature = signature
+                token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
+                bindings.push(token)
+            }
         }
     }
     if (bindings.length) {
@@ -73,6 +87,6 @@ function scanElement(node, nodeType, vmodels) {
         }
     }
 }
-
+var rvtext = /^v-(w+)\d+\:/
 //实现一个能选择文本节点的选择器
 // tagName, vid@8

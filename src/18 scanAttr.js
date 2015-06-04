@@ -39,12 +39,11 @@ function scanAttr(elem, vmodels, match) {
                             priority:  (priorityMap[type] || type.charCodeAt(0) * 10 )+ (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
-                            var token = getToken(value)
-                            avalon.mix(binding, token)
-                            binding.filters = binding.filters.replace(rhasHtml, function () {
-                                binding.type = "html"
-                                return ""
-                            })// jshint ignore:line
+                            var signature = generateID("v-" + type)
+                            var content = "<!--"+ signature + ":"+ value +"-->" +
+                            "<!--"+ signature + ":"+ value +":end-->"
+                            avalon(elem).innerHTML(content)
+                            continue
                         } else if (type === "duplex") {
                             var hasDuplex = name
                         } else if (name === "ms-if-loop") {
