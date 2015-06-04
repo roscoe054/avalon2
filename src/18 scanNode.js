@@ -19,46 +19,48 @@ function scanNodeList(parent, vmodels) {
 //{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
 function scanNodeArray(nodes, vmodels) {
     var bindings = []
+    var parent = nodes[0] ? nodes[0].parentNode : null
     for (var i = 0, node; node = nodes[i]; i++) {
         if (node.nodeType === 3) {
             if (rexpr.test(node.nodeValue)) {
-                var token = scanExpr(node.nodeValue)
+                var tokens = scanExpr(node.nodeValue)
                 var generateSignatures = false
-                for (var k = 0, token; token = token[k++]; ) {
-                    if (token.type === "text" || token.type === "html") {
+                outerLoop:
+                        for (var k = 0, token; token = tokens[k++]; ) {
+                    if (token.expr) {
                         generateSignatures = true
-                        break
+                        break outerLoop
                     }
                 }
                 if (generateSignatures) {
                     var fragment = node.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
-                    for (k = 0; token = token[k++]; ) {
-                        if (token.type === "text" || token.type === "html") {
+                    for (k = 0; token = tokens[k++]; ) {
+                        if (token.expr) {
                             var signature = generateID("v-" + token.type)
                             token.signature = signature
                             signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
-                            var node = node.isVirtual ? new VComment(signature) : DOC.createComment(signature)
-                            token.elements = node
+                            var start = node.isVirtual ? new VComment(signature) : DOC.createComment(signature)
+                            var end = node.isVirtual ? new VComment(signature + ":end") : DOC.createComment(signature + ":end")
+                            token.element = end
                             bindings.push(token)
-                            fragment.appendChild(node)
-                            fragment.appendChild(node.isVirtual ? new VComment(signature + ":end") : DOC.createComment(signature + ":end"))
+                            fragment.appendChild(start)
+                            fragment.appendChild(end)
                         } else {
                             fragment.appendChild(node.isVirtual ? new VText(token.value) : DOC.createTextNode(token.value))
                         }
                     }
-                    node.parentNode.removeChild(fragment, node)
+                    parent.replaceChild(fragment, node)
                 }
             }
         } else if (node.nodeType === 8) {
             var nodeValue = node.nodeValue
             if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
-
                 var content = nodeValue.replace(rvtext, function (a) {
                     signature = a
                     return ""
                 })
                 token = getToken(content)
-                token.elements = node
+                token.element = node
                 token.signature = signature
                 token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
                 bindings.push(token)

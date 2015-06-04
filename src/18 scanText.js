@@ -4,13 +4,13 @@ var rhasHtml = /\|\s*html\s*/,
         rgt = /&gt;/g,
         rstringLiteral = /(['"])(\\\1|.)+?\1/g
 function getToken(value, pos) {
+     var type = "text"
     if (value.indexOf("|") > 0) {
         var scapegoat = value.replace(rstringLiteral, function (_) {
             return Array(_.length + 1).join("1")// jshint ignore:line
         })
         var index = scapegoat.replace(r11a, "\u1122\u3344").indexOf("|") //干掉所有短路或
         if (index > -1) {
-            var type = "text"
             var filters = value.slice(index).replace(rhasHtml, function () {
                 type = "html"
                 return ""
@@ -25,6 +25,7 @@ function getToken(value, pos) {
         }
     }
     return {
+        type: type,
         value: value,
         filters: "",
         expr: true
