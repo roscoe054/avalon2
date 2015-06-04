@@ -4303,9 +4303,6 @@ bindingExecutors.repeat = function (method, pos, el) {
         return
   
      var vnode = addVnodeToData(parent, data)
-    
-   
-    
 //        var data = this, start, fragment
 //        var end = data.element
 
@@ -4323,11 +4320,12 @@ bindingExecutors.repeat = function (method, pos, el) {
                     proxy.$outer = data.$outer
                     shimController2(data, transation, proxy, fragments)
                 }
-            vnode.replaceChild(transation, comments[pos])
-//                for (i = 0; fragment = fragments[i++]; ) {
-//                    scanNodeArray(fragment.nodes, fragment.vmodels)
-//                    fragment.nodes = fragment.vmodels = null
-//                }
+                vnode.replaceChild(transation, comments[pos])
+                for (i = 0; fragment = fragments[i++]; ) {
+                    console.log(fragment.nodes)
+                    scanNodeArray(fragment.nodes, fragment.vmodels)
+                    fragment.nodes = fragment.vmodels = null
+                }
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
                 sweepNodes(comments[pos], comments[pos + el] || end)

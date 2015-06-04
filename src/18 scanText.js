@@ -10,10 +10,16 @@ function getToken(value, pos) {
         })
         var index = scapegoat.replace(r11a, "\u1122\u3344").indexOf("|") //干掉所有短路或
         if (index > -1) {
+            var type = "text"
+            var filters = value.slice(index).replace(rhasHtml, function () {
+                type = "html"
+                return ""
+            })
             return {
-                filters: value.slice(index),
+                type: type,
+                filters: filters,
                 value: value.slice(0, index),
-                pos: pos || 0,
+                pos: pos || 0,//???
                 expr: true
             }
         }
@@ -78,12 +84,12 @@ function scanText(textNode, vmodels) {
         for (var i = 0; token = tokens[i++]; ) {
             var node = parent.isVirtual ? new VText(token.value) : DOC.createTextNode(token.value) //将文本转换为文本节点，并替换原来的文本节点
             if (token.expr) {
-                token.type = "text"
+              //  token.type = "text"
                 token.element = node
-                token.filters = token.filters.replace(rhasHtml, function () {
-                    token.type = "html"
-                    return ""
-                })// jshint ignore:line
+//                token.filters = token.filters.replace(rhasHtml, function () {
+//                    token.type = "html"
+//                    return ""
+//                })// jshint ignore:line
                 bindings.push(token) //收集带有插值表达式的文本
             }
             fragment.appendChild(node)

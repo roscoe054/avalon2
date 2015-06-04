@@ -11,26 +11,66 @@ function scanNodeList(parent, vmodels) {
 //        node = nextNode
 //    }
 //}
+//ms-if --> <!--v-if-->
+//ms-if-loop --> <!--v-if-->
+//ms-include --> <!--v-include123123--><!--v-include123123:end-->
+//
+//{{expr}} --> <!--v-text123213:expr--><!--v-text123213:expr:end-->
+//{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
 function scanNodeArray(nodes, vmodels) {
+    var bindings = []
+    for (var i = 0, node; node = nodes[i]; i++) {
+        if (node.nodeType === 3) {
+            if (rexpr.test(node.nodeValue)) {
+                var token = scanExpr(node.nodeValue)
+                var generateSignatures = false
+                for (var k = 0, token; token = token[k++]; ) {
+                    if (token.type === "text" || token.type === "html") {
+                        generateSignatures = true
+                        break
+                    }
+                }
+                if (generateSignatures) {
+                    var fragment = node.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
+                    for (k = 0; token = token[k++]; ) {
+                        if (token.type === "text" || token.type === "html") {
+                            var signature = generateID("v-" + token.type) + ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
+                            var node = node.isVirtual ? new VComment(signature) : DOC.createComment(signature)
+                            token.elements = node
+                            bindings.push(token)
+                            fragment.appendChild(node)
+                            fragment.appendChild(node.isVirtual ? new VComment(signature + ":end") : DOC.createComment(signature + ":end"))
+                        } else {
+                            fragment.appendChild(node.isVirtual ? new VText(token.value) : DOC.createTextNode(token.value))
+                        }
+                    }
+                    node.parentNode.removeChild(fragment, node)
+                }
+            }
+        } else {
+
+        }
+    }
+    if (bindings.length) {
+        executeBindings(bindings, vmodels)
+    }
+
     for (var i = 0, node; node = nodes[i++]; ) {
-        scanNode(node, node.nodeType, vmodels)
+        scanElement(node, node.nodeType, vmodels)
     }
 }
-function scanNode(node, nodeType, vmodels) {
+
+function scanElement(node, nodeType, vmodels) {
     if (nodeType === 1) {
-        if(node.isVirtual){
-            scanVTag(node, vmodels) 
-        }else{
+        if (node.isVirtual) {
+            scanVTag(node, vmodels)
+        } else {
             scanTag(node, vmodels) //扫描元素节点
         }
-        if( node.msCallback){
+        if (node.msCallback) {
             node.msCallback()
             node.msCallback = void 0
-       }
-    } else if (nodeType === 3 && rexpr.test(node.nodeValue)){
-        scanText(node, vmodels) //扫描文本节点
-    } else if (kernel.commentInterpolate && nodeType === 8 && !rexpr.test(node.nodeValue)) {
-        scanText(node, vmodels) //扫描注释节点
+        }
     }
 }
 
