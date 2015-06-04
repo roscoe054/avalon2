@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.shim.js(无加载器版本) 1.44 built in 2015.6.4
+ avalon.shim.js(无加载器版本) 1.44 built in 2015.6.5
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -2014,106 +2014,6 @@ function shouldDispose(el) {
     }
 }
 
-
-//处理路标系统的三个重要方法
-function getSignatures(elem, signature) {
-    var comments = []
-    for (var i = 0, el; el = elem.childNodes[i++]; ) {
-        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
-            comments.push(el)
-        }
-    }
-    return comments
-}
-
-function getSignature(array, signature) {
-    var collect = false, ret = []
-    for (var i = 0, el; el = array[i++]; ) {
-        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
-            collect = !collect
-            continue
-        }
-        if (collect) {
-            ret.push(el)
-        }
-    }
-    return ret
-}
-
-function appendSignatures(elem, data, replace) {
-    //文本绑定与html绑定当elem为文本节点
-    //或include绑定，当使用了data-duplex-replace辅助指令时
-    //其左右将插入两个注释节点，自身被替换
-    var parent = elem.parentNode
-    if (parent.queryVID) {
-        start = new VComment(data.signature)
-        end = new VComment(data.signature + ":end")
-    } else {
-        var start = DOC.createComment(data.signature)
-        var end = DOC.createComment(data.signature + ":end")
-    }
-
-    if (replace) {
-        parent.insertBefore(start, elem)
-        parent.replaceChild(end, elem)
-        data.element = end
-    } else {
-        avalon.clearHTML(elem)
-        elem.appendChild(start)
-        elem.appendChild(end)
-    }
-    return [start, end]
-}
-
-function fillSignatures(elem, data, fill, callback) {
-    var comments = getSignatures(elem, data.signature)
-    callback = callback || function () {
-    }
-    //移除两个注释节点间的节点
-    //console.log(comments)
-    if (!comments.length) {
-        log(data.signature + "!找不到元素")
-        return
-    }
-    var index = indexElement(comments[0], elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
-    var removed = []
-    while (true) {
-        var node = elem.childNodes[index + 1]
-        if (node && node !== comments[1]) {
-            //在这里进行比较,如果不用替换
-            removed.push(node)
-            elem.removeChild(node)
-            callback(node, comments[0], comments[1])
-        } else {
-            break
-        }
-    }
-  
-    var fills = fill.childNodes || []
-    for (var k = 0; k < removed.length; k++) {
-        var removeEl = removed[k]
-        var fillEl = fills[k]
-        if (removeEl && fillEl && removeEl.nodeType === fillEl.nodeType) {
-            if (removeEl.nodeType === 1) {
-                if (removeEl.nodeName === fillEl.nodeName && removeEl.innerHTML === fillEl.innerHTML) {
-                    fills[k] = removeEl
-                }
-            }
-        }
-    }
-    elem.insertBefore(fill, comments[1])
-}
-
-function indexElement(target, array) {
-    for (var i = 0, el; el = array[i]; i++) {
-        if (el === target)
-            return i
-    }
-    return -1
-}
-
-//include,duplex,
-//text,html,visible,css,attr,data,if,src,href
 function VElement(element, parentNode) {
     this.nodeType = 1
 
@@ -2320,35 +2220,116 @@ String("appendChild, removeChild,insertBefore,replaceChild").replace(/\w+/g, fun
 
 
 
+
+//处理路标系统的三个重要方法
+function getSignatures(elem, signature) {
+    var comments = []
+    for (var i = 0, el; el = elem.childNodes[i++]; ) {
+        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
+            comments.push(el)
+        }
+    }
+    return comments
+}
+
+function getSignature(array, signature) {
+    var collect = false, ret = []
+    for (var i = 0, el; el = array[i++]; ) {
+        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
+            collect = !collect
+            continue
+        }
+        if (collect) {
+            ret.push(el)
+        }
+    }
+    return ret
+}
+
+function appendSignatures(elem, data, replace) {
+    //文本绑定与html绑定当elem为文本节点
+    //或include绑定，当使用了data-duplex-replace辅助指令时
+    //其左右将插入两个注释节点，自身被替换
+    var parent = elem.parentNode
+    if (parent.queryVID) {
+        start = new VComment(data.signature)
+        end = new VComment(data.signature + ":end")
+    } else {
+        var start = DOC.createComment(data.signature)
+        var end = DOC.createComment(data.signature + ":end")
+    }
+   
+    if (replace) {
+        parent.insertBefore(start, elem)
+        parent.replaceChild(end, elem)
+        data.element = end
+    } else {
+        avalon.clearHTML(elem)
+        elem.appendChild(start)
+        elem.appendChild(end)
+    }
+    return [start, end]
+}
+
+function fillSignatures(elem, data, fill, callback) {
+    var comments = getSignatures(elem, data.signature)
+    callback = callback || function () {
+    }
+    //移除两个注释节点间的节点
+    //console.log(comments)
+    if (!comments.length) {
+        log(data.signature + "!找不到元素")
+        return
+    }
+    var index = indexElement(comments[0], elem.childNodes) //avalon.slice(elem.childNodes).indexOf(comments[0])
+    while (true) {
+        var node = elem.childNodes[index + 1]
+        if (node && node !== comments[1]) {
+            elem.removeChild(node)
+            callback(node, comments[0], comments[1])
+        } else {
+            break
+        }
+    }
+
+    elem.insertBefore(fill, comments[1])
+}
+
+function indexElement(target, array) {
+    for (var i = 0, el; el = array[i]; i++) {
+        if (el === target)
+            return i
+    }
+    return -1
+}
 /* 
  更新到VTree
  */
 var updateVTree = {
     text: function (vnode, elem, value, data) {
-        if (!vnode.childNodes.length) {
-            var array = new VNodes(elem.childNodes)
-            vnode.appendChild(array)
-        } else {
-            array = new VNodes(elem.childNodes)
-            array = collectTextNode(array, vnode.childNodes)
-            vnode.childNodes.length = 0
-            vnode.appendChild(array)
-        }
+//        if (!vnode.childNodes.length) {
+//            var array = new VNodes(elem.childNodes)
+//            vnode.appendChild(array)
+//        } else {
+//            array = new VNodes(elem.childNodes)
+//            array = collectTextNode(array, vnode.childNodes)
+//            vnode.childNodes.length = 0
+//            vnode.appendChild(array)
+//        }
         var fill = new VDocumentFragment()
         fill.appendChild(new VText(value))
         fillSignatures(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
-
-        if (!vnode.childNodes.length) {
-            var array = new VNodes(elem.childNodes)
-            vnode.appendChild(array)
-        } else {
-            array = new VNodes(elem.childNodes)
-            array = collectHTMLNode(array, vnode.childNodes)
-            vnode.childNodes.length = 0
-            vnode.appendChild(array)
-        }
+//        if (!vnode.childNodes.length) {
+//            var array = new VNodes(elem.childNodes)
+//            vnode.appendChild(array)
+//        } else {
+//            array = new VNodes(elem.childNodes)
+//            array = collectHTMLNode(array, vnode.childNodes)
+//            vnode.childNodes.length = 0
+//            vnode.appendChild(array)
+//        }
         //转换成文档碎片
         var fill = new VNode(val, true)
         fillSignatures(vnode, data, fill)
@@ -2637,40 +2618,42 @@ var updateDTree = {
         delete vnode.ifValue
         delete vnode.ifData
     },
-    text: function (vnode, elem) {
-        var rnodes = elem.childNodes
+    text: function (vnode, parent) {
+        var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
-        var modify = false
+        var modify = false, token
         for (var i = 0, node; node = vnodes[i]; i++) {
             var virtual = vnodes[i]
             var real = rnodes[i]
-            if (virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-text") === 0) {
-                modify = !modify
+            if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-text") === 0) {
+                token =  virtual.nodeValue +":end"
+                modify = true
+                continue
+             } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
+                modify = false
                 continue
             }
             if (modify) {
                 if (real.nodeType !== 3) {
-                    real.parentNode.insertBefore(DOC.createTextNode(virtual.nodeValue), real)
+                    parent.insertBefore(DOC.createTextNode(virtual.nodeValue), real)
                 } else {
                     real.nodeValue = virtual.nodeValue
                 }
             }
         }
     },
-    html: function (vnode, elem) {
-        var rnodes = elem.childNodes
+    html: function (vnode, parent) {
         var vnodes = vnode.childNodes
+        var rnodes = parent.childNodes
         var modify = false, token
         for (var i = 0, node; node = vnodes[i]; i++) {
             var virtual = vnodes[i]
-            var real = rnodes[i], parent = real.parentNode
-            if (virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
-                if (!modify) {
-                    token = virtual.nodeValue + ":end"
-                    modify = true
-                } else {
-                    modify = virtual.nodeValue.indexOf(token) === 0
-                }
+            var real = rnodes[i]
+            if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
+                token = virtual.nodeValue + ":end"
+                modify = true
+            } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
+                modify = false
             }
             if (modify) {
                 if (virtual.nodeType !== real.nodeType) {
@@ -2696,6 +2679,43 @@ var updateDTree = {
                             if (real.nodeValue !== virtual.nodeValue) {
                                 real.nodeValue = virtual.nodeValue
                             }
+                    }
+                }
+            }
+        }
+    },
+    repeat: function (vnode, elem) {
+        var rnodes = elem.childNodes
+        var vnodes = vnode.childNodes
+        var modify = false, token
+        console.log("处理repeat")
+
+        for (var i = 0, node; node = vnodes[i]; i++) {
+            var virtual = vnodes[i]
+            var real = rnodes[i]//, parent = real.parentNode
+            if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-repeat") === 0) {
+                token = virtual.nodeValue + ":end"
+                console.log("开始repeat循环 " + token)
+                modify = true
+                continue
+            } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
+                modify = false
+                console.log("结束repeat循环 " + virtual.nodeValue + " " + i)
+                continue
+            }
+            if (modify) {
+                console.log(i, real, virtual)
+                if (virtual.nodeType !== real.nodeType) {
+                    elem.insertBefore(new DNode(virtual), real)
+                } else {
+                    if (virtual.nodeType == real.nodeType) {
+                        if (virtual.nodeType === 8) {
+                            if (real.nodeValue === token) {
+                                elem.insertBefore(new DNode(virtual), real)
+                            } else {
+                                real.nodeValue = virtual.nodeValue
+                            }
+                        }
                     }
                 }
             }
@@ -5045,6 +5065,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                     scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                 }
+                vnode.addTask("repeat")
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
                 sweepNodes(comments[pos], comments[pos + el] || end)

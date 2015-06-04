@@ -40,40 +40,42 @@ var updateDTree = {
         delete vnode.ifValue
         delete vnode.ifData
     },
-    text: function (vnode, elem) {
-        var rnodes = elem.childNodes
+    text: function (vnode, parent) {
+        var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
-        var modify = false
+        var modify = false, token
         for (var i = 0, node; node = vnodes[i]; i++) {
             var virtual = vnodes[i]
             var real = rnodes[i]
-            if (virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-text") === 0) {
-                modify = !modify
+            if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-text") === 0) {
+                token =  virtual.nodeValue +":end"
+                modify = true
+                continue
+             } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
+                modify = false
                 continue
             }
             if (modify) {
                 if (real.nodeType !== 3) {
-                    real.parentNode.insertBefore(DOC.createTextNode(virtual.nodeValue), real)
+                    parent.insertBefore(DOC.createTextNode(virtual.nodeValue), real)
                 } else {
                     real.nodeValue = virtual.nodeValue
                 }
             }
         }
     },
-    html: function (vnode, elem) {
-        var rnodes = elem.childNodes
+    html: function (vnode, parent) {
         var vnodes = vnode.childNodes
+        var rnodes = parent.childNodes
         var modify = false, token
         for (var i = 0, node; node = vnodes[i]; i++) {
             var virtual = vnodes[i]
-            var real = rnodes[i], parent = real.parentNode
-            if (virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
-                if (!modify) {
-                    token = virtual.nodeValue + ":end"
-                    modify = true
-                } else {
-                    modify = virtual.nodeValue.indexOf(token) === 0
-                }
+            var real = rnodes[i]
+            if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
+                token = virtual.nodeValue + ":end"
+                modify = true
+            } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
+                modify = false
             }
             if (modify) {
                 if (virtual.nodeType !== real.nodeType) {
@@ -99,6 +101,43 @@ var updateDTree = {
                             if (real.nodeValue !== virtual.nodeValue) {
                                 real.nodeValue = virtual.nodeValue
                             }
+                    }
+                }
+            }
+        }
+    },
+    repeat: function (vnode, elem) {
+        var rnodes = elem.childNodes
+        var vnodes = vnode.childNodes
+        var modify = false, token
+        console.log("处理repeat")
+
+        for (var i = 0, node; node = vnodes[i]; i++) {
+            var virtual = vnodes[i]
+            var real = rnodes[i]//, parent = real.parentNode
+            if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-repeat") === 0) {
+                token = virtual.nodeValue + ":end"
+                console.log("开始repeat循环 " + token)
+                modify = true
+                continue
+            } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
+                modify = false
+                console.log("结束repeat循环 " + virtual.nodeValue + " " + i)
+                continue
+            }
+            if (modify) {
+                console.log(i, real, virtual)
+                if (virtual.nodeType !== real.nodeType) {
+                    elem.insertBefore(new DNode(virtual), real)
+                } else {
+                    if (virtual.nodeType == real.nodeType) {
+                        if (virtual.nodeType === 8) {
+                            if (real.nodeValue === token) {
+                                elem.insertBefore(new DNode(virtual), real)
+                            } else {
+                                real.nodeValue = virtual.nodeValue
+                            }
+                        }
                     }
                 }
             }
