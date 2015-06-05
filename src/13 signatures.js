@@ -30,7 +30,7 @@ function traverseNodeBetweenSignature(array, signature, callbacks) {
     for (var i = 0, el; el = array[i];i++ ) {
         if (!collect && el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
             comments.push(el)
-            token = el.nodeValue
+            token = callbacks.token = el.nodeValue+":end"
             collect = true
             callbacks.begin && callbacks.begin(el, i)
             continue

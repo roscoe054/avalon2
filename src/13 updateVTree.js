@@ -8,6 +8,9 @@ var updateVTree = {
         fillSignatures(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
+//        traverseNodeBetweenSignature(vnode.childNodes, "v-html",{
+//            begin:function(){}
+//        })
 //        if (!vnode.childNodes.length) {
 //            var array = new VNodes(elem.childNodes)
 //            vnode.appendChild(array)

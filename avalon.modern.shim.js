@@ -1865,6 +1865,32 @@ function getSignature(array, signature) {
     return ret
 }
 
+function traverseNodeBetweenSignature(array, signature, callbacks) {
+    var collect = false, comments = [], content = [], token
+    callbacks = callbacks || {}
+    for (var i = 0, el; el = array[i];i++ ) {
+        if (!collect && el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
+            comments.push(el)
+            token = callbacks.token = el.nodeValue+":end"
+            collect = true
+            callbacks.begin && callbacks.begin(el, i)
+            continue
+        } else if (collect && el.nodeType === 8 && el.nodeValue === token) {
+            comments.push(el)
+            collect = false
+            callbacks.end && callbacks.end(el, i)
+            continue
+        }
+        if (collect) {
+            content.push(el)
+            callbacks.step && callbacks.step(el, i)
+        }
+    }
+    return {
+       comments: comments,
+       content:content
+    }
+}
 function appendSignatures(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时
@@ -1926,20 +1952,14 @@ function indexElement(target, array) {
  */
 var updateVTree = {
     text: function (vnode, elem, value, data) {
-//        if (!vnode.childNodes.length) {
-//            var array = new VNodes(elem.childNodes)
-//            vnode.appendChild(array)
-//        } else {
-//            array = new VNodes(elem.childNodes)
-//            array = collectTextNode(array, vnode.childNodes)
-//            vnode.childNodes.length = 0
-//            vnode.appendChild(array)
-//        }
         var fill = new VDocumentFragment()
         fill.appendChild(new VText(value))
         fillSignatures(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
+//        traverseNodeBetweenSignature(vnode.childNodes, "v-html",{
+//            begin:function(){}
+//        })
 //        if (!vnode.childNodes.length) {
 //            var array = new VNodes(elem.childNodes)
 //            vnode.appendChild(array)
@@ -1960,29 +1980,7 @@ var updateVTree = {
 //data 直接实现在bindingExecutors.data 
 }
 
-//收集两个注释节点间的文本节点
-function collectTextNode(aaa, bbb) {//aaa为新的， bbb为旧的
-    var collect = false
-    var array = []
-    while (aaa.length) {
-        var neo = aaa.shift()
-        array.push(neo)
-        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-text") === 0) {
-            collect = !collect
-            if (collect) {
-                var arr = getSignature(bbb, neo.nodeValue)
-                if (arr.length) {
-                    array = array.concat(arr)
-                }
-            }
-        } else {
-            if (collect) {
-                array.pop()
-            }
-        }
-    }
-    return array
-}
+
 
 function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
     var k = false
@@ -2240,53 +2238,36 @@ var updateDTree = {
     text: function (vnode, parent) {
         var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
-        var modify = false, token
-        for (var i = 0, node; node = vnodes[i]; i++) {
-            var virtual = vnodes[i]
-            var real = rnodes[i]
-            if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-text") === 0) {
-                token = virtual.nodeValue + ":end"
-                modify = true
-                continue
-            } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
-                modify = false
-                continue
-            }
-            if (modify) {
+        traverseNodeBetweenSignature(vnodes, "v-text", {
+            step: function (virtual, i) {
+                var real = rnodes[i]
                 if (real.nodeType !== 3) {
                     parent.insertBefore(DOC.createTextNode(virtual.nodeValue), real)
                 } else {
                     real.nodeValue = virtual.nodeValue
                 }
             }
-        }
+        })
+
     },
     html: function (vnode, parent) {
-        var vnodes = vnode.childNodes
         var rnodes = parent.childNodes
-        var modify = false, token
-        for (var i = 0, node; node = vnodes[i]; i++) {
-            var virtual = vnodes[i]
-            var real = rnodes[i]
-            if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
-                token = virtual.nodeValue + ":end"
-                modify = true
-                continue
-            } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
-                modify = false
+        var vnodes = vnode.childNodes
+        traverseNodeBetweenSignature(vnodes, "v-html", {
+            end: function (virtual, i) {
+                var real = rnodes[i]
+               try{
                 //<span>11</span><strong>222</strong><span>333</span> --> <b>000</b>
-                while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+                while (real && (real.nodeType !== 8 || real.nodeValue !== this.token)) {
                     parent.removeChild(real)
                     real = rnodes[i]
                 }
-                continue
-            }
-            if (modify) {
+            }catch(e){}
+            },
+            step: function (virtual, i) {
+                var real = rnodes[i]
                 if (virtual.nodeType !== real.nodeType) {
                     parent.insertBefore(new DNode(virtual), real)
-                    if (real && real.nodeValue !== token) {
-                        real.parentNode.removeChild(real)
-                    }
                 } else {
                     switch (virtual.nodeType) {
                         case 1:
@@ -2297,7 +2278,6 @@ var updateDTree = {
                                 parent.insertBefore(new DNode(virtual), real)//input[type=text] !== input[type=password]
                                 parent.removeChild(real)
                             } else if (real.vid !== virtual.vid) {
-                                console.log("111")
                                 parent.insertBefore(new DNode(virtual), real)
                                 parent.removeChild(real)
                             }
@@ -2309,35 +2289,26 @@ var updateDTree = {
                     }
                 }
             }
-        }
+        })
     },
     repeat: function (vnode, elem) {
         var rnodes = elem.childNodes
         var vnodes = vnode.childNodes
-        var modify = false, token
-        console.log("处理repeat")
-
-        for (var i = 0, node; node = vnodes[i]; i++) {
-            var virtual = vnodes[i]
-            var real = rnodes[i]//, parent = real.parentNode
-            if (!modify && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-repeat") === 0) {
-                token = virtual.nodeValue + ":end"
-                console.log("开始repeat循环 " + token)
-                modify = true
-                continue
-            } else if (modify && virtual.nodeType === 8 && virtual.nodeValue === token) {
-                modify = false
-                console.log("结束repeat循环 " + virtual.nodeValue + " " + i)
-                continue
-            }
-            if (modify) {
-                console.log(i, real, virtual)
+        traverseNodeBetweenSignature(vnodes, "v-repeat", {
+            begin: function (a, b) {
+                console.log("开始repeat循环 " + this.token)
+            },
+            end: function (virtual, i) {
+                 console.log("结束repeat循环 " + this.token)
+            },
+            step: function (virtual, i) {
+                var real = rnodes[i]
                 if (virtual.nodeType !== real.nodeType) {
                     elem.insertBefore(new DNode(virtual), real)
                 } else {
                     if (virtual.nodeType == real.nodeType) {
                         if (virtual.nodeType === 8) {
-                            if (real.nodeValue === token) {
+                            if (real.nodeValue === this.token) {
                                 elem.insertBefore(new DNode(virtual), real)
                             } else {
                                 real.nodeValue = virtual.nodeValue
@@ -2346,7 +2317,7 @@ var updateDTree = {
                     }
                 }
             }
-        }
+        })
     },
     css: function (vnode, elem) {
         for (var i in vnode.style) {
