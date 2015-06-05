@@ -2338,18 +2338,7 @@ var updateVTree = {
         fillSignatures(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
-//        traverseNodeBetweenSignature(vnode.childNodes, "v-html",{
-//            begin:function(){}
-//        })
-//        if (!vnode.childNodes.length) {
-//            var array = new VNodes(elem.childNodes)
-//            vnode.appendChild(array)
-//        } else {
-//            array = new VNodes(elem.childNodes)
-//            array = collectHTMLNode(array, vnode.childNodes)
-//            vnode.childNodes.length = 0
-//            vnode.appendChild(array)
-//        }
+
         //转换成文档碎片
         var fill = new VNode(val, true)
         fillSignatures(vnode, data, fill)
@@ -2683,11 +2672,14 @@ var updateDTree = {
               
                 token =  virtual.nodeValue + ":end"
                 collect = true
-                //callbacks.begin && callbacks.begin(el, i)
                 continue
             } else if (collect && virtual.nodeType === 8 && virtual.nodeValue === token) {
               //  comments.push(el)
-                collect = false
+                   collect = false
+                   while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+                    parent.removeChild(real)
+                    real = rnodes[i]
+                }
                 console.log("end")
                 //   callbacks.end && callbacks.end(el, i)
                 continue
@@ -2717,39 +2709,14 @@ var updateDTree = {
                     }
                 }
             }
-
         }
-//        traverseNodeBetweenSignature(vnodes, "v-repeat", {
-//            begin: function (a, b) {
-//                console.log("开始repeat循环 " + this.token)
-//            },
-//            end: function (virtual, i) {
-//                 console.log("结束repeat循环 " + this.token)
-//                   var real = rnodes[i]
-//           
-//                //<span>11</span><strong>222</strong><span>333</span> --> <b>000</b>
-//                while (real && (real.nodeType !== 8 || real.nodeValue !== this.token)) {
-//                    parent.removeChild(real)
-//                    real = rnodes[i]
-//                }
-//            },
-//            step: function (virtual, i) {
-//                var real = rnodes[i]
-//                if (virtual.nodeType !== real.nodeType) {
-//                    elem.insertBefore(new DNode(virtual), real)
-//                } else {
-//                    if (virtual.nodeType == real.nodeType) {
-//                        if (virtual.nodeType === 8) {
-//                            if (real.nodeValue === this.token) {
-//                                elem.insertBefore(new DNode(virtual), real)
-//                            } else {
-//                                real.nodeValue = virtual.nodeValue
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        })
+        if(collect){
+              while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+                    parent.removeChild(real)
+                    real = rnodes[i]
+                }
+        }
+        
     },
     css: function (vnode, elem) {
         for (var i in vnode.style) {
@@ -5075,15 +5042,11 @@ bindingExecutors.repeat = function (method, pos, el) {
         return
   
      var vnode = addVnodeToData(parent, data)
-//        var data = this, start, fragment
-//        var end = data.element
-
-       var comments = getSignatures(vnode, data.signature)
+     var comments = getSignatures(vnode, data.signature)
 
      var transation = new VDocumentFragment()
         switch (method) {
             case "add": //在pos位置后添加el数组（pos为插入位置,el为要插入的个数）
-          //    console.log("aaaaaaaaaaaaaaaaa")
                 var n = pos + el
                 var fragments = []
                 var array = data.$repeat
@@ -5094,20 +5057,20 @@ bindingExecutors.repeat = function (method, pos, el) {
                 }
                 vnode.replaceChild(transation, comments[pos])
                 for (i = 0; fragment = fragments[i++]; ) {
-                
                     scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                 }
                 vnode.addTask("repeat")
-                console.log(vnode.childNodes)
+             //   console.log(vnode.childNodes)
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
              
                 var startIndex = vnode.childNodes.indexOf(comments[pos])
                 var endIndex = vnode.childNodes.indexOf(comments[pos+el])
                 console.log(startIndex, endIndex-startIndex)
-               var rr = vnode.childNodes.splice(startIndex, endIndex-startIndex)
-               console.log(rr)
+               var removed = vnode.childNodes.splice(startIndex, endIndex-startIndex)
+               console.log(removed)
+               console.log(vnode.childNodes)
                console.log("-----------")
                 vnode.addTask("repeat")
               //  sweepNodes(comments[pos], comments[pos + el] || end)

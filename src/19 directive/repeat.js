@@ -104,15 +104,11 @@ bindingExecutors.repeat = function (method, pos, el) {
         return
   
      var vnode = addVnodeToData(parent, data)
-//        var data = this, start, fragment
-//        var end = data.element
-
-       var comments = getSignatures(vnode, data.signature)
+     var comments = getSignatures(vnode, data.signature)
 
      var transation = new VDocumentFragment()
         switch (method) {
             case "add": //在pos位置后添加el数组（pos为插入位置,el为要插入的个数）
-          //    console.log("aaaaaaaaaaaaaaaaa")
                 var n = pos + el
                 var fragments = []
                 var array = data.$repeat
@@ -123,20 +119,20 @@ bindingExecutors.repeat = function (method, pos, el) {
                 }
                 vnode.replaceChild(transation, comments[pos])
                 for (i = 0; fragment = fragments[i++]; ) {
-                
                     scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                 }
                 vnode.addTask("repeat")
-                console.log(vnode.childNodes)
+             //   console.log(vnode.childNodes)
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
              
                 var startIndex = vnode.childNodes.indexOf(comments[pos])
                 var endIndex = vnode.childNodes.indexOf(comments[pos+el])
                 console.log(startIndex, endIndex-startIndex)
-               var rr = vnode.childNodes.splice(startIndex, endIndex-startIndex)
-               console.log(rr)
+               var removed = vnode.childNodes.splice(startIndex, endIndex-startIndex)
+               console.log(removed)
+               console.log(vnode.childNodes)
                console.log("-----------")
                 vnode.addTask("repeat")
               //  sweepNodes(comments[pos], comments[pos + el] || end)

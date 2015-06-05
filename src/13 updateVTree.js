@@ -8,18 +8,7 @@ var updateVTree = {
         fillSignatures(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
-//        traverseNodeBetweenSignature(vnode.childNodes, "v-html",{
-//            begin:function(){}
-//        })
-//        if (!vnode.childNodes.length) {
-//            var array = new VNodes(elem.childNodes)
-//            vnode.appendChild(array)
-//        } else {
-//            array = new VNodes(elem.childNodes)
-//            array = collectHTMLNode(array, vnode.childNodes)
-//            vnode.childNodes.length = 0
-//            vnode.appendChild(array)
-//        }
+
         //转换成文档碎片
         var fill = new VNode(val, true)
         fillSignatures(vnode, data, fill)

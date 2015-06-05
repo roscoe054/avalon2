@@ -107,11 +107,14 @@ var updateDTree = {
               
                 token =  virtual.nodeValue + ":end"
                 collect = true
-                //callbacks.begin && callbacks.begin(el, i)
                 continue
             } else if (collect && virtual.nodeType === 8 && virtual.nodeValue === token) {
               //  comments.push(el)
-                collect = false
+                   collect = false
+                   while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+                    parent.removeChild(real)
+                    real = rnodes[i]
+                }
                 console.log("end")
                 //   callbacks.end && callbacks.end(el, i)
                 continue
@@ -141,39 +144,14 @@ var updateDTree = {
                     }
                 }
             }
-
         }
-//        traverseNodeBetweenSignature(vnodes, "v-repeat", {
-//            begin: function (a, b) {
-//                console.log("开始repeat循环 " + this.token)
-//            },
-//            end: function (virtual, i) {
-//                 console.log("结束repeat循环 " + this.token)
-//                   var real = rnodes[i]
-//           
-//                //<span>11</span><strong>222</strong><span>333</span> --> <b>000</b>
-//                while (real && (real.nodeType !== 8 || real.nodeValue !== this.token)) {
-//                    parent.removeChild(real)
-//                    real = rnodes[i]
-//                }
-//            },
-//            step: function (virtual, i) {
-//                var real = rnodes[i]
-//                if (virtual.nodeType !== real.nodeType) {
-//                    elem.insertBefore(new DNode(virtual), real)
-//                } else {
-//                    if (virtual.nodeType == real.nodeType) {
-//                        if (virtual.nodeType === 8) {
-//                            if (real.nodeValue === this.token) {
-//                                elem.insertBefore(new DNode(virtual), real)
-//                            } else {
-//                                real.nodeValue = virtual.nodeValue
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//        })
+        if(collect){
+              while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+                    parent.removeChild(real)
+                    real = rnodes[i]
+                }
+        }
+        
     },
     css: function (vnode, elem) {
         for (var i in vnode.style) {
