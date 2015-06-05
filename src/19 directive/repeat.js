@@ -91,7 +91,10 @@ bindingHandlers.repeat = function (data, vmodels) {
         data.handler("add", 0, $repeat.length)
     }
 }
-
+function sweepVNodes(vnode, comments, start, end, signature){
+    
+    
+}
 bindingExecutors.repeat = function (method, pos, el) {
     if (method) {
          var data = this, start, fragment
@@ -125,9 +128,18 @@ bindingExecutors.repeat = function (method, pos, el) {
                     fragment.nodes = fragment.vmodels = null
                 }
                 vnode.addTask("repeat")
+                console.log(vnode.childNodes)
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
-                sweepNodes(comments[pos], comments[pos + el] || end)
+             
+                var startIndex = vnode.childNodes.indexOf(comments[pos])
+                var endIndex = vnode.childNodes.indexOf(comments[pos+el])
+                console.log(startIndex, endIndex-startIndex)
+               var rr = vnode.childNodes.splice(startIndex, endIndex-startIndex)
+               console.log(rr)
+               console.log("-----------")
+                vnode.addTask("repeat")
+              //  sweepNodes(comments[pos], comments[pos + el] || end)
                 break
             case "clear":
                 start = comments[0]

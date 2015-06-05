@@ -2255,13 +2255,13 @@ var updateDTree = {
         traverseNodeBetweenSignature(vnodes, "v-html", {
             end: function (virtual, i) {
                 var real = rnodes[i]
-               try{
+
                 //<span>11</span><strong>222</strong><span>333</span> --> <b>000</b>
                 while (real && (real.nodeType !== 8 || real.nodeValue !== this.token)) {
                     parent.removeChild(real)
                     real = rnodes[i]
                 }
-            }catch(e){}
+
             },
             step: function (virtual, i) {
                 var real = rnodes[i]
@@ -2290,33 +2290,84 @@ var updateDTree = {
             }
         })
     },
-    repeat: function (vnode, elem) {
-        var rnodes = elem.childNodes
+    repeat: function (vnode, parent) {
+        var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
-        traverseNodeBetweenSignature(vnodes, "v-repeat", {
-            begin: function (a, b) {
-                console.log("开始repeat循环 " + this.token)
-            },
-            end: function (virtual, i) {
-                 console.log("结束repeat循环 " + this.token)
-            },
-            step: function (virtual, i) {
-                var real = rnodes[i]
+
+        var collect = false, comments = [], content = [], token
+      //  callbacks = callbacks || {}
+        for (var i = 0, virtual; virtual = vnodes[i]; i++) {
+            if (!collect && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-repeat") === 0) {
+              
+                token =  virtual.nodeValue + ":end"
+                collect = true
+                //callbacks.begin && callbacks.begin(el, i)
+                continue
+            } else if (collect && virtual.nodeType === 8 && virtual.nodeValue === token) {
+              //  comments.push(el)
+                collect = false
+                console.log("end")
+                //   callbacks.end && callbacks.end(el, i)
+                continue
+            }
+            if (collect) {
+                 var real = rnodes[i]
                 if (virtual.nodeType !== real.nodeType) {
-                    elem.insertBefore(new DNode(virtual), real)
+                    parent.insertBefore(new DNode(virtual), real)
                 } else {
-                    if (virtual.nodeType == real.nodeType) {
-                        if (virtual.nodeType === 8) {
-                            if (real.nodeValue === this.token) {
-                                elem.insertBefore(new DNode(virtual), real)
-                            } else {
+                    switch (virtual.nodeType) {
+                        case 1:
+                            if (real.nodeName !== virtual.nodeName) {//SPAN !== B
+                                parent.insertBefore(new DNode(virtual), real)
+                                parent.removeChild(real)
+                            } else if (real.nodeName === "INPUT" && real.type !== virtual.type) {
+                                parent.insertBefore(new DNode(virtual), real)//input[type=text] !== input[type=password]
+                                parent.removeChild(real)
+                            } else if (real.vid !== virtual.vid) {
+                                parent.insertBefore(new DNode(virtual), real)
+                                parent.removeChild(real)
+                            }
+                            break
+                        default:
+                            if (real.nodeValue !== virtual.nodeValue) {
                                 real.nodeValue = virtual.nodeValue
                             }
-                        }
                     }
                 }
             }
-        })
+
+        }
+//        traverseNodeBetweenSignature(vnodes, "v-repeat", {
+//            begin: function (a, b) {
+//                console.log("开始repeat循环 " + this.token)
+//            },
+//            end: function (virtual, i) {
+//                 console.log("结束repeat循环 " + this.token)
+//                   var real = rnodes[i]
+//           
+//                //<span>11</span><strong>222</strong><span>333</span> --> <b>000</b>
+//                while (real && (real.nodeType !== 8 || real.nodeValue !== this.token)) {
+//                    parent.removeChild(real)
+//                    real = rnodes[i]
+//                }
+//            },
+//            step: function (virtual, i) {
+//                var real = rnodes[i]
+//                if (virtual.nodeType !== real.nodeType) {
+//                    elem.insertBefore(new DNode(virtual), real)
+//                } else {
+//                    if (virtual.nodeType == real.nodeType) {
+//                        if (virtual.nodeType === 8) {
+//                            if (real.nodeValue === this.token) {
+//                                elem.insertBefore(new DNode(virtual), real)
+//                            } else {
+//                                real.nodeValue = virtual.nodeValue
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        })
     },
     css: function (vnode, elem) {
         for (var i in vnode.style) {
@@ -4327,7 +4378,10 @@ bindingHandlers.repeat = function (data, vmodels) {
         data.handler("add", 0, $repeat.length)
     }
 }
-
+function sweepVNodes(vnode, comments, start, end, signature){
+    
+    
+}
 bindingExecutors.repeat = function (method, pos, el) {
     if (method) {
          var data = this, start, fragment
@@ -4361,9 +4415,18 @@ bindingExecutors.repeat = function (method, pos, el) {
                     fragment.nodes = fragment.vmodels = null
                 }
                 vnode.addTask("repeat")
+                console.log(vnode.childNodes)
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
-                sweepNodes(comments[pos], comments[pos + el] || end)
+             
+                var startIndex = vnode.childNodes.indexOf(comments[pos])
+                var endIndex = vnode.childNodes.indexOf(comments[pos+el])
+                console.log(startIndex, endIndex-startIndex)
+               var rr = vnode.childNodes.splice(startIndex, endIndex-startIndex)
+               console.log(rr)
+               console.log("-----------")
+                vnode.addTask("repeat")
+              //  sweepNodes(comments[pos], comments[pos + el] || end)
                 break
             case "clear":
                 start = comments[0]
