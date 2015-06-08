@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <script src="avalon.js" ></script>
+        <script>
+
+            var vm = avalon.define({
+                $id: "test",
+                aaa: "111",
+                html: "<span>11</span><strong>222</strong><span>333</span><strong>444</strong><span>555</span><strong>666</strong>",
+                change1: function () {
+                    vm.html = "<span><b>11</b></span><strong>222</strong><span>333</span><strong>444</strong><span>555</span><strong>666</strong>"
+                },
+                change2: function () {
+                    vm.html = "<b>加入</b><em>2343</em><br><em>2343</em><br><span>11</span>"
+                },
+                change3: function () {
+                    vm.html = "<em>2343</em>"
+                }
+            });
+
+        </script>
+    </head>
+    <body ms-controller="test">
+        <div>%%%%{{html|html}}%%%%</div>
+        <p><button ms-click="change1" type="button">click me</button></p>
+        <p><button ms-click="change2" type="button">click me</button></p>
+        <p><button ms-click="change3" type="button">click me</button></p>
+
+    </body>
+</html>
