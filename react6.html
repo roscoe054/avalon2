@@ -4,7 +4,7 @@
         <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <title></title>
         <script src="react.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/JSXTransformer.js"></script>
+        <script src="JSXTransformer.js"></script>
     </head>
     <body>
 
@@ -13,12 +13,12 @@
 
 var Test = React.createClass({
     getInitialState: function() {
-             return {results: [{id:"aaa",name:"xxx"},{id:"bbb",name:"yyy"},{id:"ccc",name:"zzz"},{id:"uuu",name:"正常"}] };
+             return {results: [{id:"aaa",name:"xxx"},{id:"bbb",name:"yyy"},{id:"ccc",name:"zzz"},{id:"ddd",name:"正常"}] };
     },
     change: function(){
         //console.log("111")
         this.setState({
-            results : [{id:"xxx",name:"xx1x"},{id:"yyy",name:"yy2y"},{id:"zzz",name:"zz3z"}]
+            results : this.state.results.reverse()  //[{id:"xxx",name:"xx1x"},{id:"yyy",name:"yy2y"},{id:"zzz",name:"zz3z"}]
         })
     },
     render: function() {
@@ -26,7 +26,7 @@ var Test = React.createClass({
     return (
       <ol onClick={this.change}>
         {this.state.results.map(function(result,index) {
-          return <li key={index}>{result.name}</li>;
+          return <li key={result.id}>{result.name}</li>;
         })}
       </ol>
     );

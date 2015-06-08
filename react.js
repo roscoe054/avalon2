@@ -1709,7 +1709,7 @@
             var initialChildren = null;
             // List of children that will be moved or removed.
             var updatedChildren = null;
-
+console.log(updates.length)
             for (var i = 0; i < updates.length; i++) {
               update = updates[i];
               if (update.type === ReactMultiChildUpdateTypes.MOVE_EXISTING ||
@@ -1759,6 +1759,7 @@
                   );
                   break;
                 case ReactMultiChildUpdateTypes.MOVE_EXISTING:
+         
                   insertChildAt(
                     update.parentNode,
                     initialChildren[update.parentID][update.fromIndex],
@@ -5105,22 +5106,27 @@
             // moved.
             // TODO: If nothing has changed, return the prevChildren object so that we
             // can quickly bailout if nothing has changed.
+
             var nextChildren = flattenChildren(nextNestedChildNodes);
             if (!nextChildren && !prevChildren) {
               return null;
             }
             var name;
             for (name in nextChildren) {
+              
               if (!nextChildren.hasOwnProperty(name)) {
                 continue;
               }
               var prevChild = prevChildren && prevChildren[name];
               var prevElement = prevChild && prevChild._currentElement;
               var nextElement = nextChildren[name];
+              //  console.log(name,prevChild._rootNodeID, prevChild._mountIndex)
               if (shouldUpdateReactComponent(prevElement, nextElement)) {
+                  
                 ReactReconciler.receiveComponent(
                   prevChild, nextElement, transaction, context
                 );
+           
                 nextChildren[name] = prevChild;
               } else {
                 if (prevChild) {
@@ -5134,12 +5140,15 @@
                 nextChildren[name] = nextChildInstance;
               }
             }
+           
             // Unmount children that are no longer present.
             for (name in prevChildren) {
+              //  console.log(name,prevChildren[name]._rootNodeID,prevChildren[name]._mountIndex )
               if (prevChildren.hasOwnProperty(name) && !(nextChildren && nextChildren.hasOwnProperty(name))) {
                 ReactReconciler.unmountComponent(prevChildren[name]);
               }
             }
+          
             return nextChildren;
           },
 
@@ -13668,7 +13677,7 @@
              * @internal
              */
             updateTextContent: function(nextContent) {
-                console.log("updateTextContent")
+            
               updateDepth++;
               var errorThrown = true;
               try {
@@ -13733,11 +13742,15 @@
              * @protected
              */
             _updateChildren: function(nextNestedChildren, transaction, context) {
-             
+          //   console.log(nextNestedChildren)
               var prevChildren = this._renderedChildren;
+          
               var nextChildren = ReactChildReconciler.updateChildren(
                 prevChildren, nextNestedChildren, transaction, context
               );
+             console.log("开始更新子元素的顺序")
+        
+            
               this._renderedChildren = nextChildren;
               if (!nextChildren && !prevChildren) {
                 return;
@@ -13753,8 +13766,9 @@
                 }
                 var prevChild = prevChildren && prevChildren[name];
                 var nextChild = nextChildren[name];
+              
                 if (prevChild === nextChild) {
-                    console.log("prevChild === nextChild", prevChild, nextIndex, lastIndex)
+                 
                   this.moveChild(prevChild, nextIndex, lastIndex);
                   lastIndex = Math.max(prevChild._mountIndex, lastIndex);
                   prevChild._mountIndex = nextIndex;
@@ -13803,9 +13817,9 @@
               // If the index of `child` is less than `lastIndex`, then it needs to
               // be moved. Otherwise, we do not need to move it because a child will be
               // inserted or moved before `child`.
-                console.log(child._mountIndex, lastIndex)
+            
               if (child._mountIndex < lastIndex) {
-                
+                    console.log(child._mountIndex, toIndex)
                 enqueueMove(this._rootNodeID, child._mountIndex, toIndex);
               }
             },
