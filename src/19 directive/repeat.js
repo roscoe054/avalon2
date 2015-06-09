@@ -30,13 +30,13 @@ bindingHandlers.repeat = function (data, vmodels) {
     elem.removeAttribute(data.name)
     data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
     data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
-    
+
     var innerHTML = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
     var signature = generateID("v-" + data.type)
-        data.signature = signature
-        appendSignatures(elem, data, type === "repeat" )
+    data.signature = signature
+    appendSignatures(elem, data, type === "repeat")
     data.template = new VNode(avalon.parseHTML(innerHTML))
-    
+
     data.handler = bindingExecutors.repeat
     data.rollback = function () {
         var elem = data.element
@@ -65,7 +65,7 @@ bindingHandlers.repeat = function (data, vmodels) {
             }
             var m = $repeat.length
             var $proxy = []
-            for ( i = 0; i < m; i++) {//生成代理VM
+            for (i = 0; i < m; i++) {//生成代理VM
                 $proxy.push(eachProxyAgent(i, $repeat))
             }
             $repeat.$proxy = $proxy
@@ -91,22 +91,22 @@ bindingHandlers.repeat = function (data, vmodels) {
         data.handler("add", 0, $repeat.length)
     }
 }
-function sweepVNodes(vnode, comments, start, end, signature){
-    
-    
+function sweepVNodes(vnode, comments, start, end, signature) {
+
+
 }
 bindingExecutors.repeat = function (method, pos, el) {
     if (method) {
-         var data = this, start, fragment
-          var elem = data.element
-         var parent = data.type === "repeat" ? elem.parentNode : elem
-    if (!parent)
-        return
-  
-     var vnode = addVnodeToData(parent, data)
-     var comments = getSignatures(vnode, data.signature)
+        var data = this, start, fragment
+        var elem = data.element
+        var parent = data.type === "repeat" ? elem.parentNode : elem
+        if (!parent)
+            return
 
-     var transation = new VDocumentFragment()
+        var vnode = addVnodeToData(parent, data)
+        var comments = getSignatures(vnode, data.signature)
+
+        var transation = new VDocumentFragment()
         switch (method) {
             case "add": //在pos位置后添加el数组（pos为插入位置,el为要插入的个数）
                 var n = pos + el
@@ -123,47 +123,48 @@ bindingExecutors.repeat = function (method, pos, el) {
                     fragment.nodes = fragment.vmodels = null
                 }
                 vnode.addTask("repeat")
-             //   console.log(vnode.childNodes)
+                //   console.log(vnode.childNodes)
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
-             
                 var startIndex = vnode.childNodes.indexOf(comments[pos])
-                var endIndex = vnode.childNodes.indexOf(comments[pos+el])
-                console.log(startIndex, endIndex-startIndex)
-               var removed = vnode.childNodes.splice(startIndex, endIndex-startIndex)
-               console.log(removed)
-               console.log(vnode.childNodes)
-               console.log("-----------")
+                var endIndex = vnode.childNodes.indexOf(comments[pos + el])
+                vnode.childNodes.splice(startIndex, endIndex - startIndex)
+
                 vnode.addTask("repeat")
-              //  sweepNodes(comments[pos], comments[pos + el] || end)
                 break
             case "clear":
-                start = comments[0]
-                if (start) {
-                    sweepNodes(start, end)
-                }
+                var startIndex = vnode.childNodes.indexOf(comments[pos])
+                var endIndex = vnode.childNodes.indexOf(comments[comments.length - 1])
+                vnode.childNodes.splice(startIndex, endIndex - startIndex)
+                vnode.addTask("repeat")
                 break
             case "move":
-                start = comments[0]
-                if (start) {
+                var start = comments[0]
+                var end = comments[comments.length - 1]
+                if (start && end) {
+                    var startIndex = vnode.childNodes.indexOf(start)
+                    var endIndex = vnode.childNodes.indexOf(end)
                     var signature = start.nodeValue
                     var rooms = []
-                    var room = [],
-                            node
-                    sweepNodes(start, end, function () {
-                        room.unshift(this)
-                        if (this.nodeValue === signature) {
+                    var room = []
+                    for ( i = endIndex - 1; i >= startIndex; i--) {
+                        var testNode = vnode.childNodes[i]
+                        room.unshift(testNode)
+                        if (testNode.nodeValue === signature) {
                             rooms.unshift(room)
                             room = []
                         }
-                    })
+                    }
                     sortByIndex(rooms, pos)
-                    while (room = rooms.shift()) {
-                        while (node = room.shift()) {
-                            transation.appendChild(node)
+                    var array = []
+                    for (var r = 0; room = rooms[r++]; ) {
+                        for (var rr = 0; testNode = room[rr++]; ) {
+                            array.push(testNode)
                         }
                     }
-                    parent.insertBefore(transation, end)
+                    array.unshift(startIndex, endIndex - startIndex)
+                    Array.prototype.splice.apply(vnode.childNodes, array)
+                    vnode.addTask("repeat")
                 }
                 break
             case "append":
@@ -242,7 +243,7 @@ function shimController2(data, transation, proxy, fragments, index) {
         var comment = new VComment(data.signature)
         comment.parentNode = content
         content.childNodes.unshift(comment)
-      //  content.insertBefore(data.clone.cloneNode(false), content.firstChild)
+        //  content.insertBefore(data.clone.cloneNode(false), content.firstChild)
     }
 
     transation.appendChild(content)

@@ -41,6 +41,7 @@ var updateDTree = {
         delete vnode.ifData
     },
     text: function (vnode, parent) {
+        console.log("text")
         var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
         traverseNodeBetweenSignature(vnodes, "v-text", {
@@ -97,61 +98,124 @@ var updateDTree = {
         })
     },
     repeat: function (vnode, parent) {
+        console.log("repeat")
         var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
 
-        var collect = false, comments = [], content = [], token
-      //  callbacks = callbacks || {}
+        var collect = false, token
+        var keys = {}, repeatRange = [], index = 0
+        //收集从<!--v-repeat1213--> 到<!--v-repeat1213:end-->之间的节点,包括第一个<!--v-repeat1213-->
+        //将它们放进repeatRange,并在这过程中构建keys对象
         for (var i = 0, virtual; virtual = vnodes[i]; i++) {
-            if (!collect && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-repeat") === 0) {
-              
-                token =  virtual.nodeValue + ":end"
+            if (!collect && virtual.nodeType === 8 && /^v-(repeat|with|each)/.test(virtual.nodeValue)) {
+                token = virtual.nodeValue + ":end"
                 collect = true
-                continue
             } else if (collect && virtual.nodeType === 8 && virtual.nodeValue === token) {
-              //  comments.push(el)
-                   collect = false
-                   while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
-                    parent.removeChild(real)
-                    real = rnodes[i]
-                }
-                console.log("end")
-                //   callbacks.end && callbacks.end(el, i)
-                continue
+                collect = false
             }
             if (collect) {
-                 var real = rnodes[i]
-                if (virtual.nodeType !== real.nodeType) {
-                    parent.insertBefore(new DNode(virtual), real)
+                if (virtual.nodeType === 1) {
+                    keys[virtual.vid] = index
                 } else {
-                    switch (virtual.nodeType) {
-                        case 1:
-                            if (real.nodeName !== virtual.nodeName) {//SPAN !== B
-                                parent.insertBefore(new DNode(virtual), real)
-                                parent.removeChild(real)
-                            } else if (real.nodeName === "INPUT" && real.type !== virtual.type) {
-                                parent.insertBefore(new DNode(virtual), real)//input[type=text] !== input[type=password]
-                                parent.removeChild(real)
-                            } else if (real.vid !== virtual.vid) {
-                                parent.insertBefore(new DNode(virtual), real)
-                                parent.removeChild(real)
-                            }
-                            break
-                        default:
-                            if (real.nodeValue !== virtual.nodeValue) {
-                                real.nodeValue = virtual.nodeValue
-                            }
+                    if (keys[ virtual.nodeValue]) {
+                        keys[ virtual.nodeValue].push(index)
+                    } else {
+                        keys[ virtual.nodeValue] = [index]
                     }
                 }
+                repeatRange[index] = virtual
+                index++
             }
         }
-        if(collect){
-              while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
-                    parent.removeChild(real)
-                    real = rnodes[i]
+        var older = []
+        collect = false
+        for(var i = 0, node; node = rnodes[i]; i++){
+             if ( node.nodeType === 8 && /^v-(repeat|with|each)/.test(node.nodeValue)) {
+                token = node.nodeValue + ":end"
+                var end = null
+                breakLoop:
+                while ((node = rnodes[i])) {
+                   if (node.nodeValue === token) {
+                       end = node
+                       break breakLoop
+                   }
+                   //收集符合要求的真实DOM
+                   parent.removeChild(node)
+                   if (node.nodeType === 1) {
+                       older[keys[node.vid]] = node
+                   } else {
+                       if (keys[node.nodeValue]) {
+                           older[ keys[node.nodeValue].shift()] = node
+                       }
+                   }
+               }
+                var fragment = DOC.createDocumentFragment()
+                for( i = 0; node = repeatRange[i];i ++){
+                    if(older[i]){
+                        fragment.appendChild(older[i])
+                    }else{
+                        fragment.appendChild(new DNode(node))
+                    }
                 }
+                parent.insertBefore(fragment,end)
+                break
+            }
+
         }
-        
+
+
+
+        //  callbacks = callbacks || {}
+//        for (var i = 0, virtual; virtual = vnodes[i]; i++) {
+//            if (!collect && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-repeat") === 0) {
+//              
+//                token =  virtual.nodeValue + ":end"
+//                collect = true
+//                continue
+//            } else if (collect && virtual.nodeType === 8 && virtual.nodeValue === token) {
+//              //  comments.push(el)
+//                   collect = false
+//                   while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+//                    parent.removeChild(real)
+//                    real = rnodes[i]
+//                }
+//                console.log("end")
+//                //   callbacks.end && callbacks.end(el, i)
+//                continue
+//            }
+//            if (collect) {
+//                 var real = rnodes[i]
+//                if (virtual.nodeType !== real.nodeType) {
+//                    parent.insertBefore(new DNode(virtual), real)
+//                } else {
+//                    switch (virtual.nodeType) {
+//                        case 1:
+//                            if (real.nodeName !== virtual.nodeName) {//SPAN !== B
+//                                parent.insertBefore(new DNode(virtual), real)
+//                                parent.removeChild(real)
+//                            } else if (real.nodeName === "INPUT" && real.type !== virtual.type) {
+//                                parent.insertBefore(new DNode(virtual), real)//input[type=text] !== input[type=password]
+//                                parent.removeChild(real)
+//                            } else if (real.vid !== virtual.vid) {
+//                                parent.insertBefore(new DNode(virtual), real)
+//                                parent.removeChild(real)
+//                            }
+//                            break
+//                        default:
+//                            if (real.nodeValue !== virtual.nodeValue) {
+//                                real.nodeValue = virtual.nodeValue
+//                            }
+//                    }
+//                }
+//            }
+//        }
+//        if(collect){
+//              while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+//                    parent.removeChild(real)
+//                    real = rnodes[i]
+//                }
+//        }
+
     },
     css: function (vnode, elem) {
         for (var i in vnode.style) {

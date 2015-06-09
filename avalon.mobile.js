@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.js 1.44 built in 2015.6.5
+ avalon.mobile.js 1.44 built in 2015.6.9
  support IE10+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1435,7 +1435,7 @@ function eachProxyAgent(index, host) {
     }
     return proxy
 }
-
+ 
 /*********************************************************************
  *                           依赖调度系统                             *
  **********************************************************************/
@@ -2225,6 +2225,7 @@ var updateDTree = {
         delete vnode.ifData
     },
     text: function (vnode, parent) {
+        console.log("text")
         var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
         traverseNodeBetweenSignature(vnodes, "v-text", {
@@ -2281,61 +2282,124 @@ var updateDTree = {
         })
     },
     repeat: function (vnode, parent) {
+        console.log("repeat")
         var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
 
-        var collect = false, comments = [], content = [], token
-      //  callbacks = callbacks || {}
+        var collect = false, token
+        var keys = {}, repeatRange = [], index = 0
+        //收集从<!--v-repeat1213--> 到<!--v-repeat1213:end-->之间的节点,包括第一个<!--v-repeat1213-->
+        //将它们放进repeatRange,并在这过程中构建keys对象
         for (var i = 0, virtual; virtual = vnodes[i]; i++) {
-            if (!collect && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-repeat") === 0) {
-              
-                token =  virtual.nodeValue + ":end"
+            if (!collect && virtual.nodeType === 8 && /^v-(repeat|with|each)/.test(virtual.nodeValue)) {
+                token = virtual.nodeValue + ":end"
                 collect = true
-                continue
             } else if (collect && virtual.nodeType === 8 && virtual.nodeValue === token) {
-              //  comments.push(el)
-                   collect = false
-                   while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
-                    parent.removeChild(real)
-                    real = rnodes[i]
-                }
-                console.log("end")
-                //   callbacks.end && callbacks.end(el, i)
-                continue
+                collect = false
             }
             if (collect) {
-                 var real = rnodes[i]
-                if (virtual.nodeType !== real.nodeType) {
-                    parent.insertBefore(new DNode(virtual), real)
+                if (virtual.nodeType === 1) {
+                    keys[virtual.vid] = index
                 } else {
-                    switch (virtual.nodeType) {
-                        case 1:
-                            if (real.nodeName !== virtual.nodeName) {//SPAN !== B
-                                parent.insertBefore(new DNode(virtual), real)
-                                parent.removeChild(real)
-                            } else if (real.nodeName === "INPUT" && real.type !== virtual.type) {
-                                parent.insertBefore(new DNode(virtual), real)//input[type=text] !== input[type=password]
-                                parent.removeChild(real)
-                            } else if (real.vid !== virtual.vid) {
-                                parent.insertBefore(new DNode(virtual), real)
-                                parent.removeChild(real)
-                            }
-                            break
-                        default:
-                            if (real.nodeValue !== virtual.nodeValue) {
-                                real.nodeValue = virtual.nodeValue
-                            }
+                    if (keys[ virtual.nodeValue]) {
+                        keys[ virtual.nodeValue].push(index)
+                    } else {
+                        keys[ virtual.nodeValue] = [index]
                     }
                 }
+                repeatRange[index] = virtual
+                index++
             }
         }
-        if(collect){
-              while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
-                    parent.removeChild(real)
-                    real = rnodes[i]
+        var older = []
+        collect = false
+        for(var i = 0, node; node = rnodes[i]; i++){
+             if ( node.nodeType === 8 && /^v-(repeat|with|each)/.test(node.nodeValue)) {
+                token = node.nodeValue + ":end"
+                var end = null
+                breakLoop:
+                while ((node = rnodes[i])) {
+                   if (node.nodeValue === token) {
+                       end = node
+                       break breakLoop
+                   }
+                   //收集符合要求的真实DOM
+                   parent.removeChild(node)
+                   if (node.nodeType === 1) {
+                       older[keys[node.vid]] = node
+                   } else {
+                       if (keys[node.nodeValue]) {
+                           older[ keys[node.nodeValue].shift()] = node
+                       }
+                   }
+               }
+                var fragment = DOC.createDocumentFragment()
+                for( i = 0; node = repeatRange[i];i ++){
+                    if(older[i]){
+                        fragment.appendChild(older[i])
+                    }else{
+                        fragment.appendChild(new DNode(node))
+                    }
                 }
+                parent.insertBefore(fragment,end)
+                break
+            }
+
         }
-        
+
+
+
+        //  callbacks = callbacks || {}
+//        for (var i = 0, virtual; virtual = vnodes[i]; i++) {
+//            if (!collect && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-repeat") === 0) {
+//              
+//                token =  virtual.nodeValue + ":end"
+//                collect = true
+//                continue
+//            } else if (collect && virtual.nodeType === 8 && virtual.nodeValue === token) {
+//              //  comments.push(el)
+//                   collect = false
+//                   while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+//                    parent.removeChild(real)
+//                    real = rnodes[i]
+//                }
+//                console.log("end")
+//                //   callbacks.end && callbacks.end(el, i)
+//                continue
+//            }
+//            if (collect) {
+//                 var real = rnodes[i]
+//                if (virtual.nodeType !== real.nodeType) {
+//                    parent.insertBefore(new DNode(virtual), real)
+//                } else {
+//                    switch (virtual.nodeType) {
+//                        case 1:
+//                            if (real.nodeName !== virtual.nodeName) {//SPAN !== B
+//                                parent.insertBefore(new DNode(virtual), real)
+//                                parent.removeChild(real)
+//                            } else if (real.nodeName === "INPUT" && real.type !== virtual.type) {
+//                                parent.insertBefore(new DNode(virtual), real)//input[type=text] !== input[type=password]
+//                                parent.removeChild(real)
+//                            } else if (real.vid !== virtual.vid) {
+//                                parent.insertBefore(new DNode(virtual), real)
+//                                parent.removeChild(real)
+//                            }
+//                            break
+//                        default:
+//                            if (real.nodeValue !== virtual.nodeValue) {
+//                                real.nodeValue = virtual.nodeValue
+//                            }
+//                    }
+//                }
+//            }
+//        }
+//        if(collect){
+//              while (real && (real.nodeType !== 8 || real.nodeValue !== token)) {
+//                    parent.removeChild(real)
+//                    real = rnodes[i]
+//                }
+//        }
+
     },
     css: function (vnode, elem) {
         for (var i in vnode.style) {
@@ -4285,13 +4349,13 @@ bindingHandlers.repeat = function (data, vmodels) {
     elem.removeAttribute(data.name)
     data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
     data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
-    
+
     var innerHTML = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
     var signature = generateID("v-" + data.type)
-        data.signature = signature
-        appendSignatures(elem, data, type === "repeat" )
+    data.signature = signature
+    appendSignatures(elem, data, type === "repeat")
     data.template = new VNode(avalon.parseHTML(innerHTML))
-    
+
     data.handler = bindingExecutors.repeat
     data.rollback = function () {
         var elem = data.element
@@ -4320,7 +4384,7 @@ bindingHandlers.repeat = function (data, vmodels) {
             }
             var m = $repeat.length
             var $proxy = []
-            for ( i = 0; i < m; i++) {//生成代理VM
+            for (i = 0; i < m; i++) {//生成代理VM
                 $proxy.push(eachProxyAgent(i, $repeat))
             }
             $repeat.$proxy = $proxy
@@ -4346,22 +4410,22 @@ bindingHandlers.repeat = function (data, vmodels) {
         data.handler("add", 0, $repeat.length)
     }
 }
-function sweepVNodes(vnode, comments, start, end, signature){
-    
-    
+function sweepVNodes(vnode, comments, start, end, signature) {
+
+
 }
 bindingExecutors.repeat = function (method, pos, el) {
     if (method) {
-         var data = this, start, fragment
-          var elem = data.element
-         var parent = data.type === "repeat" ? elem.parentNode : elem
-    if (!parent)
-        return
-  
-     var vnode = addVnodeToData(parent, data)
-     var comments = getSignatures(vnode, data.signature)
+        var data = this, start, fragment
+        var elem = data.element
+        var parent = data.type === "repeat" ? elem.parentNode : elem
+        if (!parent)
+            return
 
-     var transation = new VDocumentFragment()
+        var vnode = addVnodeToData(parent, data)
+        var comments = getSignatures(vnode, data.signature)
+
+        var transation = new VDocumentFragment()
         switch (method) {
             case "add": //在pos位置后添加el数组（pos为插入位置,el为要插入的个数）
                 var n = pos + el
@@ -4378,47 +4442,48 @@ bindingExecutors.repeat = function (method, pos, el) {
                     fragment.nodes = fragment.vmodels = null
                 }
                 vnode.addTask("repeat")
-             //   console.log(vnode.childNodes)
+                //   console.log(vnode.childNodes)
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
-             
                 var startIndex = vnode.childNodes.indexOf(comments[pos])
-                var endIndex = vnode.childNodes.indexOf(comments[pos+el])
-                console.log(startIndex, endIndex-startIndex)
-               var removed = vnode.childNodes.splice(startIndex, endIndex-startIndex)
-               console.log(removed)
-               console.log(vnode.childNodes)
-               console.log("-----------")
+                var endIndex = vnode.childNodes.indexOf(comments[pos + el])
+                vnode.childNodes.splice(startIndex, endIndex - startIndex)
+
                 vnode.addTask("repeat")
-              //  sweepNodes(comments[pos], comments[pos + el] || end)
                 break
             case "clear":
-                start = comments[0]
-                if (start) {
-                    sweepNodes(start, end)
-                }
+                var startIndex = vnode.childNodes.indexOf(comments[pos])
+                var endIndex = vnode.childNodes.indexOf(comments[comments.length - 1])
+                vnode.childNodes.splice(startIndex, endIndex - startIndex)
+                vnode.addTask("repeat")
                 break
             case "move":
-                start = comments[0]
-                if (start) {
+                var start = comments[0]
+                var end = comments[comments.length - 1]
+                if (start && end) {
+                    var startIndex = vnode.childNodes.indexOf(start)
+                    var endIndex = vnode.childNodes.indexOf(end)
                     var signature = start.nodeValue
                     var rooms = []
-                    var room = [],
-                            node
-                    sweepNodes(start, end, function () {
-                        room.unshift(this)
-                        if (this.nodeValue === signature) {
+                    var room = []
+                    for ( i = endIndex - 1; i >= startIndex; i--) {
+                        var testNode = vnode.childNodes[i]
+                        room.unshift(testNode)
+                        if (testNode.nodeValue === signature) {
                             rooms.unshift(room)
                             room = []
                         }
-                    })
+                    }
                     sortByIndex(rooms, pos)
-                    while (room = rooms.shift()) {
-                        while (node = room.shift()) {
-                            transation.appendChild(node)
+                    var array = []
+                    for (var r = 0; room = rooms[r++]; ) {
+                        for (var rr = 0; testNode = room[rr++]; ) {
+                            array.push(testNode)
                         }
                     }
-                    parent.insertBefore(transation, end)
+                    array.unshift(startIndex, endIndex - startIndex)
+                    Array.prototype.splice.apply(vnode.childNodes, array)
+                    vnode.addTask("repeat")
                 }
                 break
             case "append":
@@ -4497,7 +4562,7 @@ function shimController2(data, transation, proxy, fragments, index) {
         var comment = new VComment(data.signature)
         comment.parentNode = content
         content.childNodes.unshift(comment)
-      //  content.insertBefore(data.clone.cloneNode(false), content.firstChild)
+        //  content.insertBefore(data.clone.cloneNode(false), content.firstChild)
     }
 
     transation.appendChild(content)

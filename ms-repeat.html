@@ -12,9 +12,10 @@
                 array: ["a", "b", "c", "d"]
             })
             setTimeout(function () {
+                vm.array.reverse()
                 vm.array.push(5, 6)
                 vm.array.splice(0,3)
-            }, 300)
+            }, 3000)
         </script>
     </head>
     <body ms-controller="test">
