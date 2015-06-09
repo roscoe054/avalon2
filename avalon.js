@@ -5073,17 +5073,14 @@ bindingExecutors.repeat = function (method, pos, el) {
                     scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                 }
-                vnode.addTask("repeat")
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
                startIndex = vnode.childNodes.indexOf(comments[pos])
                endIndex = vnode.childNodes.indexOf(comments[pos + el])
                vnode.childNodes.splice(startIndex, endIndex - startIndex)
-                vnode.addTask("repeat")
                 break
             case "clear":
                 vnode.childNodes.splice(startIndex+1, Math.max(0, endIndex - startIndex-1))
-                vnode.addTask("repeat")
                 break
             case "move":
                 if (start && end) {
@@ -5107,7 +5104,6 @@ bindingExecutors.repeat = function (method, pos, el) {
                     }
                     array.unshift(startIndex, endIndex - startIndex)
                     Array.prototype.splice.apply(vnode.childNodes, array)
-                    vnode.addTask("repeat")
                 }
                 break
             case "append":
@@ -5118,7 +5114,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                 for (var key in pool) {
                     if (!object.hasOwnProperty(key)) {
                         proxyRecycler(pool[key], withProxyPool) //去掉之前的代理VM
-                        delete(pool[key])
+                        delete pool[key]
                     }
                 }
                 for (key in object) { //得到所有键名
@@ -5136,18 +5132,19 @@ bindingExecutors.repeat = function (method, pos, el) {
                 for (i = 0; key = keys[i++]; ) {
                     if (key !== "hasOwnProperty") {
                         pool[key] = withProxyAgent(pool[key], key, data)
-                        shimController(data, transation, pool[key], fragments)
+                        shimController2(data, transation, pool[key], fragments)
                     }
                 }
-                var comment = data.$with = data.clone
-                parent.insertBefore(comment, end)
-                parent.insertBefore(transation, end)
+                data.$with = end
+                vnode.insertBefore(transation, end)
                 for (i = 0; fragment = fragments[i++]; ) {
                     scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                 }
+               
                 break
         }
+         vnode.addTask("repeat")
         if (method === "clear")
             method = "del"
         var callback = data.renderedCallback || noop,
@@ -5165,20 +5162,7 @@ bindingExecutors.repeat = function (method, pos, el) {
     bindingHandlers[name] = bindingHandlers.repeat
 })
 avalon.pool = eachProxyPool
-function shimController(data, transation, proxy, fragments) {
-    var content = data.template.cloneNode(true)
-    var nodes = avalon.slice(content.childNodes)
-    if (!data.$with) {
-        content.insertBefore(data.clone.cloneNode(false), content.firstChild)
-    }
-    transation.appendChild(content)
-    var nv = [proxy].concat(data.vmodels)
-    var fragment = {
-        nodes: nodes,
-        vmodels: nv
-    }
-    fragments.push(fragment)
-}
+
 function shimController2(data, transation, proxy, fragments, index) {
     var content = cloneVNode(data.template)//.cloneNode(true)
     var nodes = avalon.slice(content.childNodes)
@@ -5186,9 +5170,7 @@ function shimController2(data, transation, proxy, fragments, index) {
         var comment = new VComment(data.signature)
         comment.parentNode = content
         content.childNodes.unshift(comment)
-        //  content.insertBefore(data.clone.cloneNode(false), content.firstChild)
     }
-
     transation.appendChild(content)
     var nv = [proxy].concat(data.vmodels)
     var fragment = {
