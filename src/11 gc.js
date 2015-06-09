@@ -74,9 +74,9 @@ function rejectDisposeQueue(data) {
 }
 
 function disposeData(data) {
-    console.log("dispose")
-    console.log(data.type)
-    console.log(data.element)
+//    console.log("dispose")
+//    console.log(data.type)
+//    console.log(data.element)
     data.element = null
     data.rollback && data.rollback()
     for (var key in data) {
