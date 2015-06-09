@@ -221,6 +221,7 @@ function makeComplexAccessor(name, initValue, valueType) {
                 return this
             }
             if (valueType === "array") {
+            
                 var old = son._
                 son._ = []
                 son.clear()

@@ -105,7 +105,11 @@ bindingExecutors.repeat = function (method, pos, el) {
 
         var vnode = addVnodeToData(parent, data)
         var comments = getSignatures(vnode, data.signature)
-
+        
+        var start = comments[0]
+        var end = comments[comments.length-1]
+        var startIndex = vnode.childNodes.indexOf(start)
+        var endIndex = vnode.childNodes.indexOf(end)
         var transation = new VDocumentFragment()
         switch (method) {
             case "add": //在pos位置后添加el数组（pos为插入位置,el为要插入的个数）
@@ -123,27 +127,19 @@ bindingExecutors.repeat = function (method, pos, el) {
                     fragment.nodes = fragment.vmodels = null
                 }
                 vnode.addTask("repeat")
-                //   console.log(vnode.childNodes)
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
-                var startIndex = vnode.childNodes.indexOf(comments[pos])
-                var endIndex = vnode.childNodes.indexOf(comments[pos + el])
-                vnode.childNodes.splice(startIndex, endIndex - startIndex)
-
+               startIndex = vnode.childNodes.indexOf(comments[pos])
+               endIndex = vnode.childNodes.indexOf(comments[pos + el])
+               vnode.childNodes.splice(startIndex, endIndex - startIndex)
                 vnode.addTask("repeat")
                 break
             case "clear":
-                var startIndex = vnode.childNodes.indexOf(comments[pos])
-                var endIndex = vnode.childNodes.indexOf(comments[comments.length - 1])
-                vnode.childNodes.splice(startIndex, endIndex - startIndex)
+                vnode.childNodes.splice(startIndex+1, Math.max(0, endIndex - startIndex-1))
                 vnode.addTask("repeat")
                 break
             case "move":
-                var start = comments[0]
-                var end = comments[comments.length - 1]
                 if (start && end) {
-                    var startIndex = vnode.childNodes.indexOf(start)
-                    var endIndex = vnode.childNodes.indexOf(end)
                     var signature = start.nodeValue
                     var rooms = []
                     var room = []
