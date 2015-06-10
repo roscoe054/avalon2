@@ -5,13 +5,13 @@ var updateVTree = {
     text: function (vnode, elem, value, data) {
         var fill = new VDocumentFragment()
         fill.appendChild(new VText(value))
-        fillSignatures(vnode, data, fill)
+        fillPlaceholders(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
 
         //转换成文档碎片
         var fill = new VNode(val, true)
-        fillSignatures(vnode, data, fill)
+        fillPlaceholders(vnode, data, fill)
         scanNodeArray(fill.childNodes, data.vmodels)
     }
 //if 直接实现在bindingExecutors.attr
@@ -20,39 +20,6 @@ var updateVTree = {
 //data 直接实现在bindingExecutors.data 
 }
 
-
-
-function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
-    var k = false
-    var array = []
-    var token
-    // 新 1111 <!v-html1234> 2222 <!v-html2222> 3333 <!v-html2222> 4444 <!v-html1234> 5555
-    // 旧 1111 <!v-html1234>  <!v-html1234> 5555
-    while (aaa.length) {
-        var neo = aaa.shift()
-        array.push(neo)
-        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") === 0) {
-            if (!k) {
-                token = neo.nodeValue + ":end"
-                k = true
-            } else {
-                k = neo.nodeValue.indexOf(token) === 0
-            }
-//   k = !k
-            if (k) {
-                var arr = getSignature(bbb, neo.nodeValue)
-                if (arr.length) {
-                    array = array.concat(arr)
-                }
-            }
-        } else {
-            if (k) {
-                array.pop()
-            }
-        }
-    }
-    return array
-}
 /*
  <div ms-controller="test">{{aaa|html}}</div>
  
@@ -217,19 +184,8 @@ function addVnodeToData(elem, data) {
         return data.vnode
     } else if (elem.isVirtual) {
         return data.vnode = elem
-    } else if (elem.nodeType === 1) {
-
-        var vnode = VTree.queryVID(elem.getAttribute("data-vid"))
-        if (!vnode) {
-            vnode = new VNode(elem)
-            var vparent = VTree.queryVID(elem.parentNode.vid)
-            if (vparent) {
-                vparent.appendChild(vnode)
-            } else {
-                VTree.appendChild(vnode)
-            }
-        }
-        return data.vnode = vnode
+    } else if (elem.nodeType) {
+        return data.vnode = VTree.queryVID(elem.getAttribute("data-vid"))
     }
 }
 

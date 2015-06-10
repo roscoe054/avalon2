@@ -34,7 +34,7 @@ bindingHandlers.repeat = function (data, vmodels) {
     var innerHTML = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
     var signature = generateID("v-" + data.type)
     data.signature = signature
-    appendSignatures(elem, data, type === "repeat")
+    appendPlaceholders(elem, data, type === "repeat")
     data.template = new VNode(avalon.parseHTML(innerHTML))
 
     data.handler = bindingExecutors.repeat
@@ -104,7 +104,7 @@ bindingExecutors.repeat = function (method, pos, el) {
             return
 
         var vnode = addVnodeToData(parent, data)
-        var comments = getSignatures(vnode, data.signature)
+        var comments = getPlaceholders(vnode, data.signature)
         
         var start = comments[0]
         var end = comments[comments.length-1]

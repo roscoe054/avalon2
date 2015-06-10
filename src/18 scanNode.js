@@ -22,7 +22,7 @@ function scanNodeArray(nodes, vmodels) {
     var firstChild = nodes[0] || {}
     var isVirtual = firstChild.isVirtual == true
     var doc = isVirtual ? VDOC : DOC //使用何种文档对象来创建各种节点
-    var inDom = firstChild.nodeType === 1
+    var inDom = firstChild.parentNode && firstChild.parentNode.nodeType === 1
     var nodeIndex = 0, parent
     for (var i = 0, node; node = nodes[i]; i++) {
         switch (node.nodeType) {
@@ -32,22 +32,21 @@ function scanNodeArray(nodes, vmodels) {
             case 3:
                 if (rexpr.test(node.nodeValue)) {
                     var tokens = scanExpr(node.nodeValue)
-                    var generateSignatures = false
+                    var generatePlaceholders = false
                     outerLoop:
                             for (var t = 0, token; token = tokens[t++]; ) {
                         if (token.expr) {
-                            generateSignatures = true
+                            generatePlaceholders = true
                             break outerLoop
                         }
                     }
-                    if (generateSignatures) {//如果要生成占位用的注释节点
+                    if (generatePlaceholders) {//如果要生成占位用的注释节点
                         parent = parent || node.parentNode
-                        var pid = buildTree(parent)
+                        var pid = buildVTree(parent)
                         var fragment = doc.createDocumentFragment()
                         for (t = 0; token = tokens[t++]; ) {
                             if (token.expr) {
-                                nodeIndex++
-                                var signature = "v-" + token.type + pid + "." + nodeIndex
+                                var signature = "v-" + token.type + pid + "." +  nodeIndex++
                                 token.signature = signature
                                 signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
                                 var start = doc.createComment(signature)
@@ -94,7 +93,7 @@ function scanNodeArray(nodes, vmodels) {
                         vnode.vid = pid + "." + nodeIndex++
                         break
                     case 3:
-                        var vnode = VDOC.createTextNode(node.valueNode)
+                        vnode = VDOC.createTextNode(node.nodeValue)
                         vparent.appendChild(vnode)
                         break
                     case 8:
@@ -110,9 +109,9 @@ function scanNodeArray(nodes, vmodels) {
             }
             executeBindings(bindings, vmodels)
         }
-        for (i = 0; node = nodes[i++]; ) {
-            scanElement(node, node.nodeType, vmodels)
-        }
+    }
+    for (i = 0; node = nodes[i++]; ) {
+        scanElement(node, node.nodeType, vmodels)
     }
 }
 function scanElement(node, nodeType, vmodels) {

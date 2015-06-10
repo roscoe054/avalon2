@@ -2018,7 +2018,7 @@ function shouldDispose(el) {
 function VElement(element, parentNode) {
     this.nodeType = 1
 
-  //  this.vid = getUid(element)
+    //  this.vid = getUid(element)
     this.nodeName = element.nodeName
     this.className = element.className
     this.childNodes = []
@@ -2229,11 +2229,24 @@ String("appendChild, removeChild,insertBefore,replaceChild").replace(/\w+/g, fun
     VDocumentFragment.prototype[method] = VElement.prototype[method]
 })
 
-
+var VDOC = {
+    createElement: function (tagName, parentNode) {
+        return new VElement(tagName, parentNode)
+    },
+    createTextNode: function (text) {
+        return new VText(text)
+    },
+    createComment: function (text) {
+        return new VComment(text)
+    },
+    createDocumentFragment: function () {
+        return new VDocumentFragment()
+    }
+}
 
 
 //处理路标系统的三个重要方法
-function getSignatures(elem, signature) {
+function getPlaceholders(elem, signature) {
     var comments = []
     for (var i = 0, el; el = elem.childNodes[i++]; ) {
         if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
@@ -2243,19 +2256,6 @@ function getSignatures(elem, signature) {
     return comments
 }
 
-function getSignature(array, signature) {
-    var collect = false, ret = []
-    for (var i = 0, el; el = array[i++]; ) {
-        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
-            collect = !collect
-            continue
-        }
-        if (collect) {
-            ret.push(el)
-        }
-    }
-    return ret
-}
 
 function traverseNodeBetweenSignature(array, signature, callbacks) {
     var collect = false, comments = [], content = [], token
@@ -2283,7 +2283,7 @@ function traverseNodeBetweenSignature(array, signature, callbacks) {
        content:content
     }
 }
-function appendSignatures(elem, data, replace) {
+function appendPlaceholders(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时
     //其左右将插入两个注释节点，自身被替换
@@ -2308,8 +2308,8 @@ function appendSignatures(elem, data, replace) {
     return [start, end]
 }
 
-function fillSignatures(elem, data, fill, callback) {
-    var comments = getSignatures(elem, data.signature)
+function fillPlaceholders(elem, data, fill, callback) {
+    var comments = getPlaceholders(elem, data.signature)
     callback = callback || function () {
     }
     //移除两个注释节点间的节点
@@ -2346,13 +2346,13 @@ var updateVTree = {
     text: function (vnode, elem, value, data) {
         var fill = new VDocumentFragment()
         fill.appendChild(new VText(value))
-        fillSignatures(vnode, data, fill)
+        fillPlaceholders(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
 
         //转换成文档碎片
         var fill = new VNode(val, true)
-        fillSignatures(vnode, data, fill)
+        fillPlaceholders(vnode, data, fill)
         scanNodeArray(fill.childNodes, data.vmodels)
     }
 //if 直接实现在bindingExecutors.attr
@@ -2361,39 +2361,6 @@ var updateVTree = {
 //data 直接实现在bindingExecutors.data 
 }
 
-
-
-function collectHTMLNode(aaa, bbb) {//aaa为新的， bbb为旧的
-    var k = false
-    var array = []
-    var token
-    // 新 1111 <!v-html1234> 2222 <!v-html2222> 3333 <!v-html2222> 4444 <!v-html1234> 5555
-    // 旧 1111 <!v-html1234>  <!v-html1234> 5555
-    while (aaa.length) {
-        var neo = aaa.shift()
-        array.push(neo)
-        if (neo.nodeType === 8 && neo.nodeValue.indexOf("v-html") === 0) {
-            if (!k) {
-                token = neo.nodeValue + ":end"
-                k = true
-            } else {
-                k = neo.nodeValue.indexOf(token) === 0
-            }
-//   k = !k
-            if (k) {
-                var arr = getSignature(bbb, neo.nodeValue)
-                if (arr.length) {
-                    array = array.concat(arr)
-                }
-            }
-        } else {
-            if (k) {
-                array.pop()
-            }
-        }
-    }
-    return array
-}
 /*
  <div ms-controller="test">{{aaa|html}}</div>
  
@@ -2558,19 +2525,8 @@ function addVnodeToData(elem, data) {
         return data.vnode
     } else if (elem.isVirtual) {
         return data.vnode = elem
-    } else if (elem.nodeType === 1) {
-
-        var vnode = VTree.queryVID(elem.getAttribute("data-vid"))
-        if (!vnode) {
-            vnode = new VNode(elem)
-            var vparent = VTree.queryVID(elem.parentNode.vid)
-            if (vparent) {
-                vparent.appendChild(vnode)
-            } else {
-                VTree.appendChild(vnode)
-            }
-        }
-        return data.vnode = vnode
+    } else if (elem.nodeType) {
+        return data.vnode = VTree.queryVID(elem.getAttribute("data-vid"))
     }
 }
 
@@ -3921,7 +3877,8 @@ function scanAttr(elem, vmodels, match) {
                             priority: (priorityMap[type] || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
-                            var signature = generateID("v-" + type)
+                            var pid = buildVTree(elem)
+                            var signature = "v-" + type + pid+".0"
                             var content = "<!--" + signature + ":" + value + "-->" +
                                     "<!--" + signature + ":" + value + ":end-->"
                             avalon(elem).innerHTML(content)
@@ -4029,7 +3986,7 @@ if (!"1" [0]) {
 //避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
-    scanNodeArray(nodes, vmodels)
+    scanNodeArray(nodes, vmodels, parent)
 }
 //function scanNodeList(parent, vmodels) {
 //    var node = parent.firstChild
@@ -4047,65 +4004,101 @@ function scanNodeList(parent, vmodels) {
 //{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
 function scanNodeArray(nodes, vmodels) {
     var bindings = []
-    var parent = nodes[0] ? nodes[0].parentNode : null
+    var firstChild = nodes[0] || {}
+    var isVirtual = firstChild.isVirtual == true
+    var doc = isVirtual ? VDOC : DOC //使用何种文档对象来创建各种节点
+    var inDom = firstChild.parentNode && firstChild.parentNode.nodeType === 1
+    var nodeIndex = 0, parent
     for (var i = 0, node; node = nodes[i]; i++) {
-        if (node.nodeType === 3) {
-            if (rexpr.test(node.nodeValue)) {
-                var tokens = scanExpr(node.nodeValue)
-                var generateSignatures = false
-                outerLoop:
-                        for (var k = 0, token; token = tokens[k++]; ) {
-                    if (token.expr) {
-                        generateSignatures = true
-                        break outerLoop
-                    }
-                }
-                if (generateSignatures) {
-                    var fragment = node.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
-                    var pid = buildVTree(parent)
-                    for (k = 0; token = tokens[k++]; ) {
+        switch (node.nodeType) {
+            case 1:
+                nodeIndex++
+                break
+            case 3:
+                if (rexpr.test(node.nodeValue)) {
+                    var tokens = scanExpr(node.nodeValue)
+                    var generatePlaceholders = false
+                    outerLoop:
+                            for (var t = 0, token; token = tokens[t++]; ) {
                         if (token.expr) {
-                            var signature = "v-" + token.type + pid + "." + i  // generateID("v-" + token.type)
-                            token.signature = signature
-                            signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
-                            var start = node.isVirtual ? new VComment(signature) : DOC.createComment(signature)
-                            var end = node.isVirtual ? new VComment(signature + ":end") : DOC.createComment(signature + ":end")
-                            token.element = end
-                            bindings.push(token)
-                            fragment.appendChild(start)
-                            fragment.appendChild(end)
-                        } else {
-                            fragment.appendChild(node.isVirtual ? new VText(token.value) : DOC.createTextNode(token.value))
+                            generatePlaceholders = true
+                            break outerLoop
                         }
                     }
-                    parent.replaceChild(fragment, node)
+                    if (generatePlaceholders) {//如果要生成占位用的注释节点
+                        parent = parent || node.parentNode
+                        var pid = buildVTree(parent)
+                        var fragment = doc.createDocumentFragment()
+                        for (t = 0; token = tokens[t++]; ) {
+                            if (token.expr) {
+                                var signature = "v-" + token.type + pid + "." +  nodeIndex++
+                                token.signature = signature
+                                signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
+                                var start = doc.createComment(signature)
+                                var end = doc.createComment(signature + ":end")
+                                token.element = end
+                                bindings.push(token)
+                                fragment.appendChild(start)
+                                fragment.appendChild(end)
+                            } else {
+                                fragment.appendChild(doc.createTextNode(token.value))
+                            }
+                        }
+                        parent.replaceChild(fragment, node)
+                    }
                 }
-            }
-        } else if (node.nodeType === 8) {
-            var nodeValue = node.nodeValue
-            if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
-                buildVTree(parent)
-                var content = nodeValue.replace(rvtext, function (a) {
-                    signature = a
-                    return ""
-                })
-                token = getToken(content)
-                token.element = node
-                token.signature = signature
-                token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
-                bindings.push(token)
-            }
+                break
+            case 8:
+                var nodeValue = node.nodeValue //如果后端渲染时已经生成好注释节点
+                if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
+                    nodeIndex++
+                    var content = nodeValue.replace(rvtext, function (a) {
+                        signature = a
+                        return ""
+                    })
+                    token = getToken(content)
+                    token.element = node
+                    token.signature = signature
+                    token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
+                    bindings.push(token)
+                }
+                break
         }
     }
-    if (bindings.length) {
-        executeBindings(bindings, vmodels)
-    }
 
-    for (var i = 0, node; node = nodes[i++]; ) {
+    if (bindings.length) {
+        if (!isVirtual && inDom) { //如果是扫描真实DOM树，那么我们需要在虚拟DOM树复制这一部分节点
+            vparent = VTree.queryVID(parent.getAttribute("data-vid"))
+            vparent.childNodes.length = 0
+            nodeIndex = 0
+            for (i = 0, node; node = parent.childNodes[i]; i++) {
+                switch (node.nodeType) {
+                    case 1:
+                        var vnode = VDOC.createElement(node.tagName, vparent)
+                        vnode.vid = pid + "." + nodeIndex++
+                        break
+                    case 3:
+                        vnode = VDOC.createTextNode(node.nodeValue)
+                        vparent.appendChild(vnode)
+                        break
+                    case 8:
+                        nodeValue = node.nodeValue
+                        if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
+                            nodeIndex++
+                        }
+                        var vnode = VDOC.createComment(nodeValue)
+                        vparent.appendChild(vnode)
+                        break
+
+                }
+            }
+            executeBindings(bindings, vmodels)
+        }
+    }
+    for (i = 0; node = nodes[i++]; ) {
         scanElement(node, node.nodeType, vmodels)
     }
 }
-
 function scanElement(node, nodeType, vmodels) {
     if (nodeType === 1) {
         if (node.isVirtual) {
@@ -4823,7 +4816,7 @@ bindingHandlers.include = function (data, vmodels) {
         }
         //下面的逻辑与html绑定差不多
         data.signature = generateID("v-include")
-        appendSignatures(elem, data, replace)
+        appendPlaceholders(elem, data, replace)
     }
     bindingHandlers.attr(data, vmodels)
 }
@@ -4863,7 +4856,7 @@ function includeExecutor(val, elem, data) {
         var fill = getTemplateNodes(data, val, text)
         var nodes = avalon.slice(fill.childNodes)
         
-        fillSignatures(target, data, fill, function (node) {
+        fillPlaceholders(target, data, fill, function (node) {
             if (lastTemplate)
                 lastTemplate.appendChild(node)
         })
@@ -5025,7 +5018,7 @@ bindingHandlers.repeat = function (data, vmodels) {
     var innerHTML = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
     var signature = generateID("v-" + data.type)
     data.signature = signature
-    appendSignatures(elem, data, type === "repeat")
+    appendPlaceholders(elem, data, type === "repeat")
     data.template = new VNode(avalon.parseHTML(innerHTML))
 
     data.handler = bindingExecutors.repeat
@@ -5095,7 +5088,7 @@ bindingExecutors.repeat = function (method, pos, el) {
             return
 
         var vnode = addVnodeToData(parent, data)
-        var comments = getSignatures(vnode, data.signature)
+        var comments = getPlaceholders(vnode, data.signature)
         
         var start = comments[0]
         var end = comments[comments.length-1]

@@ -11,7 +11,7 @@ bindingHandlers.include = function (data, vmodels) {
         }
         //下面的逻辑与html绑定差不多
         data.signature = generateID("v-include")
-        appendSignatures(elem, data, replace)
+        appendPlaceholders(elem, data, replace)
     }
     bindingHandlers.attr(data, vmodels)
 }
@@ -51,7 +51,7 @@ function includeExecutor(val, elem, data) {
         var fill = getTemplateNodes(data, val, text)
         var nodes = avalon.slice(fill.childNodes)
         
-        fillSignatures(target, data, fill, function (node) {
+        fillPlaceholders(target, data, fill, function (node) {
             if (lastTemplate)
                 lastTemplate.appendChild(node)
         })

@@ -1,6 +1,6 @@
 
 //处理路标系统的三个重要方法
-function getSignatures(elem, signature) {
+function getPlaceholders(elem, signature) {
     var comments = []
     for (var i = 0, el; el = elem.childNodes[i++]; ) {
         if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
@@ -10,19 +10,6 @@ function getSignatures(elem, signature) {
     return comments
 }
 
-function getSignature(array, signature) {
-    var collect = false, ret = []
-    for (var i = 0, el; el = array[i++]; ) {
-        if (el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
-            collect = !collect
-            continue
-        }
-        if (collect) {
-            ret.push(el)
-        }
-    }
-    return ret
-}
 
 function traverseNodeBetweenSignature(array, signature, callbacks) {
     var collect = false, comments = [], content = [], token
@@ -50,7 +37,7 @@ function traverseNodeBetweenSignature(array, signature, callbacks) {
        content:content
     }
 }
-function appendSignatures(elem, data, replace) {
+function appendPlaceholders(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时
     //其左右将插入两个注释节点，自身被替换
@@ -75,8 +62,8 @@ function appendSignatures(elem, data, replace) {
     return [start, end]
 }
 
-function fillSignatures(elem, data, fill, callback) {
-    var comments = getSignatures(elem, data.signature)
+function fillPlaceholders(elem, data, fill, callback) {
+    var comments = getPlaceholders(elem, data.signature)
     callback = callback || function () {
     }
     //移除两个注释节点间的节点

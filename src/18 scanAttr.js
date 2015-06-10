@@ -39,7 +39,7 @@ function scanAttr(elem, vmodels, match) {
                             priority: (priorityMap[type] || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
-                            var pid = buildTree(elem)
+                            var pid = buildVTree(elem)
                             var signature = "v-" + type + pid+".0"
                             var content = "<!--" + signature + ":" + value + "-->" +
                                     "<!--" + signature + ":" + value + ":end-->"
@@ -65,7 +65,6 @@ function scanAttr(elem, vmodels, match) {
                 elem.removeAttribute(arr[0])
                 elem.setAttribute(arr[1], arr[2])
             })
-            buildTree(elem)
             //http://bugs.jquery.com/ticket/7071
             //在IE下对VML读取type属性,会让此元素所有属性都变成<Failed>
             if (hasDuplex) {
