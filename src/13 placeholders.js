@@ -14,10 +14,10 @@ function getPlaceholders(elem, signature) {
 function traverseNodeBetweenSignature(array, signature, callbacks) {
     var collect = false, comments = [], content = [], token
     callbacks = callbacks || {}
-    for (var i = 0, el; el = array[i];i++ ) {
+    for (var i = 0, el; el = array[i]; i++) {
         if (!collect && el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
             comments.push(el)
-            token = callbacks.token = el.nodeValue+":end"
+            token = callbacks.token = el.nodeValue + ":end"
             collect = true
             callbacks.begin && callbacks.begin(el, i)
             continue
@@ -33,8 +33,8 @@ function traverseNodeBetweenSignature(array, signature, callbacks) {
         }
     }
     return {
-       comments: comments,
-       content:content
+        comments: comments,
+        content: content
     }
 }
 function appendPlaceholders(elem, data, replace) {
@@ -42,14 +42,9 @@ function appendPlaceholders(elem, data, replace) {
     //或include绑定，当使用了data-duplex-replace辅助指令时
     //其左右将插入两个注释节点，自身被替换
     var parent = elem.parentNode
-    if (parent.queryVID) {
-        start = new VComment(data.signature)
-        end = new VComment(data.signature + ":end")
-    } else {
-        var start = DOC.createComment(data.signature)
-        var end = DOC.createComment(data.signature + ":end")
-    }
-   
+    var doc = parent.isVirtual === true ? VDOC : DOC
+    var start = doc.createComment(data.signature)
+    var end = doc.createComment(data.signature + ":end")
     if (replace) {
         parent.insertBefore(start, elem)
         parent.replaceChild(end, elem)

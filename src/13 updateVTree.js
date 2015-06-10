@@ -213,7 +213,7 @@ function buildVTree(elem) {//将此元素生成对应的虚拟DOM,并挂在VTree
     if (!elem.isVirtual) {
         if (!VTree.queryVID(vid)) {
             var vparent = VTree.queryVID(elem.parentNode.getAttribute("data-vid"))
-            var vnode = new VElement(elem, vparent || VTree)
+            var vnode = new VElement(elem.nodeName, vparent || VTree)
             vnode.vid = vid
         }
     }

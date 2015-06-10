@@ -2015,12 +2015,12 @@ function shouldDispose(el) {
     }
 }
 
-function VElement(element, parentNode) {
+function VElement(nodeName, parentNode) {
+    nodeName = typeof nodeName === "object" ? nodeName.nodeName : nodeName
     this.nodeType = 1
-
-    //  this.vid = getUid(element)
-    this.nodeName = element.nodeName
-    this.className = element.className
+    this.nodeName = nodeName
+    this.tagName = nodeName
+    this.className = ""
     this.childNodes = []
     this.style = {}
     this.tasks = []
@@ -2028,8 +2028,8 @@ function VElement(element, parentNode) {
     this.parentNode = parentNode
     this.innerHTML = "<ms ms-if=bbb>"
     this.textContent = ""
-    // this.dirty
-    var fix = VElements[this.nodeName.toLowerCase()]
+    this.dirty = false
+    var fix = VElements[nodeName.toLowerCase()]
     if (typeof fix === "function") {
         fix(this)
     }
@@ -2042,6 +2042,9 @@ function VElement(element, parentNode) {
         log(e)
     }
 }
+
+
+
 var VElements = {
     input: function (elem) {
         elem.type = elem.props.type || "text"
@@ -2260,10 +2263,10 @@ function getPlaceholders(elem, signature) {
 function traverseNodeBetweenSignature(array, signature, callbacks) {
     var collect = false, comments = [], content = [], token
     callbacks = callbacks || {}
-    for (var i = 0, el; el = array[i];i++ ) {
+    for (var i = 0, el; el = array[i]; i++) {
         if (!collect && el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
             comments.push(el)
-            token = callbacks.token = el.nodeValue+":end"
+            token = callbacks.token = el.nodeValue + ":end"
             collect = true
             callbacks.begin && callbacks.begin(el, i)
             continue
@@ -2279,8 +2282,8 @@ function traverseNodeBetweenSignature(array, signature, callbacks) {
         }
     }
     return {
-       comments: comments,
-       content:content
+        comments: comments,
+        content: content
     }
 }
 function appendPlaceholders(elem, data, replace) {
@@ -2288,14 +2291,9 @@ function appendPlaceholders(elem, data, replace) {
     //或include绑定，当使用了data-duplex-replace辅助指令时
     //其左右将插入两个注释节点，自身被替换
     var parent = elem.parentNode
-    if (parent.queryVID) {
-        start = new VComment(data.signature)
-        end = new VComment(data.signature + ":end")
-    } else {
-        var start = DOC.createComment(data.signature)
-        var end = DOC.createComment(data.signature + ":end")
-    }
-   
+    var doc = parent.isVirtual === true ? VDOC : DOC
+    var start = doc.createComment(data.signature)
+    var end = doc.createComment(data.signature + ":end")
     if (replace) {
         parent.insertBefore(start, elem)
         parent.replaceChild(end, elem)
@@ -2554,7 +2552,7 @@ function buildVTree(elem) {//将此元素生成对应的虚拟DOM,并挂在VTree
     if (!elem.isVirtual) {
         if (!VTree.queryVID(vid)) {
             var vparent = VTree.queryVID(elem.parentNode.getAttribute("data-vid"))
-            var vnode = new VElement(elem, vparent || VTree)
+            var vnode = new VElement(elem.nodeName, vparent || VTree)
             vnode.vid = vid
         }
     }
@@ -2779,7 +2777,7 @@ var updateDTree = {
 
 //创建虚拟DOM的根节点
 root.setAttribute("data-vid", ".0")
-var VTree = avalon.VTree = new VElement(root)
+var VTree = avalon.VTree = new VElement("HTML")
 VTree.vid = ".0"
 //scanTag 遇到ms-controller会创建一个VElement添加到VTree
 var reID
@@ -2794,7 +2792,6 @@ function refreshTree() {
     updateTree(VTree)
 }
 function querySelector(tag, vid, root) {
-    console.log(tag,vid,root)
     root = root || document
     var nodes = root.getElementsByTagName(tag)
     for (var i = 0, node; node = nodes[i++]; ) {
@@ -4074,8 +4071,10 @@ function scanNodeArray(nodes, vmodels) {
             for (i = 0, node; node = parent.childNodes[i]; i++) {
                 switch (node.nodeType) {
                     case 1:
+                        var vid =  pid + "." + nodeIndex++
+                        node.setAttribute("data-vid", vid)
                         var vnode = VDOC.createElement(node.tagName, vparent)
-                        vnode.vid = pid + "." + nodeIndex++
+                        vnode.vid = vid
                         break
                     case 3:
                         vnode = VDOC.createTextNode(node.nodeValue)
@@ -4112,7 +4111,7 @@ function scanElement(node, nodeType, vmodels) {
         }
     }
 }
-var rvtext = /^v-(w+)[\.\d]+\:/
+var rvtext = /^v\-[a-z]+[\.\d]+/
 //实现一个能选择文本节点的选择器
 // tagName, vid@8
 function scanTag(elem, vmodels, node) {

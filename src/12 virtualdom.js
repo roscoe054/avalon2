@@ -1,9 +1,9 @@
-function VElement(element, parentNode) {
+function VElement(nodeName, parentNode) {
+    nodeName = typeof nodeName === "object" ? nodeName.nodeName : nodeName
     this.nodeType = 1
-
-    //  this.vid = getUid(element)
-    this.nodeName = element.nodeName
-    this.className = element.className
+    this.nodeName = nodeName
+    this.tagName = nodeName
+    this.className = ""
     this.childNodes = []
     this.style = {}
     this.tasks = []
@@ -11,8 +11,8 @@ function VElement(element, parentNode) {
     this.parentNode = parentNode
     this.innerHTML = "<ms ms-if=bbb>"
     this.textContent = ""
-    // this.dirty
-    var fix = VElements[this.nodeName.toLowerCase()]
+    this.dirty = false
+    var fix = VElements[nodeName.toLowerCase()]
     if (typeof fix === "function") {
         fix(this)
     }
@@ -25,6 +25,9 @@ function VElement(element, parentNode) {
         log(e)
     }
 }
+
+
+
 var VElements = {
     input: function (elem) {
         elem.type = elem.props.type || "text"

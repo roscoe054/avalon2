@@ -89,8 +89,10 @@ function scanNodeArray(nodes, vmodels) {
             for (i = 0, node; node = parent.childNodes[i]; i++) {
                 switch (node.nodeType) {
                     case 1:
+                        var vid =  pid + "." + nodeIndex++
+                        node.setAttribute("data-vid", vid)
                         var vnode = VDOC.createElement(node.tagName, vparent)
-                        vnode.vid = pid + "." + nodeIndex++
+                        vnode.vid = vid
                         break
                     case 3:
                         vnode = VDOC.createTextNode(node.nodeValue)
@@ -127,6 +129,6 @@ function scanElement(node, nodeType, vmodels) {
         }
     }
 }
-var rvtext = /^v-(w+)[\.\d]+\:/
+var rvtext = /^v\-[a-z]+[\.\d]+/
 //实现一个能选择文本节点的选择器
 // tagName, vid@8
