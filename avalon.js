@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.44 built in 2015.6.10
+ avalon.js 1.44 built in 2015.6.11
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -68,6 +68,7 @@ var Registry = {} //将函数曝光到此对象上，方便访问器收集依赖
 var W3C = window.dispatchEvent
 var root = DOC.documentElement
 var hyperspace = DOC.createDocumentFragment()
+var avalonFragment = hyperspace
 var cinerator = DOC.createElement("div")
 var class2type = {}
 "Boolean Number String Function Array Date RegExp Object Error".replace(rword, function(name) {
@@ -2347,10 +2348,9 @@ var updateVTree = {
         fillPlaceholders(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
-
-        //转换成文档碎片
-        var fill = new VNode(val, true)
+        var fill = new VNode(val)
         fillPlaceholders(vnode, data, fill)
+        console.log(data)
         scanNodeArray(fill.childNodes, data.vmodels)
     }
 //if 直接实现在bindingExecutors.attr
@@ -2422,7 +2422,6 @@ function VNode(element) {
     switch (element.nodeType) {
         case 11:
             ret = new VDocumentFragment()
-
             avalon.each(element.childNodes, function (index, node) {
                 ret.appendChild(new VNode(node))//添加孩子
             })
@@ -2463,9 +2462,12 @@ function DNode(element) {
             if (element.className.trim()) {
                 ret.className = element.className
             }
+            if(element.vid){
+                ret.setAttribute("data-vid",element.vid)
+            }
             updateDTree.attr(element, ret)
             updateDTree.css(element, ret)
-            ret.vid = element.vid
+          //  ret.setAttribute = element.vid
             avalon.each(element.childNodes, function (index, node) {
                 ret.appendChild(new DNode(node))//添加孩子
             })
@@ -2477,7 +2479,7 @@ function DNode(element) {
     }
 }
 
-function cloneVNode(element) {//克降虚拟DOM
+function cloneVNode(element) {//克隆虚拟DOM
     var ret
     switch (element.nodeType) {
         case 11:
@@ -2499,8 +2501,8 @@ function cloneVNode(element) {//克降虚拟DOM
             })
             ret.className = element.className
             ret.textContent = element.innerHTML
-            delete ret.vid
-            getUid(ret)
+          //  delete ret.vid
+         //   getUid(ret)
             return ret
         case 3:
             return new VText(element.nodeValue)
@@ -2510,13 +2512,13 @@ function cloneVNode(element) {//克降虚拟DOM
 }
 
 //将一组节点转换为虚拟DOM
-function VNodes(nodes) {
-    var ret = []
-    avalon.each(nodes, function (i, node) {
-        ret.push(new VNode(node))
-    })
-    return ret
-}
+//function VNodes(nodes) {
+//    var ret = []
+//    avalon.each(nodes, function (i, node) {
+//        ret.push(new VNode(node))
+//    })
+//    return ret
+//}
 
 function addVnodeToData(elem, data) {
     if (data.vnode) {
@@ -2850,7 +2852,7 @@ var rnest = /<(?:tb|td|tf|th|tr|col|opt|leg|cap|area)/ //需要处理套嵌关�
 var script = DOC.createElement("script")
 var rhtml = /<|&#?\w+;/
 avalon.parseHTML = function (html) {
-    var fragment = hyperspace.cloneNode(false)
+    var fragment = avalonFragment.cloneNode(false)
     if (typeof html !== "string") {
         return fragment
     }
@@ -3983,7 +3985,7 @@ if (!"1" [0]) {
 //避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
-    scanNodeArray(nodes, vmodels, parent)
+    scanNodeArray(nodes, vmodels, parent.getAttribute("data-vid"))
 }
 //function scanNodeList(parent, vmodels) {
 //    var node = parent.firstChild
@@ -3999,20 +4001,22 @@ function scanNodeList(parent, vmodels) {
 //
 //{{expr}} --> <!--v-text123213:expr--><!--v-text123213:expr:end-->
 //{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
-function scanNodeArray(nodes, vmodels) {
+function scanNodeArray(nodes, vmodels, pid) {
     var bindings = []
     var firstChild = nodes[0] || {}
     var isVirtual = firstChild.isVirtual == true
     var doc = isVirtual ? VDOC : DOC //使用何种文档对象来创建各种节点
     var inDom = firstChild.parentNode && firstChild.parentNode.nodeType === 1
-    var nodeIndex = 0, parent
+    var nodeIndex = 0, parent, skipHtml = false
     for (var i = 0, node; node = nodes[i]; i++) {
         switch (node.nodeType) {
             case 1:
-                nodeIndex++
+                if (!skipHtml) {
+                    nodeIndex++
+                }
                 break
             case 3:
-                if (rexpr.test(node.nodeValue)) {
+                if (!skipHtml && rexpr.test(node.nodeValue)) {
                     var tokens = scanExpr(node.nodeValue)
                     var generatePlaceholders = false
                     outerLoop:
@@ -4024,11 +4028,11 @@ function scanNodeArray(nodes, vmodels) {
                     }
                     if (generatePlaceholders) {//如果要生成占位用的注释节点
                         parent = parent || node.parentNode
-                        var pid = buildVTree(parent)
+                        pid = pid || buildVTree(parent)
                         var fragment = doc.createDocumentFragment()
                         for (t = 0; token = tokens[t++]; ) {
                             if (token.expr) {
-                                var signature = "v-" + token.type + pid + "." +  nodeIndex++
+                                var signature = "v-" + token.type + pid + "." + nodeIndex++
                                 token.signature = signature
                                 signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
                                 var start = doc.createComment(signature)
@@ -4047,7 +4051,8 @@ function scanNodeArray(nodes, vmodels) {
                 break
             case 8:
                 var nodeValue = node.nodeValue //如果后端渲染时已经生成好注释节点
-                if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
+                if (!skipHtml && rvtext.test(nodeValue)) {
+                    //<b data-vid=".1.0">1</b><!-v-html><b>2</b><!--v-html:end><b data-vid=".1.1">3</b>
                     nodeIndex++
                     var content = nodeValue.replace(rvtext, function (a) {
                         signature = a
@@ -4057,7 +4062,12 @@ function scanNodeArray(nodes, vmodels) {
                     token.element = node
                     token.signature = signature
                     token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
+                    if (token.type === "html") {
+                        skipHtml = nodeValue + ":end"
+                    }
                     bindings.push(token)
+                } else if (nodeValue === skipHtml) {
+                    skipHtml = false
                 }
                 break
         }
@@ -4068,11 +4078,14 @@ function scanNodeArray(nodes, vmodels) {
             vparent = VTree.queryVID(parent.getAttribute("data-vid"))
             vparent.childNodes.length = 0
             nodeIndex = 0
+            skipHtml = false
             for (i = 0, node; node = parent.childNodes[i]; i++) {
                 switch (node.nodeType) {
                     case 1:
-                        var vid =  pid + "." + nodeIndex++
-                        node.setAttribute("data-vid", vid)
+                        if (!skipHtml) {
+                            var vid = pid + "." + nodeIndex++
+                            node.setAttribute("data-vid", vid)
+                        }
                         var vnode = VDOC.createElement(node.tagName, vparent)
                         vnode.vid = vid
                         break
@@ -4081,11 +4094,16 @@ function scanNodeArray(nodes, vmodels) {
                         vparent.appendChild(vnode)
                         break
                     case 8:
-                        nodeValue = node.nodeValue
-                        if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
+                        var nodeValue = node.nodeValue
+                        if (!skipHtml && rvtext.test(nodeValue)) {
                             nodeIndex++
+                            if (nodeValue.indexOf("v-html") === 0) {
+                                skipHtml = nodeValue + ":end"
+                            }
+                        } else if (nodeValue === skipHtml) {
+                            skipHtml = false
                         }
-                        var vnode = VDOC.createComment(nodeValue)
+                        vnode = VDOC.createComment(nodeValue)
                         vparent.appendChild(vnode)
                         break
 
@@ -4775,16 +4793,15 @@ bindingExecutors.html = function (val, elem, data) {
         var fragment = avalon.parseHTML(String(val))
     } else if (val.nodeType === 11) { //将val转换为文档碎片
         fragment = val.childNodes
-    } else if (val.nodeType === 1 || val.item) {
-        var nodes = val.nodeType === 1 ? val.childNodes : val.item
-        fragment = hyperspace.cloneNode(true)
-        while (nodes[0]) {
-            fragment.appendChild(nodes[0])
+    } else if (val.nodeType === 1 ) {
+        fragment = avalonFragment.cloneNode(true)
+        while (val.firstChild) {
+            fragment.appendChild(val.firstChild)
         }
     }
     var vnode = addVnodeToData(parent, data)
     updateVTree.html(vnode, parent, fragment, data)
-   
+
     vnode.addTask("html")
 }
 bindingHandlers["if"] =

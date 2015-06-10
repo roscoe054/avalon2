@@ -8,10 +8,9 @@ var updateVTree = {
         fillPlaceholders(vnode, data, fill)
     },
     html: function (vnode, elem, val, data) {
-
-        //转换成文档碎片
-        var fill = new VNode(val, true)
+        var fill = new VNode(val)
         fillPlaceholders(vnode, data, fill)
+        console.log(data)
         scanNodeArray(fill.childNodes, data.vmodels)
     }
 //if 直接实现在bindingExecutors.attr
@@ -83,7 +82,6 @@ function VNode(element) {
     switch (element.nodeType) {
         case 11:
             ret = new VDocumentFragment()
-
             avalon.each(element.childNodes, function (index, node) {
                 ret.appendChild(new VNode(node))//添加孩子
             })
@@ -124,9 +122,12 @@ function DNode(element) {
             if (element.className.trim()) {
                 ret.className = element.className
             }
+            if(element.vid){
+                ret.setAttribute("data-vid",element.vid)
+            }
             updateDTree.attr(element, ret)
             updateDTree.css(element, ret)
-            ret.vid = element.vid
+          //  ret.setAttribute = element.vid
             avalon.each(element.childNodes, function (index, node) {
                 ret.appendChild(new DNode(node))//添加孩子
             })
@@ -138,7 +139,7 @@ function DNode(element) {
     }
 }
 
-function cloneVNode(element) {//克降虚拟DOM
+function cloneVNode(element) {//克隆虚拟DOM
     var ret
     switch (element.nodeType) {
         case 11:
@@ -160,8 +161,8 @@ function cloneVNode(element) {//克降虚拟DOM
             })
             ret.className = element.className
             ret.textContent = element.innerHTML
-            delete ret.vid
-            getUid(ret)
+          //  delete ret.vid
+         //   getUid(ret)
             return ret
         case 3:
             return new VText(element.nodeValue)
@@ -171,13 +172,13 @@ function cloneVNode(element) {//克降虚拟DOM
 }
 
 //将一组节点转换为虚拟DOM
-function VNodes(nodes) {
-    var ret = []
-    avalon.each(nodes, function (i, node) {
-        ret.push(new VNode(node))
-    })
-    return ret
-}
+//function VNodes(nodes) {
+//    var ret = []
+//    avalon.each(nodes, function (i, node) {
+//        ret.push(new VNode(node))
+//    })
+//    return ret
+//}
 
 function addVnodeToData(elem, data) {
     if (data.vnode) {

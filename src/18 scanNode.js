@@ -1,7 +1,7 @@
 //避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
-    scanNodeArray(nodes, vmodels, parent)
+    scanNodeArray(nodes, vmodels, parent.getAttribute("data-vid"))
 }
 //function scanNodeList(parent, vmodels) {
 //    var node = parent.firstChild
@@ -17,20 +17,22 @@ function scanNodeList(parent, vmodels) {
 //
 //{{expr}} --> <!--v-text123213:expr--><!--v-text123213:expr:end-->
 //{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
-function scanNodeArray(nodes, vmodels) {
+function scanNodeArray(nodes, vmodels, pid) {
     var bindings = []
     var firstChild = nodes[0] || {}
     var isVirtual = firstChild.isVirtual == true
     var doc = isVirtual ? VDOC : DOC //使用何种文档对象来创建各种节点
     var inDom = firstChild.parentNode && firstChild.parentNode.nodeType === 1
-    var nodeIndex = 0, parent
+    var nodeIndex = 0, parent, skipHtml = false
     for (var i = 0, node; node = nodes[i]; i++) {
         switch (node.nodeType) {
             case 1:
-                nodeIndex++
+                if (!skipHtml) {
+                    nodeIndex++
+                }
                 break
             case 3:
-                if (rexpr.test(node.nodeValue)) {
+                if (!skipHtml && rexpr.test(node.nodeValue)) {
                     var tokens = scanExpr(node.nodeValue)
                     var generatePlaceholders = false
                     outerLoop:
@@ -42,11 +44,11 @@ function scanNodeArray(nodes, vmodels) {
                     }
                     if (generatePlaceholders) {//如果要生成占位用的注释节点
                         parent = parent || node.parentNode
-                        var pid = buildVTree(parent)
+                        pid = pid || buildVTree(parent)
                         var fragment = doc.createDocumentFragment()
                         for (t = 0; token = tokens[t++]; ) {
                             if (token.expr) {
-                                var signature = "v-" + token.type + pid + "." +  nodeIndex++
+                                var signature = "v-" + token.type + pid + "." + nodeIndex++
                                 token.signature = signature
                                 signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
                                 var start = doc.createComment(signature)
@@ -65,7 +67,8 @@ function scanNodeArray(nodes, vmodels) {
                 break
             case 8:
                 var nodeValue = node.nodeValue //如果后端渲染时已经生成好注释节点
-                if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
+                if (!skipHtml && rvtext.test(nodeValue)) {
+                    //<b data-vid=".1.0">1</b><!-v-html><b>2</b><!--v-html:end><b data-vid=".1.1">3</b>
                     nodeIndex++
                     var content = nodeValue.replace(rvtext, function (a) {
                         signature = a
@@ -75,7 +78,12 @@ function scanNodeArray(nodes, vmodels) {
                     token.element = node
                     token.signature = signature
                     token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
+                    if (token.type === "html") {
+                        skipHtml = nodeValue + ":end"
+                    }
                     bindings.push(token)
+                } else if (nodeValue === skipHtml) {
+                    skipHtml = false
                 }
                 break
         }
@@ -86,11 +94,14 @@ function scanNodeArray(nodes, vmodels) {
             vparent = VTree.queryVID(parent.getAttribute("data-vid"))
             vparent.childNodes.length = 0
             nodeIndex = 0
+            skipHtml = false
             for (i = 0, node; node = parent.childNodes[i]; i++) {
                 switch (node.nodeType) {
                     case 1:
-                        var vid =  pid + "." + nodeIndex++
-                        node.setAttribute("data-vid", vid)
+                        if (!skipHtml) {
+                            var vid = pid + "." + nodeIndex++
+                            node.setAttribute("data-vid", vid)
+                        }
                         var vnode = VDOC.createElement(node.tagName, vparent)
                         vnode.vid = vid
                         break
@@ -99,11 +110,16 @@ function scanNodeArray(nodes, vmodels) {
                         vparent.appendChild(vnode)
                         break
                     case 8:
-                        nodeValue = node.nodeValue
-                        if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
+                        var nodeValue = node.nodeValue
+                        if (!skipHtml && rvtext.test(nodeValue)) {
                             nodeIndex++
+                            if (nodeValue.indexOf("v-html") === 0) {
+                                skipHtml = nodeValue + ":end"
+                            }
+                        } else if (nodeValue === skipHtml) {
+                            skipHtml = false
                         }
-                        var vnode = VDOC.createComment(nodeValue)
+                        vnode = VDOC.createComment(nodeValue)
                         vparent.appendChild(vnode)
                         break
 

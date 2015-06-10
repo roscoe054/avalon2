@@ -9,15 +9,14 @@ bindingExecutors.html = function (val, elem, data) {
         var fragment = avalon.parseHTML(String(val))
     } else if (val.nodeType === 11) { //将val转换为文档碎片
         fragment = val.childNodes
-    } else if (val.nodeType === 1 || val.item) {
-        var nodes = val.nodeType === 1 ? val.childNodes : val.item
-        fragment = hyperspace.cloneNode(true)
-        while (nodes[0]) {
-            fragment.appendChild(nodes[0])
+    } else if (val.nodeType === 1 ) {
+        fragment = avalonFragment.cloneNode(true)
+        while (val.firstChild) {
+            fragment.appendChild(val.firstChild)
         }
     }
     var vnode = addVnodeToData(parent, data)
     updateVTree.html(vnode, parent, fragment, data)
-   
+
     vnode.addTask("html")
 }
