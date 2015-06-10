@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>虚拟DOM测试</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+        <script>
+
+            var vm = avalon.define({
+                $id: "test",
+                array: {
+                    a: 1,
+                    b: 2,
+                    c: 3
+                }
+            })
+     
+        </script>
+    </head>
+    <body ms-controller="test">
+        <h1>测试虚拟DOM</h1>
+
+        <ul>
+            <li ms-repeat="array">{{$key}}*{{$val}}</li> 
+        </ul>
+
+    </body>
+</html>
