@@ -26,7 +26,7 @@ var Test = React.createClass({
     return (
       <ol onClick={this.change}>
         {this.state.results.map(function(result,index) {
-          return <li key={result.id}>{result.name}</li>;
+          return <li key={result.id}><b>{result.name}</b></li>;
         })}
       </ol>
     );
