@@ -1,7 +1,7 @@
 function scanAttr(elem, vmodels, match) {
     var scanNode = true
     if (vmodels.length) {
-        var attributes =  elem.isVirtual ? getVAttributes(elem) : getAttributes ? getAttributes(elem) : elem.attributes
+        var attributes = elem.isVirtual ? getVAttributes(elem) : getAttributes ? getAttributes(elem) : elem.attributes
         var bindings = []
         var fixAttrs = []
         var msData = {}
@@ -35,13 +35,13 @@ function scanAttr(elem, vmodels, match) {
                             element: elem,
                             name: name,
                             value: value,
-                             //chrome与firefox下Number(param)得到的值不一样 #855
-                            priority:  (priorityMap[type] || type.charCodeAt(0) * 10 )+ (Number(param.replace(/\D/g, "")) || 0)
+                            //chrome与firefox下Number(param)得到的值不一样 #855
+                            priority: (priorityMap[type] || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
                             var signature = generateID("v-" + type)
-                            var content = "<!--"+ signature + ":"+ value +"-->" +
-                            "<!--"+ signature + ":"+ value +":end-->"
+                            var content = "<!--" + signature + ":" + value + "-->" +
+                                    "<!--" + signature + ":" + value + ":end-->"
                             avalon(elem).innerHTML(content)
                             continue
                         } else if (type === "duplex") {
@@ -74,6 +74,7 @@ function scanAttr(elem, vmodels, match) {
                     log("warning!一个控件不能同时定义ms-attr-value与" + hasDuplex)
                 }
             }
+            buildVTree(elem)
             for (i = 0; binding = bindings[i]; i++) {
                 type = binding.type
                 if (rnoscanAttrBinding.test(type)) {
@@ -141,3 +142,4 @@ if (!"1" [0]) {
         return cacheAttrs.put(str, attributes)
     }
 }
+

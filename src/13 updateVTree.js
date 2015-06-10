@@ -218,8 +218,8 @@ function addVnodeToData(elem, data) {
     } else if (elem.isVirtual) {
         return data.vnode = elem
     } else if (elem.nodeType === 1) {
-        var vid = getUid(elem)
-        var vnode = VTree.queryVID(vid)
+
+        var vnode = VTree.queryVID(elem.getAttribute("data-vid"))
         if (!vnode) {
             vnode = new VNode(elem)
             var vparent = VTree.queryVID(elem.parentNode.vid)
@@ -231,4 +231,35 @@ function addVnodeToData(elem, data) {
         }
         return data.vnode = vnode
     }
+}
+
+
+var rootID = 1
+function buidVID(elem) {//为元素生成data-vid
+    var vid = elem.getAttribute("data-vid")
+    if (!vid) {
+        var parent = elem.parentNode
+        if (parent && parent.nodeType === 1) {
+            var pid = parent.getAttribute("data-vid")
+            if (pid) {
+                vid = pid + "." + indexElement(elem, parent.childNodes)
+            } else {
+                vid = "." + rootID++
+            }
+            elem.setAttribute("data-vid", vid)
+        }
+    }
+    return vid
+}
+
+function buildVTree(elem) {//将此元素生成对应的虚拟DOM,并挂在VTree中
+    var vid = buidVID(elem)
+    if (!elem.isVirtual) {
+        if (!VTree.queryVID(vid)) {
+            var vparent = VTree.queryVID(elem.parentNode.getAttribute("data-vid"))
+            var vnode = new VElement(elem, vparent || VTree)
+            vnode.vid = vid
+        }
+    }
+    return vid
 }

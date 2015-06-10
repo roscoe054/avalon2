@@ -16,9 +16,6 @@ function scanTag(elem, vmodels, node) {
             return
         }
 
-        var vparent = vmodels.batch ? elem.parentNode : VTree
-        new VElement(elem,  vparent)
- 
         //ms-important不包含父VM，ms-controller相反
         vmodels = node === b ? [newVmodel] : [newVmodel].concat(vmodels)
         var name = node.name

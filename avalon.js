@@ -1996,20 +1996,20 @@ function shouldDispose(el) {
         return true
     }
     if (el.isVirtual) {
-        if (el.nodeType === 1) {
-            return !VTree.queryVID(el.vid)
-        } else {
-            if (!VTree.queryVID(el.parentNode.vid)) {
-                var notInVTree = true//如果它父亲不在VTree
-            } else {
-                //如果它现在也不是它父亲的孩子
-                notInVTree = el.parentNode.childNodes.indexOf(el) === -1
-            }
-        }
-        if (notInVTree) {
-            el.parentNode = null
-            return true
-        }
+//        if (el.nodeType === 1) {
+//            return !VTree.queryVID(el.vid)
+//        } else {
+//            if (!VTree.queryVID(el.parentNode.vid)) {
+//                var notInVTree = true//如果它父亲不在VTree
+//            } else {
+//                //如果它现在也不是它父亲的孩子
+//                notInVTree = el.parentNode.childNodes.indexOf(el) === -1
+//            }
+//        }
+//        if (notInVTree) {
+//            el.parentNode = null
+//            return true
+//        }
     } else {
         return el.msRetain ? 0 : (el.nodeType === 1 ? !root.contains(el) : !avalon.contains(root, el))
     }
@@ -2018,7 +2018,7 @@ function shouldDispose(el) {
 function VElement(element, parentNode) {
     this.nodeType = 1
 
-    this.vid = getUid(element)
+  //  this.vid = getUid(element)
     this.nodeName = element.nodeName
     this.className = element.className
     this.childNodes = []
@@ -2153,13 +2153,23 @@ VElement.prototype = {
         return elem
     },
     getAttribute: function (name) {
+        if (name === "data-vid") {
+            return this.vid
+        }
         return this.props[name]
     },
     hasAttribute: function (name) {
+        if (name === "data-vid") {
+            return typeof this.vid === "string"
+        }
         return typeof this.props[name] === "string"
     },
     setAttribute: function (name, value) {
-        this.props[name] = String(value)
+        if (name === "data-vid") {
+            this.vid = value
+        } else {
+            this.props[name] = String(value)
+        }
         return this
     },
     removeAttribute: function (name) {
@@ -2549,8 +2559,8 @@ function addVnodeToData(elem, data) {
     } else if (elem.isVirtual) {
         return data.vnode = elem
     } else if (elem.nodeType === 1) {
-        var vid = getUid(elem)
-        var vnode = VTree.queryVID(vid)
+
+        var vnode = VTree.queryVID(elem.getAttribute("data-vid"))
         if (!vnode) {
             vnode = new VNode(elem)
             var vparent = VTree.queryVID(elem.parentNode.vid)
@@ -2564,6 +2574,36 @@ function addVnodeToData(elem, data) {
     }
 }
 
+
+var rootID = 1
+function buidVID(elem) {//为元素生成data-vid
+    var vid = elem.getAttribute("data-vid")
+    if (!vid) {
+        var parent = elem.parentNode
+        if (parent && parent.nodeType === 1) {
+            var pid = parent.getAttribute("data-vid")
+            if (pid) {
+                vid = pid + "." + indexElement(elem, parent.childNodes)
+            } else {
+                vid = "." + rootID++
+            }
+            elem.setAttribute("data-vid", vid)
+        }
+    }
+    return vid
+}
+
+function buildVTree(elem) {//将此元素生成对应的虚拟DOM,并挂在VTree中
+    var vid = buidVID(elem)
+    if (!elem.isVirtual) {
+        if (!VTree.queryVID(vid)) {
+            var vparent = VTree.queryVID(elem.parentNode.getAttribute("data-vid"))
+            var vnode = new VElement(elem, vparent || VTree)
+            vnode.vid = vid
+        }
+    }
+    return vid
+}
 /* 
  将VTree中的数据同步到DTree 
  */
@@ -2782,7 +2822,9 @@ var updateDTree = {
 
 
 //创建虚拟DOM的根节点
+root.setAttribute("data-vid", ".0")
 var VTree = avalon.VTree = new VElement(root)
+VTree.vid = ".0"
 //scanTag 遇到ms-controller会创建一个VElement添加到VTree
 var reID
 function globalRender() {
@@ -2796,16 +2838,17 @@ function refreshTree() {
     updateTree(VTree)
 }
 function querySelector(tag, vid, root) {
+    console.log(tag,vid,root)
     root = root || document
     var nodes = root.getElementsByTagName(tag)
     for (var i = 0, node; node = nodes[i++]; ) {
-        if (node.vid === vid)
+        if (node.getAttribute("data-vid") === vid)
             return node
     }
 }
 function updateTree(node, element) {
     if (node.dirty) {
-        var rnode = querySelector(node.nodeName, node.vid, element)
+        var rnode = querySelector(node.nodeName, node.getAttribute("data-vid"), element)
         element = rnode
         if (!rnode)
             return
@@ -3840,7 +3883,7 @@ function bindingSorter(a, b) {
 function scanAttr(elem, vmodels, match) {
     var scanNode = true
     if (vmodels.length) {
-        var attributes =  elem.isVirtual ? getVAttributes(elem) : getAttributes ? getAttributes(elem) : elem.attributes
+        var attributes = elem.isVirtual ? getVAttributes(elem) : getAttributes ? getAttributes(elem) : elem.attributes
         var bindings = []
         var fixAttrs = []
         var msData = {}
@@ -3874,13 +3917,13 @@ function scanAttr(elem, vmodels, match) {
                             element: elem,
                             name: name,
                             value: value,
-                             //chrome与firefox下Number(param)得到的值不一样 #855
-                            priority:  (priorityMap[type] || type.charCodeAt(0) * 10 )+ (Number(param.replace(/\D/g, "")) || 0)
+                            //chrome与firefox下Number(param)得到的值不一样 #855
+                            priority: (priorityMap[type] || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
                             var signature = generateID("v-" + type)
-                            var content = "<!--"+ signature + ":"+ value +"-->" +
-                            "<!--"+ signature + ":"+ value +":end-->"
+                            var content = "<!--" + signature + ":" + value + "-->" +
+                                    "<!--" + signature + ":" + value + ":end-->"
                             avalon(elem).innerHTML(content)
                             continue
                         } else if (type === "duplex") {
@@ -3913,6 +3956,7 @@ function scanAttr(elem, vmodels, match) {
                     log("warning!一个控件不能同时定义ms-attr-value与" + hasDuplex)
                 }
             }
+            buildVTree(elem)
             for (i = 0; binding = bindings[i]; i++) {
                 type = binding.type
                 if (rnoscanAttrBinding.test(type)) {
@@ -3981,6 +4025,7 @@ if (!"1" [0]) {
     }
 }
 
+
 //避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
@@ -4017,9 +4062,10 @@ function scanNodeArray(nodes, vmodels) {
                 }
                 if (generateSignatures) {
                     var fragment = node.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
+                    var pid = buildVTree(parent)
                     for (k = 0; token = tokens[k++]; ) {
                         if (token.expr) {
-                            var signature = generateID("v-" + token.type)
+                            var signature = "v-" + token.type + pid + "." + i  // generateID("v-" + token.type)
                             token.signature = signature
                             signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
                             var start = node.isVirtual ? new VComment(signature) : DOC.createComment(signature)
@@ -4038,6 +4084,7 @@ function scanNodeArray(nodes, vmodels) {
         } else if (node.nodeType === 8) {
             var nodeValue = node.nodeValue
             if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
+                buildVTree(parent)
                 var content = nodeValue.replace(rvtext, function (a) {
                     signature = a
                     return ""
@@ -4072,7 +4119,7 @@ function scanElement(node, nodeType, vmodels) {
         }
     }
 }
-var rvtext = /^v-(w+)\d+\:/
+var rvtext = /^v-(w+)[\.\d]+\:/
 //实现一个能选择文本节点的选择器
 // tagName, vid@8
 function scanTag(elem, vmodels, node) {
@@ -4093,9 +4140,6 @@ function scanTag(elem, vmodels, node) {
             return
         }
 
-        var vparent = vmodels.batch ? elem.parentNode : VTree
-        new VElement(elem,  vparent)
- 
         //ms-important不包含父VM，ms-controller相反
         vmodels = node === b ? [newVmodel] : [newVmodel].concat(vmodels)
         var name = node.name

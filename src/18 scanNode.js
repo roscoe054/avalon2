@@ -1,7 +1,7 @@
 //避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
-    scanNodeArray(nodes, vmodels)
+    scanNodeArray(nodes, vmodels, parent)
 }
 //function scanNodeList(parent, vmodels) {
 //    var node = parent.firstChild
@@ -19,9 +19,13 @@ function scanNodeList(parent, vmodels) {
 //{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
 function scanNodeArray(nodes, vmodels) {
     var bindings = []
-    var parent = nodes[0] ? nodes[0].parentNode : null
+    var isVirtual = (nodes[0] || {}).isVirtual 
+    var doc = isVirtual ? VDOC : DOC //使用何种文档对象来创建各种节点
+    var nodeIndex = 0, parent
     for (var i = 0, node; node = nodes[i]; i++) {
-        if (node.nodeType === 3) {
+        if (node.nodeType === 1) {
+            nodeIndex++
+        } else if (node.nodeType === 3) {
             if (rexpr.test(node.nodeValue)) {
                 var tokens = scanExpr(node.nodeValue)
                 var generateSignatures = false
@@ -33,20 +37,23 @@ function scanNodeArray(nodes, vmodels) {
                     }
                 }
                 if (generateSignatures) {
-                    var fragment = node.isVirtual ? new VDocumentFragment() : DOC.createDocumentFragment()
+                    parent = parent || node.parentNode
+                    var pid = buildTree(parent)
+                    var fragment = doc.createDocumentFragment()
                     for (k = 0; token = tokens[k++]; ) {
                         if (token.expr) {
-                            var signature = generateID("v-" + token.type)
+                            nodeIndex++
+                            var signature = "v-" + token.type + pid + "." + nodeIndex
                             token.signature = signature
                             signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
-                            var start = node.isVirtual ? new VComment(signature) : DOC.createComment(signature)
-                            var end = node.isVirtual ? new VComment(signature + ":end") : DOC.createComment(signature + ":end")
+                            var start = doc.createComment(signature)
+                            var end = doc.createComment(signature + ":end")
                             token.element = end
                             bindings.push(token)
                             fragment.appendChild(start)
                             fragment.appendChild(end)
                         } else {
-                            fragment.appendChild(node.isVirtual ? new VText(token.value) : DOC.createTextNode(token.value))
+                            fragment.appendChild(doc.createTextNode(token.value))
                         }
                     }
                     parent.replaceChild(fragment, node)
@@ -55,6 +62,7 @@ function scanNodeArray(nodes, vmodels) {
         } else if (node.nodeType === 8) {
             var nodeValue = node.nodeValue
             if (nodeValue.slice(-4) !== ":end" && rvtext.test(nodeValue)) {
+                nodeIndex++
                 var content = nodeValue.replace(rvtext, function (a) {
                     signature = a
                     return ""
@@ -67,7 +75,18 @@ function scanNodeArray(nodes, vmodels) {
             }
         }
     }
+
     if (bindings.length) {
+        if(!isVirtual){
+          for( i = 0, node; node = parent.childNodes[i]; i++){
+          if (node.nodeType === 1) {
+             
+          } else if (node.nodeType === 3) {
+          } else if(node.nodeType === 8){
+              
+          }
+        }
+
         executeBindings(bindings, vmodels)
     }
 
@@ -75,7 +94,6 @@ function scanNodeArray(nodes, vmodels) {
         scanElement(node, node.nodeType, vmodels)
     }
 }
-
 function scanElement(node, nodeType, vmodels) {
     if (nodeType === 1) {
         if (node.isVirtual) {
@@ -89,6 +107,6 @@ function scanElement(node, nodeType, vmodels) {
         }
     }
 }
-var rvtext = /^v-(w+)\d+\:/
+var rvtext = /^v-(w+)[\.\d]+\:/
 //实现一个能选择文本节点的选择器
 // tagName, vid@8

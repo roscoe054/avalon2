@@ -1,7 +1,7 @@
 function VElement(element, parentNode) {
     this.nodeType = 1
 
-    this.vid = getUid(element)
+    //  this.vid = getUid(element)
     this.nodeName = element.nodeName
     this.className = element.className
     this.childNodes = []
@@ -136,13 +136,23 @@ VElement.prototype = {
         return elem
     },
     getAttribute: function (name) {
+        if (name === "data-vid") {
+            return this.vid
+        }
         return this.props[name]
     },
     hasAttribute: function (name) {
+        if (name === "data-vid") {
+            return typeof this.vid === "string"
+        }
         return typeof this.props[name] === "string"
     },
     setAttribute: function (name, value) {
-        this.props[name] = String(value)
+        if (name === "data-vid") {
+            this.vid = value
+        } else {
+            this.props[name] = String(value)
+        }
         return this
     },
     removeAttribute: function (name) {
@@ -202,4 +212,17 @@ String("appendChild, removeChild,insertBefore,replaceChild").replace(/\w+/g, fun
     VDocumentFragment.prototype[method] = VElement.prototype[method]
 })
 
-
+var VDOC = {
+    createElement: function (tagName, parentNode) {
+        return new VElement(tagName, parentNode)
+    },
+    createTextNode: function (text) {
+        return new VText(text)
+    },
+    createComment: function (text) {
+        return new VComment(text)
+    },
+    createDocumentFragment: function () {
+        return new VDocumentFragment()
+    }
+}

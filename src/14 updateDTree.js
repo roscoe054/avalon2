@@ -216,7 +216,9 @@ var updateDTree = {
 
 
 //创建虚拟DOM的根节点
+root.setAttribute("data-vid", ".0")
 var VTree = avalon.VTree = new VElement(root)
+VTree.vid = ".0"
 //scanTag 遇到ms-controller会创建一个VElement添加到VTree
 var reID
 function globalRender() {
@@ -230,16 +232,17 @@ function refreshTree() {
     updateTree(VTree)
 }
 function querySelector(tag, vid, root) {
+    console.log(tag,vid,root)
     root = root || document
     var nodes = root.getElementsByTagName(tag)
     for (var i = 0, node; node = nodes[i++]; ) {
-        if (node.vid === vid)
+        if (node.getAttribute("data-vid") === vid)
             return node
     }
 }
 function updateTree(node, element) {
     if (node.dirty) {
-        var rnode = querySelector(node.nodeName, node.vid, element)
+        var rnode = querySelector(node.nodeName, node.getAttribute("data-vid"), element)
         element = rnode
         if (!rnode)
             return
