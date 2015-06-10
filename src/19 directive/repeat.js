@@ -119,7 +119,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                 for (var i = pos; i < n; i++) {
                     var proxy = array.$proxy[i]
                     proxy.$outer = data.$outer
-                    shimController2(data, transation, proxy, fragments)
+                    shimController(data, transation, proxy, fragments)
                 }
                 vnode.replaceChild(transation, comments[pos])
                 for (i = 0; fragment = fragments[i++]; ) {
@@ -185,10 +185,10 @@ bindingExecutors.repeat = function (method, pos, el) {
                 for (i = 0; key = keys[i++]; ) {
                     if (key !== "hasOwnProperty") {
                         pool[key] = withProxyAgent(pool[key], key, data)
-                        shimController2(data, transation, pool[key], fragments)
+                        shimController(data, transation, pool[key], fragments)
                     }
                 }
-                data.$with = end
+                data.$with = start
                 vnode.insertBefore(transation, end)
                 for (i = 0; fragment = fragments[i++]; ) {
                     scanNodeArray(fragment.nodes, fragment.vmodels)
@@ -216,7 +216,7 @@ bindingExecutors.repeat = function (method, pos, el) {
 })
 avalon.pool = eachProxyPool
 
-function shimController2(data, transation, proxy, fragments, index) {
+function shimController(data, transation, proxy, fragments, index) {
     var content = cloneVNode(data.template)//.cloneNode(true)
     var nodes = avalon.slice(content.childNodes)
     if (!data.$with) {
