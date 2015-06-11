@@ -1,7 +1,7 @@
 //避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
-    scanNodeArray(nodes, vmodels, parent.getAttribute("data-vid"))
+    scanNodeArray(nodes, vmodels)
 }
 //function scanNodeList(parent, vmodels) {
 //    var node = parent.firstChild
@@ -17,7 +17,7 @@ function scanNodeList(parent, vmodels) {
 //
 //{{expr}} --> <!--v-text123213:expr--><!--v-text123213:expr:end-->
 //{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
-function scanNodeArray(nodes, vmodels, pid) {
+function scanNodeArray(nodes, vmodels) {
     var bindings = []
     var firstChild = nodes[0] || {}
     var isVirtual = firstChild.isVirtual == true
@@ -32,7 +32,7 @@ function scanNodeArray(nodes, vmodels, pid) {
                 }
                 break
             case 3:
-                if (!skipHtml && rexpr.test(node.nodeValue)) {
+                if (rexpr.test(node.nodeValue)) {
                     var tokens = scanExpr(node.nodeValue)
                     var generatePlaceholders = false
                     outerLoop:
@@ -44,11 +44,14 @@ function scanNodeArray(nodes, vmodels, pid) {
                     }
                     if (generatePlaceholders) {//如果要生成占位用的注释节点
                         parent = parent || node.parentNode
-                        pid = pid || buildVTree(parent)
+                        var pid = pid || buildVTree(parent)
                         var fragment = doc.createDocumentFragment()
                         for (t = 0; token = tokens[t++]; ) {
                             if (token.expr) {
-                                var signature = "v-" + token.type + pid + "." + nodeIndex++
+                                var signature = "v-" + token.type + pid + "." + nodeIndex
+                                if (!skipHtml) {
+                                    nodeIndex++
+                                }
                                 token.signature = signature
                                 signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
                                 var start = doc.createComment(signature)
@@ -67,9 +70,8 @@ function scanNodeArray(nodes, vmodels, pid) {
                 break
             case 8:
                 var nodeValue = node.nodeValue //如果后端渲染时已经生成好注释节点
-                if (!skipHtml && rvtext.test(nodeValue)) {
-                    //<b data-vid=".1.0">1</b><!-v-html><b>2</b><!--v-html:end><b data-vid=".1.1">3</b>
-                    nodeIndex++
+                if (rvtext.test(nodeValue)) {
+                   //<b data-vid=".1.0">1</b><!-v-html><b>2</b><!--v-html:end><b data-vid=".1.1">3</b>
                     var content = nodeValue.replace(rvtext, function (a) {
                         signature = a
                         return ""
@@ -78,12 +80,15 @@ function scanNodeArray(nodes, vmodels, pid) {
                     token.element = node
                     token.signature = signature
                     token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
-                    if (token.type === "html") {
-                        skipHtml = nodeValue + ":end"
-                    }
                     bindings.push(token)
-                } else if (nodeValue === skipHtml) {
-                    skipHtml = false
+                    if (nodeValue === skipHtml) {
+                        skipHtml = false
+                    } else {
+                        nodeIndex++
+                        if (token.type === "html") {
+                            skipHtml = nodeValue + ":end"
+                        }
+                    }
                 }
                 break
         }
@@ -111,16 +116,18 @@ function scanNodeArray(nodes, vmodels, pid) {
                         break
                     case 8:
                         var nodeValue = node.nodeValue
-                        if (!skipHtml && rvtext.test(nodeValue)) {
-                            nodeIndex++
-                            if (nodeValue.indexOf("v-html") === 0) {
-                                skipHtml = nodeValue + ":end"
+                        if (rvtext.test(nodeValue)) {
+                            if (nodeValue === skipHtml) {
+                                skipHtml = false
+                            } else {
+                                nodeIndex++
+                                if (nodeValue.indexOf("v-html") === 0) {
+                                    skipHtml = nodeValue + ":end"
+                                }
                             }
-                        } else if (nodeValue === skipHtml) {
-                            skipHtml = false
+                            vnode = VDOC.createComment(nodeValue)
+                            vparent.appendChild(vnode)
                         }
-                        vnode = VDOC.createComment(nodeValue)
-                        vparent.appendChild(vnode)
                         break
 
                 }
@@ -145,6 +152,7 @@ function scanElement(node, nodeType, vmodels) {
         }
     }
 }
+
 var rvtext = /^v\-[a-z]+[\.\d]+/
 //实现一个能选择文本节点的选择器
 // tagName, vid@8

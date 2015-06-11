@@ -9,6 +9,53 @@ function getPlaceholders(elem, signature) {
     }
     return comments
 }
+function updateNodesBetweenPlaceholders(virtuals, parent, index, placeholder) {
+    var nodes = [], collect, end
+    for (var i = index, node; node = parent.childNodes[i]; i++) {
+        if (!collect && node.nodeType === 8 && node.nodeValue === placeholder) {
+            collect = true
+            continue
+        } else if (collect && node.nodeType === 8 && node.nodeValue === placeholder + ":end") {
+            end = node
+            break
+        }
+        if (collect) {
+            nodes.push(node)
+        }
+    }
+    updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end)
+    return index + virtuals.length
+}
+
+function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
+    for (var i = 0, node; node = virtuals[i]; i++) {
+        var real = nodes.shift();
+        if (!real) {
+            parent.insertBefore(new DNode(node), end || null)
+        } else {
+            switch (node.nodeType) {
+                case 1:
+                    if (real.nodeName !== node.nodeName ||
+                            (real.nodeName === "INPUT" && real.type !== node.type)) {
+                        //SPAN !== B 或 input[type=text] !== input[type=password]
+                        parent.replaceChild(new DNode(node), real)
+                    } else {
+                        updateNodesBetweenPlaceholdersImpl(real.childNodes, node.childNodes, real, real.lastChild)
+                    }
+                    break
+                default:
+                    if (real.nodeValue !== node.nodeValue) {
+                        real.nodeValue = node.nodeValue
+                    }
+            }
+        }
+    }
+    if(nodes.length){
+        while(node = nodes.shift()){
+            parent.removeChild(node)
+        }
+    }
+}
 
 
 function traverseNodeBetweenSignature(array, signature, callbacks) {

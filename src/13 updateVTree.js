@@ -10,8 +10,7 @@ var updateVTree = {
     html: function (vnode, elem, val, data) {
         var fill = new VNode(val)
         fillPlaceholders(vnode, data, fill)
-        console.log(data)
-        scanNodeArray(fill.childNodes, data.vmodels)
+        scanNodeArray(fill.childNodes, data.vmodels, vnode.vid)
     }
 //if 直接实现在bindingExecutors.attr
 //css 直接实现在bindingExecutors.attr

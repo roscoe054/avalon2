@@ -2259,6 +2259,57 @@ function getPlaceholders(elem, signature) {
     }
     return comments
 }
+function updateNodesBetweenPlaceholders(virtuals, parent, index, placeholder) {
+    var nodes = [], collect, end
+   // console.log(placeholder)
+    for (var i = index, node; node = parent.childNodes[i]; i++) {
+        if (!collect && node.nodeType === 8 && node.nodeValue === placeholder) {
+            collect = true
+            continue
+        } else if (collect && node.nodeType === 8 && node.nodeValue === placeholder + ":end") {
+            end = node
+          //  console.log("end ",placeholder,end)
+            break
+        }
+        if (collect) {
+            nodes.push(node)
+        }
+    }
+    updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end)
+    return index + virtuals.length
+}
+
+function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
+    for (var i = 0, node; node = virtuals[i]; i++) {
+        var real = nodes.shift();
+        console.log(real, node)
+        if (!real) {
+            parent.insertBefore(new DNode(node), end || null)
+        } else {
+            switch (node.nodeType) {
+                case 1:
+                    if (real.nodeName !== node.nodeName ||
+                            (real.nodeName === "INPUT" && real.type !== node.type)) {
+                        //SPAN !== B 或 input[type=text] !== input[type=password]
+                        parent.replaceChild(new DNode(node), real)
+                    } else {
+                        updateNodesBetweenPlaceholdersImpl(real.childNodes, node.childNodes, real, real.lastChild)
+                    }
+                    break
+                default:
+                    if (real.nodeValue !== node.nodeValue) {
+                        real.nodeValue = node.nodeValue
+                    }
+            }
+        }
+    }
+    if(nodes.length){
+        while(node = nodes.shift()){
+            parent.removeChild(node)
+        }
+        //console.log("=====")
+    }
+}
 
 
 function traverseNodeBetweenSignature(array, signature, callbacks) {
@@ -2350,8 +2401,7 @@ var updateVTree = {
     html: function (vnode, elem, val, data) {
         var fill = new VNode(val)
         fillPlaceholders(vnode, data, fill)
-        console.log(data)
-        scanNodeArray(fill.childNodes, data.vmodels)
+        scanNodeArray(fill.childNodes, data.vmodels, vnode.vid)
     }
 //if 直接实现在bindingExecutors.attr
 //css 直接实现在bindingExecutors.attr
@@ -2619,44 +2669,27 @@ var updateDTree = {
 
     },
     html: function (vnode, parent) {
-        var rnodes = parent.childNodes
-        var vnodes = vnode.childNodes
-        traverseNodeBetweenSignature(vnodes, "v-html", {
-            end: function (virtual, i) {
-                var real = rnodes[i]
-
-                //<span>11</span><strong>222</strong><span>333</span> --> <b>000</b>
-                while (real && (real.nodeType !== 8 || real.nodeValue !== this.token)) {
-                    parent.removeChild(real)
-                    real = rnodes[i]
+        var vnodes = vnode.childNodes, placeholder
+        var nodesBetweenPlaceholders = []
+        var searchIndexInDom = 0
+        for (var i = 0, virtual; virtual = vnodes[i]; i++) {
+            if (!placeholder && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
+                placeholder = virtual.nodeValue + ":end"
+                continue
+            } else if (placeholder === virtual.nodeValue) {
+                if (nodesBetweenPlaceholders.length) {
+                    searchIndexInDom = updateNodesBetweenPlaceholders(
+                            nodesBetweenPlaceholders, parent,
+                            searchIndexInDom, placeholder.slice(0,-4))
+                    nodesBetweenPlaceholders.length = 0
                 }
-            },
-            step: function (virtual, i) {
-                var real = rnodes[i]
-                if (virtual.nodeType !== real.nodeType) {
-                    parent.insertBefore(new DNode(virtual), real)
-                } else {
-                    switch (virtual.nodeType) {
-                        case 1:
-                            if (real.nodeName !== virtual.nodeName) {//SPAN !== B
-                                parent.insertBefore(new DNode(virtual), real)
-                                parent.removeChild(real)
-                            } else if (real.nodeName === "INPUT" && real.type !== virtual.type) {
-                                parent.insertBefore(new DNode(virtual), real)//input[type=text] !== input[type=password]
-                                parent.removeChild(real)
-                            } else if (real.vid !== virtual.vid) {
-                                parent.insertBefore(new DNode(virtual), real)
-                                parent.removeChild(real)
-                            }
-                            break
-                        default:
-                            if (real.nodeValue !== virtual.nodeValue) {
-                                real.nodeValue = virtual.nodeValue
-                            }
-                    }
-                }
+                placeholder = false
+                continue
             }
-        })
+            if (placeholder) {
+                nodesBetweenPlaceholders.push(virtual)
+            }
+        }
     },
     repeat: function (vnode, parent) {
         avalon.log("repeat")
@@ -2689,35 +2722,35 @@ var updateDTree = {
             }
         }
         //对真实DOM根据keys给出的顺序进行重排，并删掉没用的旧节点，与生成缺少的新节点
-        for(var i = 0, node; node = rnodes[i]; i++){
-             if ( node.nodeType === 8 && /^v-(repeat|with|each)/.test(node.nodeValue)) {
+        for (var i = 0, node; node = rnodes[i]; i++) {
+            if (node.nodeType === 8 && /^v-(repeat|with|each)/.test(node.nodeValue)) {
                 token = node.nodeValue + ":end"
                 var end = null
                 breakLoop:
-                while ((node = rnodes[i])) {
-                   if (node.nodeValue === token) {
-                       end = node
-                       break breakLoop
-                   }
-                   //收集符合要求的真实DOM
-                   parent.removeChild(node)
-                   if (node.nodeType === 1) {
-                       oldRepeatNodes[keys[node.vid]] = node
-                   } else {
-                       if (keys[node.nodeValue]) {
-                           oldRepeatNodes[ keys[node.nodeValue].shift()] = node
-                       }
-                   }
-               }
+                        while ((node = rnodes[i])) {
+                    if (node.nodeValue === token) {
+                        end = node
+                        break breakLoop
+                    }
+                    //收集符合要求的真实DOM
+                    parent.removeChild(node)
+                    if (node.nodeType === 1) {
+                        oldRepeatNodes[keys[node.vid]] = node
+                    } else {
+                        if (keys[node.nodeValue]) {
+                            oldRepeatNodes[ keys[node.nodeValue].shift()] = node
+                        }
+                    }
+                }
                 var fragment = DOC.createDocumentFragment()
-                for( i = 0; node = newRepeatNodes[i];i ++){
-                    if(oldRepeatNodes[i]){
+                for (i = 0; node = newRepeatNodes[i]; i++) {
+                    if (oldRepeatNodes[i]) {
                         fragment.appendChild(oldRepeatNodes[i])
-                    }else{
+                    } else {
                         fragment.appendChild(new DNode(node))
                     }
                 }
-                parent.insertBefore(fragment,end)
+                parent.insertBefore(fragment, end)
                 break
             }
         }
@@ -2775,6 +2808,7 @@ var updateDTree = {
         }
     }
 }
+
 
 
 //创建虚拟DOM的根节点
@@ -3985,7 +4019,7 @@ if (!"1" [0]) {
 //避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
-    scanNodeArray(nodes, vmodels, parent.getAttribute("data-vid"))
+    scanNodeArray(nodes, vmodels)
 }
 //function scanNodeList(parent, vmodels) {
 //    var node = parent.firstChild
@@ -4001,7 +4035,7 @@ function scanNodeList(parent, vmodels) {
 //
 //{{expr}} --> <!--v-text123213:expr--><!--v-text123213:expr:end-->
 //{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
-function scanNodeArray(nodes, vmodels, pid) {
+function scanNodeArray(nodes, vmodels) {
     var bindings = []
     var firstChild = nodes[0] || {}
     var isVirtual = firstChild.isVirtual == true
@@ -4016,7 +4050,7 @@ function scanNodeArray(nodes, vmodels, pid) {
                 }
                 break
             case 3:
-                if (!skipHtml && rexpr.test(node.nodeValue)) {
+                if (rexpr.test(node.nodeValue)) {
                     var tokens = scanExpr(node.nodeValue)
                     var generatePlaceholders = false
                     outerLoop:
@@ -4028,11 +4062,14 @@ function scanNodeArray(nodes, vmodels, pid) {
                     }
                     if (generatePlaceholders) {//如果要生成占位用的注释节点
                         parent = parent || node.parentNode
-                        pid = pid || buildVTree(parent)
+                        var pid = pid || buildVTree(parent)
                         var fragment = doc.createDocumentFragment()
                         for (t = 0; token = tokens[t++]; ) {
                             if (token.expr) {
-                                var signature = "v-" + token.type + pid + "." + nodeIndex++
+                                var signature = "v-" + token.type + pid + "." + nodeIndex
+                                if (!skipHtml) {
+                                    nodeIndex++
+                                }
                                 token.signature = signature
                                 signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
                                 var start = doc.createComment(signature)
@@ -4051,9 +4088,8 @@ function scanNodeArray(nodes, vmodels, pid) {
                 break
             case 8:
                 var nodeValue = node.nodeValue //如果后端渲染时已经生成好注释节点
-                if (!skipHtml && rvtext.test(nodeValue)) {
-                    //<b data-vid=".1.0">1</b><!-v-html><b>2</b><!--v-html:end><b data-vid=".1.1">3</b>
-                    nodeIndex++
+                if (rvtext.test(nodeValue)) {
+                   //<b data-vid=".1.0">1</b><!-v-html><b>2</b><!--v-html:end><b data-vid=".1.1">3</b>
                     var content = nodeValue.replace(rvtext, function (a) {
                         signature = a
                         return ""
@@ -4062,12 +4098,15 @@ function scanNodeArray(nodes, vmodels, pid) {
                     token.element = node
                     token.signature = signature
                     token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
-                    if (token.type === "html") {
-                        skipHtml = nodeValue + ":end"
-                    }
                     bindings.push(token)
-                } else if (nodeValue === skipHtml) {
-                    skipHtml = false
+                    if (nodeValue === skipHtml) {
+                        skipHtml = false
+                    } else {
+                        nodeIndex++
+                        if (token.type === "html") {
+                            skipHtml = nodeValue + ":end"
+                        }
+                    }
                 }
                 break
         }
@@ -4095,16 +4134,18 @@ function scanNodeArray(nodes, vmodels, pid) {
                         break
                     case 8:
                         var nodeValue = node.nodeValue
-                        if (!skipHtml && rvtext.test(nodeValue)) {
-                            nodeIndex++
-                            if (nodeValue.indexOf("v-html") === 0) {
-                                skipHtml = nodeValue + ":end"
+                        if (rvtext.test(nodeValue)) {
+                            if (nodeValue === skipHtml) {
+                                skipHtml = false
+                            } else {
+                                nodeIndex++
+                                if (nodeValue.indexOf("v-html") === 0) {
+                                    skipHtml = nodeValue + ":end"
+                                }
                             }
-                        } else if (nodeValue === skipHtml) {
-                            skipHtml = false
+                            vnode = VDOC.createComment(nodeValue)
+                            vparent.appendChild(vnode)
                         }
-                        vnode = VDOC.createComment(nodeValue)
-                        vparent.appendChild(vnode)
                         break
 
                 }
@@ -4129,6 +4170,7 @@ function scanElement(node, nodeType, vmodels) {
         }
     }
 }
+
 var rvtext = /^v\-[a-z]+[\.\d]+/
 //实现一个能选择文本节点的选择器
 // tagName, vid@8
@@ -4801,7 +4843,6 @@ bindingExecutors.html = function (val, elem, data) {
     }
     var vnode = addVnodeToData(parent, data)
     updateVTree.html(vnode, parent, fragment, data)
-
     vnode.addTask("html")
 }
 bindingHandlers["if"] =

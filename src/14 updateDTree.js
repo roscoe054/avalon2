@@ -57,44 +57,27 @@ var updateDTree = {
 
     },
     html: function (vnode, parent) {
-        var rnodes = parent.childNodes
-        var vnodes = vnode.childNodes
-        traverseNodeBetweenSignature(vnodes, "v-html", {
-            end: function (virtual, i) {
-                var real = rnodes[i]
-
-                //<span>11</span><strong>222</strong><span>333</span> --> <b>000</b>
-                while (real && (real.nodeType !== 8 || real.nodeValue !== this.token)) {
-                    parent.removeChild(real)
-                    real = rnodes[i]
+        var vnodes = vnode.childNodes, placeholder
+        var nodesBetweenPlaceholders = []
+        var searchIndexInDom = 0
+        for (var i = 0, virtual; virtual = vnodes[i]; i++) {
+            if (!placeholder && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
+                placeholder = virtual.nodeValue + ":end"
+                continue
+            } else if (placeholder === virtual.nodeValue) {
+                if (nodesBetweenPlaceholders.length) {
+                    searchIndexInDom = updateNodesBetweenPlaceholders(
+                            nodesBetweenPlaceholders, parent,
+                            searchIndexInDom, placeholder.slice(0,-4))
+                    nodesBetweenPlaceholders.length = 0
                 }
-            },
-            step: function (virtual, i) {
-                var real = rnodes[i]
-                if (virtual.nodeType !== real.nodeType) {
-                    parent.insertBefore(new DNode(virtual), real)
-                } else {
-                    switch (virtual.nodeType) {
-                        case 1:
-                            if (real.nodeName !== virtual.nodeName) {//SPAN !== B
-                                parent.insertBefore(new DNode(virtual), real)
-                                parent.removeChild(real)
-                            } else if (real.nodeName === "INPUT" && real.type !== virtual.type) {
-                                parent.insertBefore(new DNode(virtual), real)//input[type=text] !== input[type=password]
-                                parent.removeChild(real)
-                            } else if (real.vid !== virtual.vid) {
-                                parent.insertBefore(new DNode(virtual), real)
-                                parent.removeChild(real)
-                            }
-                            break
-                        default:
-                            if (real.nodeValue !== virtual.nodeValue) {
-                                real.nodeValue = virtual.nodeValue
-                            }
-                    }
-                }
+                placeholder = false
+                continue
             }
-        })
+            if (placeholder) {
+                nodesBetweenPlaceholders.push(virtual)
+            }
+        }
     },
     repeat: function (vnode, parent) {
         avalon.log("repeat")
@@ -127,35 +110,35 @@ var updateDTree = {
             }
         }
         //对真实DOM根据keys给出的顺序进行重排，并删掉没用的旧节点，与生成缺少的新节点
-        for(var i = 0, node; node = rnodes[i]; i++){
-             if ( node.nodeType === 8 && /^v-(repeat|with|each)/.test(node.nodeValue)) {
+        for (var i = 0, node; node = rnodes[i]; i++) {
+            if (node.nodeType === 8 && /^v-(repeat|with|each)/.test(node.nodeValue)) {
                 token = node.nodeValue + ":end"
                 var end = null
                 breakLoop:
-                while ((node = rnodes[i])) {
-                   if (node.nodeValue === token) {
-                       end = node
-                       break breakLoop
-                   }
-                   //收集符合要求的真实DOM
-                   parent.removeChild(node)
-                   if (node.nodeType === 1) {
-                       oldRepeatNodes[keys[node.vid]] = node
-                   } else {
-                       if (keys[node.nodeValue]) {
-                           oldRepeatNodes[ keys[node.nodeValue].shift()] = node
-                       }
-                   }
-               }
+                        while ((node = rnodes[i])) {
+                    if (node.nodeValue === token) {
+                        end = node
+                        break breakLoop
+                    }
+                    //收集符合要求的真实DOM
+                    parent.removeChild(node)
+                    if (node.nodeType === 1) {
+                        oldRepeatNodes[keys[node.vid]] = node
+                    } else {
+                        if (keys[node.nodeValue]) {
+                            oldRepeatNodes[ keys[node.nodeValue].shift()] = node
+                        }
+                    }
+                }
                 var fragment = DOC.createDocumentFragment()
-                for( i = 0; node = newRepeatNodes[i];i ++){
-                    if(oldRepeatNodes[i]){
+                for (i = 0; node = newRepeatNodes[i]; i++) {
+                    if (oldRepeatNodes[i]) {
                         fragment.appendChild(oldRepeatNodes[i])
-                    }else{
+                    } else {
                         fragment.appendChild(new DNode(node))
                     }
                 }
-                parent.insertBefore(fragment,end)
+                parent.insertBefore(fragment, end)
                 break
             }
         }
@@ -213,6 +196,7 @@ var updateDTree = {
         }
     }
 }
+
 
 
 //创建虚拟DOM的根节点

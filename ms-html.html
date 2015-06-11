@@ -12,7 +12,8 @@
                 aaa: "111",
                 html: "<span>11</span><strong>222</strong><span>333</span><strong>444</strong><span>555</span><strong>666</strong>",
                 change1: function () {
-                    vm.html = "<span><b>11</b></span><strong>222</strong><span>333</span><strong>444</strong><span>555</span><strong>666</strong>"
+                    console.log("change1")
+                    vm.html = "<span><b>AA</b></span><strong>555</strong><span>BB</span><strong>444</strong><span>555</span><strong>666</strong>end"
                 },
                 change2: function () {
                     vm.html = "<b>加入</b><em>2343</em><br><em>2343</em><br><span>11</span>"
@@ -26,9 +27,9 @@
     </head>
     <body ms-controller="test">
         <div>%%%%{{html|html}}%%%%</div>
-        <p><button ms-click="change1" type="button">click me</button></p>
-        <p><button ms-click="change2" type="button">click me</button></p>
-        <p><button ms-click="change3" type="button">click me</button></p>
+        <p><button ms-click="change1" type="button">click 1</button></p>
+        <p><button ms-click="change2" type="button">click 2</button></p>
+        <p><button ms-click="change3" type="button">click 3</button></p>
 
     </body>
 </html>
