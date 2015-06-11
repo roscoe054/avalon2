@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <script src="avalon.js" ></script>
+        <script>
+
+            var vm = avalon.define({
+                $id: "test",
+                aaa: "<span>1111</span>",
+                bbb: "<span>2222</span>",
+                ccc: "<span>aaa</span>",
+                ddd: "<span>bbb</span>",
+                change1: function () {
+                    vm.aaa = "<strong>333</strong>"
+                    vm.bbb = "<strong>444</strong>"
+                    vm.ccc = "<strong>xxx</strong>"
+                    vm.ddd = "<strong>ccc</strong>"
+                },
+                change2: function () {
+                    vm.aaa = "<strong>q</strong>"
+                    vm.bbb = "<strong>ww</strong>"
+                    vm.ccc = "<strong>eee</strong>"
+                    vm.ddd = "<strong>rrr</strong>"
+                }
+
+            });
+
+        </script>
+    </head>
+    <body ms-controller="test">
+        <div>first{{aaa|html}}second{{bbb|html}}{{ccc|html}}{{ddd|html}}7777</div>
+        <p><button ms-click="change1" type="button">click 1</button></p>
+        <p><button ms-click="change2" type="button">click 2</button></p>
+
+    </body>
+</html>

@@ -66,7 +66,7 @@ var updateDTree = {
                 continue
             } else if (placeholder === virtual.nodeValue) {
                 if (nodesBetweenPlaceholders.length) {
-                    searchIndexInDom = updateNodesBetweenPlaceholders(
+                   searchIndexInDom = updateNodesBetweenPlaceholders(
                             nodesBetweenPlaceholders, parent,
                             searchIndexInDom, placeholder.slice(0,-4))
                     nodesBetweenPlaceholders.length = 0

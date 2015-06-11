@@ -23,8 +23,10 @@ function updateNodesBetweenPlaceholders(virtuals, parent, index, placeholder) {
             nodes.push(node)
         }
     }
+
     updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end)
-    return index + virtuals.length
+
+    return i - virtuals.length + 1
 }
 
 function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
@@ -50,8 +52,8 @@ function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
             }
         }
     }
-    if(nodes.length){
-        while(node = nodes.shift()){
+    if (nodes.length) {
+        while (node = nodes.shift()) {
             parent.removeChild(node)
         }
     }
