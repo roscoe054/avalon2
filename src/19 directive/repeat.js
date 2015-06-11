@@ -91,10 +91,7 @@ bindingHandlers.repeat = function (data, vmodels) {
         data.handler("add", 0, $repeat.length)
     }
 }
-function sweepVNodes(vnode, comments, start, end, signature) {
 
-
-}
 bindingExecutors.repeat = function (method, pos, el) {
     if (method) {
         var data = this, start, fragment
@@ -102,10 +99,15 @@ bindingExecutors.repeat = function (method, pos, el) {
         var parent = data.type === "repeat" ? elem.parentNode : elem
         if (!parent)
             return
-
-        var vnode = addVnodeToData(parent, data)
-        var comments = getPlaceholders(vnode, data.signature)
+        var vnode = VTree.queryVID(parent.getAttribute("data-vid") )
+        if(!vnode){
+            vnode = new VNode(parent)
+            VTree.appendChild(vnode)
+        }
+        data.vnode = vnode
         
+        var comments = getPlaceholders(vnode, data.signature)
+
         var start = comments[0]
         var end = comments[comments.length-1]
         var startIndex = vnode.childNodes.indexOf(start)

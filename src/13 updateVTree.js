@@ -66,8 +66,9 @@ function addVnodeToData(elem, data) {
         return data.vnode
     } else if (elem.isVirtual) {
         return data.vnode = elem
-    } else if (elem.nodeType) {
-        return data.vnode = VTree.queryVID(elem.getAttribute("data-vid"))
+    } else if (elem.nodeType ) {
+
+        return data.vnode = VTree.queryVID( buildVTree(elem) )
     }
 }
 
