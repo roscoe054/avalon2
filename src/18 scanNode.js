@@ -132,8 +132,8 @@ function scanNodeArray(nodes, vmodels) {
 
                 }
             }
-            executeBindings(bindings, vmodels)
         }
+         executeBindings(bindings, vmodels)
     }
     for (i = 0; node = nodes[i++]; ) {
         scanElement(node, node.nodeType, vmodels)

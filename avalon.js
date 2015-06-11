@@ -2261,14 +2261,12 @@ function getPlaceholders(elem, signature) {
 }
 function updateNodesBetweenPlaceholders(virtuals, parent, index, placeholder) {
     var nodes = [], collect, end
-   // console.log(placeholder)
     for (var i = index, node; node = parent.childNodes[i]; i++) {
         if (!collect && node.nodeType === 8 && node.nodeValue === placeholder) {
             collect = true
             continue
         } else if (collect && node.nodeType === 8 && node.nodeValue === placeholder + ":end") {
             end = node
-          //  console.log("end ",placeholder,end)
             break
         }
         if (collect) {
@@ -2282,7 +2280,6 @@ function updateNodesBetweenPlaceholders(virtuals, parent, index, placeholder) {
 function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
     for (var i = 0, node; node = virtuals[i]; i++) {
         var real = nodes.shift();
-        console.log(real, node)
         if (!real) {
             parent.insertBefore(new DNode(node), end || null)
         } else {
@@ -2293,7 +2290,7 @@ function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
                         //SPAN !== B 或 input[type=text] !== input[type=password]
                         parent.replaceChild(new DNode(node), real)
                     } else {
-                        updateNodesBetweenPlaceholdersImpl(real.childNodes, node.childNodes, real, real.lastChild)
+                        updateNodesBetweenPlaceholdersImpl(avalon.slice(real.childNodes), node.childNodes, real, real.lastChild)
                     }
                     break
                 default:
@@ -2307,7 +2304,6 @@ function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
         while(node = nodes.shift()){
             parent.removeChild(node)
         }
-        //console.log("=====")
     }
 }
 
@@ -4150,8 +4146,8 @@ function scanNodeArray(nodes, vmodels) {
 
                 }
             }
-            executeBindings(bindings, vmodels)
         }
+         executeBindings(bindings, vmodels)
     }
     for (i = 0; node = nodes[i++]; ) {
         scanElement(node, node.nodeType, vmodels)

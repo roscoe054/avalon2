@@ -40,7 +40,7 @@ function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
                         //SPAN !== B 或 input[type=text] !== input[type=password]
                         parent.replaceChild(new DNode(node), real)
                     } else {
-                        updateNodesBetweenPlaceholdersImpl(real.childNodes, node.childNodes, real, real.lastChild)
+                        updateNodesBetweenPlaceholdersImpl(avalon.slice(real.childNodes), node.childNodes, real, real.lastChild)
                     }
                     break
                 default:
