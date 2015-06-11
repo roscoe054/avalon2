@@ -2384,8 +2384,7 @@ function updateNodesBetweenPlaceholders(virtuals, parent, index, placeholder) {
     }
 
     updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end)
-
-    return index + virtuals.length //+ 1
+    return i - virtuals.length + 1
 }
 
 function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
@@ -2424,33 +2423,6 @@ function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
     }
 }
 
-
-function traverseNodeBetweenSignature(array, signature, callbacks) {
-    var collect = false, comments = [], content = [], token
-    callbacks = callbacks || {}
-    for (var i = 0, el; el = array[i]; i++) {
-        if (!collect && el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
-            comments.push(el)
-            token = callbacks.token = el.nodeValue + ":end"
-            collect = true
-            callbacks.begin && callbacks.begin(el, i)
-            continue
-        } else if (collect && el.nodeType === 8 && el.nodeValue === token) {
-            comments.push(el)
-            collect = false
-            callbacks.end && callbacks.end(el, i)
-            continue
-        }
-        if (collect) {
-            content.push(el)
-            callbacks.step && callbacks.step(el, i)
-        }
-    }
-    return {
-        comments: comments,
-        content: content
-    }
-}
 function appendPlaceholders(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时
@@ -2648,20 +2620,27 @@ var updateDTree = {
         delete vnode.ifData
     },
     text: function (vnode, parent) {
-
-        var rnodes = parent.childNodes
-        var vnodes = vnode.childNodes
-        traverseNodeBetweenSignature(vnodes, "v-text", {
-            step: function (virtual, i) {
-                var real = rnodes[i]
-                if (real.nodeType !== 3) {
-                    parent.insertBefore(DOC.createTextNode(virtual.nodeValue), real)
-                } else {
-                    real.nodeValue = virtual.nodeValue
+        var vnodes = vnode.childNodes, placeholder
+        var nodesBetweenPlaceholders = []
+        var searchIndexInDom = 0
+        for (var i = 0, virtual; virtual = vnodes[i]; i++) {
+            if (!placeholder && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-text") === 0) {
+                placeholder = virtual.nodeValue + ":end"
+                continue
+            } else if (placeholder === virtual.nodeValue) {
+                if (nodesBetweenPlaceholders.length) {
+                   searchIndexInDom = updateNodesBetweenPlaceholders(
+                            nodesBetweenPlaceholders, parent,
+                            searchIndexInDom, placeholder.slice(0,-4))
+                    nodesBetweenPlaceholders.length = 0
                 }
+                placeholder = false
+                continue
             }
-        })
-
+            if (placeholder) {
+                nodesBetweenPlaceholders.push(virtual)
+            }
+        }
     },
     html: function (vnode, parent) {
         var vnodes = vnode.childNodes, placeholder
@@ -2670,8 +2649,6 @@ var updateDTree = {
         for (var i = 0, virtual; virtual = vnodes[i]; i++) {
             if (!placeholder && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
                 placeholder = virtual.nodeValue + ":end"
-               
-             
                 continue
             } else if (placeholder === virtual.nodeValue) {
                 if (nodesBetweenPlaceholders.length) {

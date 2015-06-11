@@ -25,8 +25,7 @@ function updateNodesBetweenPlaceholders(virtuals, parent, index, placeholder) {
     }
 
     updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end)
-
-    return index + virtuals.length //+ 1
+    return i - virtuals.length + 1
 }
 
 function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
@@ -65,33 +64,6 @@ function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
     }
 }
 
-
-function traverseNodeBetweenSignature(array, signature, callbacks) {
-    var collect = false, comments = [], content = [], token
-    callbacks = callbacks || {}
-    for (var i = 0, el; el = array[i]; i++) {
-        if (!collect && el.nodeType === 8 && el.nodeValue.indexOf(signature) === 0) {
-            comments.push(el)
-            token = callbacks.token = el.nodeValue + ":end"
-            collect = true
-            callbacks.begin && callbacks.begin(el, i)
-            continue
-        } else if (collect && el.nodeType === 8 && el.nodeValue === token) {
-            comments.push(el)
-            collect = false
-            callbacks.end && callbacks.end(el, i)
-            continue
-        }
-        if (collect) {
-            content.push(el)
-            callbacks.step && callbacks.step(el, i)
-        }
-    }
-    return {
-        comments: comments,
-        content: content
-    }
-}
 function appendPlaceholders(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时

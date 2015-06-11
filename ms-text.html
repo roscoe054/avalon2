@@ -9,12 +9,23 @@
             var vm = avalon.define({
                 $id: "test",
                 a: 111,
-                b: 222
+                b: 222,
+                c: 777,
+                change1: function () {
+                    vm.a = 10
+                    vm.b = 22
+                },
+                change2: function () {
+                    vm.a = 55
+                    vm.b = 8
+                }
             })
         </script>
     </head>
     <body ms-controller="test">
         <h1>测试虚拟DOM</h1>
-        <div><span></span>{{a}}*{{b}}=<b>{{a*b}}</b></div>
+        <div><span></span>{{a}}*{{b}}={{c}}<b>{{a*b}}</b></div>
+        <p><button ms-click="change1" type="button">click 1</button></p>
+        <p><button ms-click="change2" type="button">click 2</button></p>
     </body>
 </html>
