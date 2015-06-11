@@ -123,7 +123,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                 }
                 vnode.replaceChild(transation, comments[pos])
                 for (i = 0; fragment = fragments[i++]; ) {
-                    scanNodeArray(fragment.nodes, fragment.vmodels)
+                    scanNodes(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                 }
                 break
@@ -191,7 +191,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                 data.$with = start
                 vnode.insertBefore(transation, end)
                 for (i = 0; fragment = fragments[i++]; ) {
-                    scanNodeArray(fragment.nodes, fragment.vmodels)
+                    scanNodes(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                 }
                

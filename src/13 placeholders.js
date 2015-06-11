@@ -26,26 +26,32 @@ function updateNodesBetweenPlaceholders(virtuals, parent, index, placeholder) {
 
     updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end)
 
-    return i - virtuals.length + 1
+    return index + virtuals.length //+ 1
 }
 
 function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
     for (var i = 0, node; node = virtuals[i]; i++) {
         var real = nodes.shift();
         if (!real) {
+            //如果真空DOM树中的相应位置只有占位符，或者真实DOM的个数比虚拟DOM少，那么就直接创建添加
             parent.insertBefore(new DNode(node), end || null)
+        }else if(real.nodeType !== node.nodeType){
+            //如果类型不相同，那么直接创建替换
+            parent.replaceChild(new DNode(node), real)
         } else {
             switch (node.nodeType) {
                 case 1:
+                    //如果类型相同，tagName不同，或不是同一种表单元素，就创建替换
                     if (real.nodeName !== node.nodeName ||
                             (real.nodeName === "INPUT" && real.type !== node.type)) {
                         //SPAN !== B 或 input[type=text] !== input[type=password]
                         parent.replaceChild(new DNode(node), real)
                     } else {
+                        //如果类型相同，就比较元素
                         updateNodesBetweenPlaceholdersImpl(avalon.slice(real.childNodes), node.childNodes, real, real.lastChild)
                     }
                     break
-                default:
+                default://直接刷新nodeValue
                     if (real.nodeValue !== node.nodeValue) {
                         real.nodeValue = node.nodeValue
                     }

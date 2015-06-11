@@ -1,23 +1,27 @@
 //避免使用firstChild，nextSibling，previousSibling等属性，一是提高速度，二是兼容VTree
 function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
-    scanNodeArray(nodes, vmodels)
+    scanNodes(nodes, vmodels, parent.getAttribute("data-vid"))
 }
-//function scanNodeList(parent, vmodels) {
-//    var node = parent.firstChild
-//    while (node) {
-//        var nextNode = node.nextSibling
-//        scanNode(node, node.nodeType, vmodels)
-//        node = nextNode
-//    }
-//}
-//ms-if --> <!--v-if-->
-//ms-if-loop --> <!--v-if-->
-//ms-include --> <!--v-include123123--><!--v-include123123:end-->
-//
-//{{expr}} --> <!--v-text123213:expr--><!--v-text123213:expr:end-->
-//{{expr|html}} --> <!--v-thtml123213:expr--><!--v-text123213:expr:end-->
-function scanNodeArray(nodes, vmodels) {
+
+/**
+ * 这个方法用于扫描一个真实DOM数组/虚拟DOM数组
+ * 在第一个循环中，会将文本节点中
+ * {{expr}}变而 <!--v-text.1.0:expr--><!--v-text.1.0:expr:end-->
+ * {{expr|html}}变而 <!--v-html.1.0:expr--><!--v-html.1.0:expr:end-->
+ * 并抽取成绑定对象，
+ * 如果存在符合/^v\-[a-z]+[\.\d]+/的注释节点，也会抽取成绑定对象，
+ * 在第二个循环中，将这些真实DOM转换为虚拟DOM，并添加到虚拟DOM树上
+ * 然后执行刚才收集到的绑定对象，
+ * 最后扫描刚才那个数组剩下的元素节点
+ * 
+ * @param {Array} nodes
+ * @param {Array} vmodels
+ * @param {String} pid
+ * @returns {undefined}
+ */
+
+function scanNodes(nodes, vmodels, pid) {
     var bindings = []
     var firstChild = nodes[0] || {}
     var isVirtual = firstChild.isVirtual == true
@@ -28,6 +32,9 @@ function scanNodeArray(nodes, vmodels) {
         switch (node.nodeType) {
             case 1:
                 if (!skipHtml) {
+                    if (isVirtual) {
+                        node.setAttribute("data-vid", pid + "." + nodeIndex)
+                    }
                     nodeIndex++
                 }
                 break
@@ -44,7 +51,7 @@ function scanNodeArray(nodes, vmodels) {
                     }
                     if (generatePlaceholders) {//如果要生成占位用的注释节点
                         parent = parent || node.parentNode
-                        var pid = pid || buildVTree(parent)
+                        pid = pid || buildVTree(parent)
                         var fragment = doc.createDocumentFragment()
                         for (t = 0; token = tokens[t++]; ) {
                             if (token.expr) {
@@ -71,31 +78,31 @@ function scanNodeArray(nodes, vmodels) {
             case 8:
                 var nodeValue = node.nodeValue //如果后端渲染时已经生成好注释节点
                 if (rvtext.test(nodeValue)) {
-                   //<b data-vid=".1.0">1</b><!-v-html><b>2</b><!--v-html:end><b data-vid=".1.1">3</b>
-                    var content = nodeValue.replace(rvtext, function (a) {
-                        signature = a
-                        return ""
-                    })
-                    token = getToken(content)
-                    token.element = node
-                    token.signature = signature
-                    token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
-                    bindings.push(token)
-                    if (nodeValue === skipHtml) {
-                        skipHtml = false
-                    } else {
+                    if(nodeValue.slice(-4) !== ":end"){
+                        var content = nodeValue.replace(rvtext, function (a) {
+                            signature = a
+                            return ""
+                        })
+                        token = getToken(content)
+                        token.element = node
+                        token.signature = signature
+                        token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
+                        bindings.push(token)
                         nodeIndex++
                         if (token.type === "html") {
                             skipHtml = nodeValue + ":end"
                         }
                     }
+                    if (nodeValue === skipHtml) {
+                        skipHtml = false
+                    } 
                 }
                 break
         }
     }
 
     if (bindings.length) {
-        if (!isVirtual && inDom) { //如果是扫描真实DOM树，那么我们需要在虚拟DOM树复制这一部分节点
+        if (!isVirtual && inDom) { //将真实DOM转换虚拟DOM并添加到虚拟DOM树上
             vparent = VTree.queryVID(parent.getAttribute("data-vid"))
             vparent.childNodes.length = 0
             nodeIndex = 0
@@ -133,7 +140,7 @@ function scanNodeArray(nodes, vmodels) {
                 }
             }
         }
-         executeBindings(bindings, vmodels)
+        executeBindings(bindings, vmodels)
     }
     for (i = 0; node = nodes[i++]; ) {
         scanElement(node, node.nodeType, vmodels)

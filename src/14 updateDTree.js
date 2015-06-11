@@ -63,6 +63,8 @@ var updateDTree = {
         for (var i = 0, virtual; virtual = vnodes[i]; i++) {
             if (!placeholder && virtual.nodeType === 8 && virtual.nodeValue.indexOf("v-html") === 0) {
                 placeholder = virtual.nodeValue + ":end"
+               
+             
                 continue
             } else if (placeholder === virtual.nodeValue) {
                 if (nodesBetweenPlaceholders.length) {
@@ -75,6 +77,7 @@ var updateDTree = {
                 continue
             }
             if (placeholder) {
+                logger2(virtual)
                 nodesBetweenPlaceholders.push(virtual)
             }
         }
@@ -197,7 +200,15 @@ var updateDTree = {
     }
 }
 
-
+function logger2(a){
+    var parentNode = a.parentNode
+    var childNodes = a.childNodes
+    delete a.parentNode
+    delete a.childNodes
+    console.log( JSON.stringify(a) )
+    a.parentNode = parentNode
+    a.childNodes = childNodes
+}
 
 //创建虚拟DOM的根节点
 root.setAttribute("data-vid", ".0")

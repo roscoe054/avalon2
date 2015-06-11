@@ -111,7 +111,7 @@ bindingExecutors.attr = function(val, elem, data) {
             var dom = getTemplateNodes(data, val, text)
             var nodes = avalon.slice(dom.childNodes)
             target.insertBefore(dom, data.endInclude)
-            scanNodeArray(nodes, vmodels)
+            scanNodes(nodes, vmodels)
         }
         if (data.param === "src") {
             if (typeof cacheTmpls[val] === "string") {

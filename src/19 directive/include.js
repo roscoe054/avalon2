@@ -56,7 +56,7 @@ function includeExecutor(val, elem, data) {
                 lastTemplate.appendChild(node)
         })
 
-        scanNodeArray(nodes, vmodels)
+        scanNodes(nodes, vmodels)
     }
     if (data.param === "src") {
         if (typeof cacheTmpls[val] === "string") {

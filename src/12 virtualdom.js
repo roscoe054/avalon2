@@ -151,10 +151,9 @@ VElement.prototype = {
         return typeof this.props[name] === "string"
     },
     setAttribute: function (name, value) {
+        this.props[name] = String(value)
         if (name === "data-vid") {
             this.vid = value
-        } else {
-            this.props[name] = String(value)
         }
         return this
     },
@@ -227,5 +226,116 @@ var VDOC = {
     },
     createDocumentFragment: function () {
         return new VDocumentFragment()
+    }
+}
+
+
+//让avalon的VNode能顺利在scanAttr中运作
+function getVAttributes(elem) {
+    var attrs = []
+    for (var i in elem.props) {
+        if (elem.props.hasOwnProperty(i)) {
+            attrs.push({
+                name: i,
+                value: elem.props[i],
+                specified: true
+            })
+        }
+    }
+
+    return attrs
+}
+//将真实DOM转换为虚拟DOM
+function VNode(element) {
+    var ret
+    switch (element.nodeType) {
+        case 11:
+            ret = new VDocumentFragment()
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new VNode(node))//添加孩子
+            })
+            return ret
+        case 1:
+            ret = new VElement(element)
+            //只处理显示定义的属性
+            var attributes = getAttributes ? getAttributes(element) : element.attributes
+            avalon.each(attributes, function (index, attr) {//添加属性
+                if (attr.name !== "class") {
+                    ret.props[attr.name] = attr.value
+                }
+            })
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new VNode(node))
+            })
+            ret.className = element.className
+            ret.textContent = element.innerHTML
+            return ret
+        case 3:
+            return new VText(element.nodeValue)
+        case 8:
+            return new VComment(element.nodeValue)
+    }
+}
+//将虚拟DOM转换为真实DOM
+function DNode(element) {
+    var ret
+    switch (element.nodeType) {
+        case 11:
+            ret = DOC.createDocumentFragment()
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new DNode(node))//添加孩子
+            })
+            return ret
+        case 1:
+            ret = DOC.createElement(element.nodeName)
+            if (element.className.trim()) {
+                ret.className = element.className
+            }
+            if (element.vid) {
+                ret.setAttribute("data-vid", element.vid)
+            }
+            updateDTree.attr(element, ret)
+            updateDTree.css(element, ret)
+            //  ret.setAttribute = element.vid
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(new DNode(node))//添加孩子
+            })
+            return ret
+        case 3:
+            return  DOC.createTextNode(element.nodeValue)
+        case 8:
+            return  DOC.createComment(element.nodeValue)
+    }
+}
+
+function cloneVNode(element) {//克隆虚拟DOM
+    var ret
+    switch (element.nodeType) {
+        case 11:
+            ret = new VDocumentFragment()
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(cloneVNode(node))
+            })
+            return ret
+        case 1:
+            ret = new VElement(element)
+            avalon.each(element.props, function (name, value) {
+                ret.props[name] = value//添加属性 
+            })
+            avalon.each(element.style, function (name, value) {
+                ret.style[name] = value//添加样式
+            })
+            avalon.each(element.childNodes, function (index, node) {
+                ret.appendChild(cloneVNode(node))//添加孩子
+            })
+            ret.className = element.className
+            ret.textContent = element.innerHTML
+            //  delete ret.vid
+            //   getUid(ret)
+            return ret
+        case 3:
+            return new VText(element.nodeValue)
+        case 8:
+            return new VComment(element.nodeValue)
     }
 }
