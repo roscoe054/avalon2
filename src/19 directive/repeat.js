@@ -109,11 +109,7 @@ bindingExecutors.repeat = function (method, pos, el) {
         if (!parent)
             return
         var vnode = VTree.queryVID(parent.getAttribute("data-vid") )
-        console.log(vnode)
-//        if(!vnode){
-//            vnode = new VNode(parent)
-//            VTree.appendChild(vnode)
-//        }
+
         data.vnode = vnode
         
         var comments = getPlaceholders(vnode, data.signature)
@@ -201,9 +197,14 @@ bindingExecutors.repeat = function (method, pos, el) {
                     }
                 }
                 data.$with = start
+                var pid = data.signature.replace(rvtext, function(a, b){
+                    return b
+                })
+              //  console.log(pid+"!!!!!!!!!!!!")
                 vnode.insertBefore(transation, end)
+                var mountIndex = 0
                 for (i = 0; fragment = fragments[i++]; ) {
-                    scanNodes(fragment.nodes, fragment.vmodels)
+                     mountIndex =  scanNodes(fragment.nodes, fragment.vmodels, pid , mountIndex)
                     fragment.nodes = fragment.vmodels = null
                 }
                

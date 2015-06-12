@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.44 built in 2015.6.12
+ avalon.js 1.44 built in 2015.6.13
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -4035,19 +4035,21 @@ function scanNodeList(parent, vmodels) {
  * @returns {undefined}
  */
 
-function scanNodes(nodes, vmodels, pid) {
+function scanNodes(nodes, vmodels, pid, mountIndex) {
     var bindings = []
     var firstChild = nodes[0] || {}
     var isVirtual = firstChild.isVirtual == true
     var doc = isVirtual ? VDOC : DOC //使用何种文档对象来创建各种节点
     var inDom = firstChild.parentNode && firstChild.parentNode.nodeType === 1
-    var mountIndex = 0, parent, skipHtml = false
-   // 包在<!--v-html-->与<!--v-html:end-->,<!--v-repeat-->与<!--v-repeat:end-->,
-   // <!--v-include-->与<!--v-include:end--> 之间的节点会被忽略掉
+    var endComment = false //如果前面出现了<!--v-text-->，但还没有看到<!--v-text:end-->
+    mountIndex = mountIndex || 0
+    var parent
+    // 包在<!--v-html-->与<!--v-html:end-->,<!--v-repeat-->与<!--v-repeat:end-->,
+    // <!--v-include-->与<!--v-include:end--> 之间的节点会被忽略掉
     for (var i = 0, node; node = nodes[i]; i++) {
         switch (node.nodeType) {
             case 1:
-                if (!skipHtml) {
+                if (!endComment) {
                     if (isVirtual) {
                         node.setAttribute("data-vid", pid + "." + mountIndex)
                     }
@@ -4055,6 +4057,7 @@ function scanNodes(nodes, vmodels, pid) {
                 }
                 break
             case 3:
+                //如果碰到{{text}},{{html}}
                 if (rexpr.test(node.nodeValue)) {
                     var tokens = scanExpr(node.nodeValue)
                     var generatePlaceholders = false
@@ -4072,7 +4075,7 @@ function scanNodes(nodes, vmodels, pid) {
                         for (t = 0; token = tokens[t++]; ) {
                             if (token.expr) {
                                 var signature = "v-" + token.type + pid + "." + mountIndex
-                                if (!skipHtml) {
+                                if (!endComment) {
                                     mountIndex++
                                 }
                                 token.signature = signature
@@ -4092,9 +4095,14 @@ function scanNodes(nodes, vmodels, pid) {
                 }
                 break
             case 8:
+                //如果是<!--v-text--><!--v-html--><!--v-include--><!--v-repeat--><!--v-with-->
                 var nodeValue = node.nodeValue //如果后端渲染时已经生成好注释节点
-                if (rvtext.test(nodeValue)) {
-                    if(nodeValue.slice(-4) !== ":end"){
+                if (nodeValue === endComment) { //<!--v-text:end-->
+                    endComment = false
+                } else if (rvtext.test(nodeValue)) {//<!--v-text-->
+                    endComment = nodeValue + ":end"
+                    var btype = nodeValue.slice(2, nodeValue.indexOf("."))
+                    if (btype === "text" || btype == "html") {//以后考虑也把ms-if放进来
                         var content = nodeValue.replace(rvtext, function (a) {
                             signature = a
                             return ""
@@ -4102,16 +4110,10 @@ function scanNodes(nodes, vmodels, pid) {
                         token = getToken(content)
                         token.element = node
                         token.signature = signature
-                        token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
+                        token.type = btype
                         bindings.push(token)
-                        mountIndex++
-                        if (token.type === "html") {
-                            skipHtml = nodeValue + ":end"
-                        }
                     }
-                    if (nodeValue === skipHtml) {
-                        skipHtml = false
-                    } 
+                    mountIndex++
                 }
                 break
         }
@@ -4119,14 +4121,14 @@ function scanNodes(nodes, vmodels, pid) {
 
     if (bindings.length) {
         if (!isVirtual && inDom) { //将真实DOM转换虚拟DOM并添加到虚拟DOM树上
-            vparent = VTree.queryVID(parent.getAttribute("data-vid"))
+            var vparent = VTree.queryVID(parent.getAttribute("data-vid"))
             vparent.childNodes.length = 0
-            nodeIndex = 0
-            skipHtml = false
+            var nodeIndex = 0
+            endComment = false
             for (i = 0, node; node = parent.childNodes[i]; i++) {
                 switch (node.nodeType) {
                     case 1:
-                        if (!skipHtml) {
+                        if (!endComment) {
                             var vid = pid + "." + nodeIndex++
                             node.setAttribute("data-vid", vid)
                         }
@@ -4139,20 +4141,15 @@ function scanNodes(nodes, vmodels, pid) {
                         break
                     case 8:
                         var nodeValue = node.nodeValue
-                        if (rvtext.test(nodeValue)) {
-                            if (nodeValue === skipHtml) {
-                                skipHtml = false
-                            } else {
-                                nodeIndex++
-                                if (nodeValue.indexOf("v-html") === 0) {
-                                    skipHtml = nodeValue + ":end"
-                                }
-                            }
-                            vnode = VDOC.createComment(nodeValue)
-                            vparent.appendChild(vnode)
+                        if (endComment === nodeValue) {
+                            endComment = false
+                        } else if (rvtext.test(nodeValue)) {
+                            endComment = nodeValue+":end"
+                            nodeIndex++
                         }
+                        vnode = VDOC.createComment(nodeValue)
+                        vparent.appendChild(vnode)
                         break
-
                 }
             }
         }
@@ -4161,6 +4158,7 @@ function scanNodes(nodes, vmodels, pid) {
     for (i = 0; node = nodes[i++]; ) {
         scanElement(node, node.nodeType, vmodels)
     }
+    return mountIndex
 }
 function scanElement(node, nodeType, vmodels) {
     if (nodeType === 1) {
@@ -4176,7 +4174,7 @@ function scanElement(node, nodeType, vmodels) {
     }
 }
 
-var rvtext = /^v\-[a-z]+[\.\d]+/
+var rvtext = /^v\-[a-z]+([\.\d]+)/
 //实现一个能选择文本节点的选择器
 // tagName, vid@8
 function scanTag(elem, vmodels, node) {
@@ -5155,11 +5153,7 @@ bindingExecutors.repeat = function (method, pos, el) {
         if (!parent)
             return
         var vnode = VTree.queryVID(parent.getAttribute("data-vid") )
-        console.log(vnode)
-//        if(!vnode){
-//            vnode = new VNode(parent)
-//            VTree.appendChild(vnode)
-//        }
+
         data.vnode = vnode
         
         var comments = getPlaceholders(vnode, data.signature)
@@ -5247,9 +5241,14 @@ bindingExecutors.repeat = function (method, pos, el) {
                     }
                 }
                 data.$with = start
+                var pid = data.signature.replace(rvtext, function(a, b){
+                    return b
+                })
+              //  console.log(pid+"!!!!!!!!!!!!")
                 vnode.insertBefore(transation, end)
+                var mountIndex = 0
                 for (i = 0; fragment = fragments[i++]; ) {
-                    scanNodes(fragment.nodes, fragment.vmodels)
+                     mountIndex =  scanNodes(fragment.nodes, fragment.vmodels, pid , mountIndex)
                     fragment.nodes = fragment.vmodels = null
                 }
                
