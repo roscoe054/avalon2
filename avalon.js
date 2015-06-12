@@ -5074,22 +5074,19 @@ bindingHandlers.repeat = function (data, vmodels) {
     elem.removeAttribute(data.name)
     data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
     data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
-   
+
     var parent = type === "repeat" ? elem.parentNode : elem
     var pid = buildVTree(parent)
-    data.signature = "v-"+type+pid+"."+elem._mountIndex
+    data.signature = "v-" + type + pid + "." + elem._mountIndex
     var innerHTML = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
-  
-  //  var signature = generateID("v-" + data.type)
-  //  data.signature = signature
-    
+
+
     appendPlaceholders(elem, data, type === "repeat")
-    
-    
+
+
     data.template = new VNode(avalon.parseHTML(innerHTML))
-    
-    
-    
+
+
     data.handler = bindingExecutors.repeat
     data.rollback = function () {
         var elem = data.element
@@ -5152,14 +5149,17 @@ bindingExecutors.repeat = function (method, pos, el) {
         var parent = data.type === "repeat" ? elem.parentNode : elem
         if (!parent)
             return
-        var vnode = VTree.queryVID(parent.getAttribute("data-vid") )
-
+        var pid = data.signature.replace(rvtext, function (a, b) {
+            return b
+        })
+        var vnode = VTree.queryVID(parent.getAttribute("data-vid"))
+        // console.log(parent.getAttribute("data-vid") + "--------")
         data.vnode = vnode
-        
+
         var comments = getPlaceholders(vnode, data.signature)
 
         var start = comments[0]
-        var end = comments[comments.length-1]
+        var end = comments[comments.length - 1]
         var startIndex = vnode.childNodes.indexOf(start)
         var endIndex = vnode.childNodes.indexOf(end)
         var transation = new VDocumentFragment()
@@ -5174,25 +5174,26 @@ bindingExecutors.repeat = function (method, pos, el) {
                     shimController(data, transation, proxy, fragments)
                 }
                 vnode.replaceChild(transation, comments[pos])
+                var mountIndex = 0
                 for (i = 0; fragment = fragments[i++]; ) {
-                    scanNodes(fragment.nodes, fragment.vmodels)
+                    mountIndex = scanNodes(fragment.nodes, fragment.vmodels, pid, mountIndex)
                     fragment.nodes = fragment.vmodels = null
                 }
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
-               startIndex = vnode.childNodes.indexOf(comments[pos])
-               endIndex = vnode.childNodes.indexOf(comments[pos + el])
-               vnode.childNodes.splice(startIndex, endIndex - startIndex)
+                startIndex = vnode.childNodes.indexOf(comments[pos])
+                endIndex = vnode.childNodes.indexOf(comments[pos + el])
+                vnode.childNodes.splice(startIndex, endIndex - startIndex)
                 break
             case "clear":
-                vnode.childNodes.splice(startIndex+1, Math.max(0, endIndex - startIndex-1))
+                vnode.childNodes.splice(startIndex + 1, Math.max(0, endIndex - startIndex - 1))
                 break
             case "move":
                 if (start && end) {
                     var signature = start.nodeValue
                     var rooms = []
                     var room = []
-                    for ( i = endIndex - 1; i >= startIndex; i--) {
+                    for (i = endIndex - 1; i >= startIndex; i--) {
                         var testNode = vnode.childNodes[i]
                         room.unshift(testNode)
                         if (testNode.nodeValue === signature) {
@@ -5241,20 +5242,20 @@ bindingExecutors.repeat = function (method, pos, el) {
                     }
                 }
                 data.$with = start
-                var pid = data.signature.replace(rvtext, function(a, b){
+                var pid = data.signature.replace(rvtext, function (a, b) {
                     return b
                 })
-              //  console.log(pid+"!!!!!!!!!!!!")
+                //  console.log(pid+"!!!!!!!!!!!!")
                 vnode.insertBefore(transation, end)
                 var mountIndex = 0
                 for (i = 0; fragment = fragments[i++]; ) {
-                     mountIndex =  scanNodes(fragment.nodes, fragment.vmodels, pid , mountIndex)
+                    mountIndex = scanNodes(fragment.nodes, fragment.vmodels, pid, mountIndex)
                     fragment.nodes = fragment.vmodels = null
                 }
-               
+
                 break
         }
-         vnode.addTask("repeat")
+        vnode.addTask("repeat")
         if (method === "clear")
             method = "del"
         var callback = data.renderedCallback || noop,
