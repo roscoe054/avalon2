@@ -130,7 +130,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                     shimController(data, transation, proxy, fragments)
                 }
                 vnode.replaceChild(transation, comments[pos])
-                var mountIndex = 0
+                var mountIndex = pos
                 for (i = 0; fragment = fragments[i++]; ) {
                     mountIndex = scanNodes(fragment.nodes, fragment.vmodels, pid, mountIndex)
                     fragment.nodes = fragment.vmodels = null
