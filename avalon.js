@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.44 built in 2015.6.11
+ avalon.js 1.44 built in 2015.6.12
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -2435,10 +2435,21 @@ function appendPlaceholders(elem, data, replace) {
         parent.insertBefore(start, elem)
         parent.replaceChild(end, elem)
         data.element = end
+        if(!parent.isVirtual){
+            
+            var pid = buildVTree(parent)
+            
+            var node = VTree.queryVID(pid)
+            node.childNodes = (new VNode(parent)).childNodes
+            
+        }
+        
     } else {
         avalon.clearHTML(elem)
         elem.appendChild(start)
         elem.appendChild(end)
+        
+        
     }
     return [start, end]
 }
@@ -2578,6 +2589,7 @@ function buildVTree(elem) {//将此元素生成对应的虚拟DOM,并挂在VTree
     }
     return vid
 }
+
 /* 
  将VTree中的数据同步到DTree 
  */
@@ -4029,15 +4041,17 @@ function scanNodes(nodes, vmodels, pid) {
     var isVirtual = firstChild.isVirtual == true
     var doc = isVirtual ? VDOC : DOC //使用何种文档对象来创建各种节点
     var inDom = firstChild.parentNode && firstChild.parentNode.nodeType === 1
-    var nodeIndex = 0, parent, skipHtml = false
+    var mountIndex = 0, parent, skipHtml = false
+   // 包在<!--v-html-->与<!--v-html:end-->,<!--v-repeat-->与<!--v-repeat:end-->,
+   // <!--v-include-->与<!--v-include:end--> 之间的节点会被忽略掉
     for (var i = 0, node; node = nodes[i]; i++) {
         switch (node.nodeType) {
             case 1:
                 if (!skipHtml) {
                     if (isVirtual) {
-                        node.setAttribute("data-vid", pid + "." + nodeIndex)
+                        node.setAttribute("data-vid", pid + "." + mountIndex)
                     }
-                    nodeIndex++
+                    node._mountIndex = mountIndex++
                 }
                 break
             case 3:
@@ -4057,9 +4071,9 @@ function scanNodes(nodes, vmodels, pid) {
                         var fragment = doc.createDocumentFragment()
                         for (t = 0; token = tokens[t++]; ) {
                             if (token.expr) {
-                                var signature = "v-" + token.type + pid + "." + nodeIndex
+                                var signature = "v-" + token.type + pid + "." + mountIndex
                                 if (!skipHtml) {
-                                    nodeIndex++
+                                    mountIndex++
                                 }
                                 token.signature = signature
                                 signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
@@ -4090,7 +4104,7 @@ function scanNodes(nodes, vmodels, pid) {
                         token.signature = signature
                         token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
                         bindings.push(token)
-                        nodeIndex++
+                        mountIndex++
                         if (token.type === "html") {
                             skipHtml = nodeValue + ":end"
                         }
@@ -5062,13 +5076,22 @@ bindingHandlers.repeat = function (data, vmodels) {
     elem.removeAttribute(data.name)
     data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
     data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
-
+   
+    var parent = type === "repeat" ? elem.parentNode : elem
+    var pid = buildVTree(parent)
+    data.signature = "v-"+type+pid+"."+elem._mountIndex
     var innerHTML = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
-    var signature = generateID("v-" + data.type)
-    data.signature = signature
+  
+  //  var signature = generateID("v-" + data.type)
+  //  data.signature = signature
+    
     appendPlaceholders(elem, data, type === "repeat")
+    
+    
     data.template = new VNode(avalon.parseHTML(innerHTML))
-
+    
+    
+    
     data.handler = bindingExecutors.repeat
     data.rollback = function () {
         var elem = data.element
@@ -5132,10 +5155,11 @@ bindingExecutors.repeat = function (method, pos, el) {
         if (!parent)
             return
         var vnode = VTree.queryVID(parent.getAttribute("data-vid") )
-        if(!vnode){
-            vnode = new VNode(parent)
-            VTree.appendChild(vnode)
-        }
+        console.log(vnode)
+//        if(!vnode){
+//            vnode = new VNode(parent)
+//            VTree.appendChild(vnode)
+//        }
         data.vnode = vnode
         
         var comments = getPlaceholders(vnode, data.signature)

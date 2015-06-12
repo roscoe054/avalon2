@@ -76,10 +76,21 @@ function appendPlaceholders(elem, data, replace) {
         parent.insertBefore(start, elem)
         parent.replaceChild(end, elem)
         data.element = end
+        if(!parent.isVirtual){
+            
+            var pid = buildVTree(parent)
+            
+            var node = VTree.queryVID(pid)
+            node.childNodes = (new VNode(parent)).childNodes
+            
+        }
+        
     } else {
         avalon.clearHTML(elem)
         elem.appendChild(start)
         elem.appendChild(end)
+        
+        
     }
     return [start, end]
 }

@@ -27,15 +27,17 @@ function scanNodes(nodes, vmodels, pid) {
     var isVirtual = firstChild.isVirtual == true
     var doc = isVirtual ? VDOC : DOC //使用何种文档对象来创建各种节点
     var inDom = firstChild.parentNode && firstChild.parentNode.nodeType === 1
-    var nodeIndex = 0, parent, skipHtml = false
+    var mountIndex = 0, parent, skipHtml = false
+   // 包在<!--v-html-->与<!--v-html:end-->,<!--v-repeat-->与<!--v-repeat:end-->,
+   // <!--v-include-->与<!--v-include:end--> 之间的节点会被忽略掉
     for (var i = 0, node; node = nodes[i]; i++) {
         switch (node.nodeType) {
             case 1:
                 if (!skipHtml) {
                     if (isVirtual) {
-                        node.setAttribute("data-vid", pid + "." + nodeIndex)
+                        node.setAttribute("data-vid", pid + "." + mountIndex)
                     }
-                    nodeIndex++
+                    node._mountIndex = mountIndex++
                 }
                 break
             case 3:
@@ -55,9 +57,9 @@ function scanNodes(nodes, vmodels, pid) {
                         var fragment = doc.createDocumentFragment()
                         for (t = 0; token = tokens[t++]; ) {
                             if (token.expr) {
-                                var signature = "v-" + token.type + pid + "." + nodeIndex
+                                var signature = "v-" + token.type + pid + "." + mountIndex
                                 if (!skipHtml) {
-                                    nodeIndex++
+                                    mountIndex++
                                 }
                                 token.signature = signature
                                 signature += ":" + token.value + (token.filters ? "|" + token.filters.join("|") : "")
@@ -88,7 +90,7 @@ function scanNodes(nodes, vmodels, pid) {
                         token.signature = signature
                         token.type = nodeValue.indexOf("v-text") === 0 ? "text" : "html"
                         bindings.push(token)
-                        nodeIndex++
+                        mountIndex++
                         if (token.type === "html") {
                             skipHtml = nodeValue + ":end"
                         }

@@ -30,13 +30,22 @@ bindingHandlers.repeat = function (data, vmodels) {
     elem.removeAttribute(data.name)
     data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
     data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
-
+   
+    var parent = type === "repeat" ? elem.parentNode : elem
+    var pid = buildVTree(parent)
+    data.signature = "v-"+type+pid+"."+elem._mountIndex
     var innerHTML = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
-    var signature = generateID("v-" + data.type)
-    data.signature = signature
+  
+  //  var signature = generateID("v-" + data.type)
+  //  data.signature = signature
+    
     appendPlaceholders(elem, data, type === "repeat")
+    
+    
     data.template = new VNode(avalon.parseHTML(innerHTML))
-
+    
+    
+    
     data.handler = bindingExecutors.repeat
     data.rollback = function () {
         var elem = data.element
@@ -100,10 +109,11 @@ bindingExecutors.repeat = function (method, pos, el) {
         if (!parent)
             return
         var vnode = VTree.queryVID(parent.getAttribute("data-vid") )
-        if(!vnode){
-            vnode = new VNode(parent)
-            VTree.appendChild(vnode)
-        }
+        console.log(vnode)
+//        if(!vnode){
+//            vnode = new VNode(parent)
+//            VTree.appendChild(vnode)
+//        }
         data.vnode = vnode
         
         var comments = getPlaceholders(vnode, data.signature)
