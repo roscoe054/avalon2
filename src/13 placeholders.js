@@ -34,7 +34,7 @@ function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
         if (!real) {
             //如果真空DOM树中的相应位置只有占位符，或者真实DOM的个数比虚拟DOM少，那么就直接创建添加
             parent.insertBefore(new DNode(node), end || null)
-        }else if(real.nodeType !== node.nodeType){
+        } else if (real.nodeType !== node.nodeType) {
             //如果类型不相同，那么直接创建替换
             parent.replaceChild(new DNode(node), real)
         } else {
@@ -68,40 +68,27 @@ function appendPlaceholders(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时
     //其左右将插入两个注释节点，自身被替换
-    var parent = elem.parentNode
-    var doc = parent.isVirtual === true ? VDOC : DOC
+    var doc = elem.isVirtual === true ? VDOC : DOC
     var start = doc.createComment(data.signature)
     var end = doc.createComment(data.signature + ":end")
+    var target = replace ? elem.parentNode : target
     if (replace) {
-        parent.insertBefore(start, elem)
-        parent.replaceChild(end, elem)
         data.element = end
-        if(!parent.isVirtual){
-            
-            var pid = buildVTree(parent)
-            
-            var node = VTree.queryVID(pid)
-            node.childNodes.length = 0
-            node.appendChild( (new VNode(parent)).childNodes )
-            
-        }
-        
+        target.insertBefore(start, elem)
+        target.replaceChild(end, elem)
     } else {
-        avalon.clearHTML(elem)
-        elem.appendChild(start)
-        elem.appendChild(end)
-        if(!elem.isVirtual){
-            
-            var pid = buildVTree(elem)
-            
-            var node = VTree.queryVID(pid)
-            node.childNodes.length = 0
-            node.appendChild( (new VNode(parent)).childNodes )
-            
-        }
-        
-        
+        avalon.clearHTML(target)
+        target.appendChild(start)
+        target.appendChild(end)
     }
+
+    if (!target.isVirtual) {
+        var pid = buildVTree(target)
+        var vnode = VTree.queryVID(pid)
+        vnode.childNodes.length = 0
+        vnode.appendChild((new VNode(target)).childNodes)
+    }
+
     return [start, end]
 }
 

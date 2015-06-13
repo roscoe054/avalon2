@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.44 built in 2015.6.13
+ avalon.js 1.44 built in 2015.6.14
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -2393,7 +2393,7 @@ function updateNodesBetweenPlaceholdersImpl(nodes, virtuals, parent, end) {
         if (!real) {
             //如果真空DOM树中的相应位置只有占位符，或者真实DOM的个数比虚拟DOM少，那么就直接创建添加
             parent.insertBefore(new DNode(node), end || null)
-        }else if(real.nodeType !== node.nodeType){
+        } else if (real.nodeType !== node.nodeType) {
             //如果类型不相同，那么直接创建替换
             parent.replaceChild(new DNode(node), real)
         } else {
@@ -2427,40 +2427,27 @@ function appendPlaceholders(elem, data, replace) {
     //文本绑定与html绑定当elem为文本节点
     //或include绑定，当使用了data-duplex-replace辅助指令时
     //其左右将插入两个注释节点，自身被替换
-    var parent = elem.parentNode
-    var doc = parent.isVirtual === true ? VDOC : DOC
+    var doc = elem.isVirtual === true ? VDOC : DOC
     var start = doc.createComment(data.signature)
     var end = doc.createComment(data.signature + ":end")
+    var target = replace ? elem.parentNode : target
     if (replace) {
-        parent.insertBefore(start, elem)
-        parent.replaceChild(end, elem)
         data.element = end
-        if(!parent.isVirtual){
-            
-            var pid = buildVTree(parent)
-            
-            var node = VTree.queryVID(pid)
-            node.childNodes.length = 0
-            node.appendChild( (new VNode(parent)).childNodes )
-            
-        }
-        
+        target.insertBefore(start, elem)
+        target.replaceChild(end, elem)
     } else {
-        avalon.clearHTML(elem)
-        elem.appendChild(start)
-        elem.appendChild(end)
-        if(!elem.isVirtual){
-            
-            var pid = buildVTree(elem)
-            
-            var node = VTree.queryVID(pid)
-            node.childNodes.length = 0
-            node.appendChild( (new VNode(parent)).childNodes )
-            
-        }
-        
-        
+        avalon.clearHTML(target)
+        target.appendChild(start)
+        target.appendChild(end)
     }
+
+    if (!target.isVirtual) {
+        var pid = buildVTree(target)
+        var vnode = VTree.queryVID(pid)
+        vnode.childNodes.length = 0
+        vnode.appendChild((new VNode(target)).childNodes)
+    }
+
     return [start, end]
 }
 
@@ -3606,10 +3593,10 @@ var rsplit = /[^\w$]+/g
 var rkeywords = new RegExp(["\\b" + keywords.replace(/,/g, '\\b|\\b') + "\\b"].join('|'), 'g')
 var rnumber = /\b\d[^,]*/g
 var rcomma = /^,+|,+$/g
-var cacheVars = new Cache(512)
+var variablePool = new Cache(512)
 var getVariables = function (code) {
     var key = "," + code.trim()
-    var ret = cacheVars.get(key)
+    var ret = variablePool.get(key)
     if (ret) {
         return ret
     }
@@ -3620,7 +3607,7 @@ var getVariables = function (code) {
             .replace(rnumber, "")
             .replace(rcomma, "")
             .split(/^$|,+/)
-    return cacheVars.put(key, uniqSet(match))
+    return variablePool.put(key, uniqSet(match))
 }
 /*添加赋值语句*/
 
@@ -3655,7 +3642,7 @@ function uniqSet(array) {
     return ret
 }
 //缓存求值函数，以便多次利用
-var cacheExprs = new Cache(128)
+var evaluatorPool = new Cache(128)
 //取得求值函数及其传参
 var rduplex = /\w\[.*\]|\w\.\w/
 var rproxy = /(\$proxy\$[a-z]+)\d+$/
@@ -3739,7 +3726,7 @@ function parseExpr(code, scopes, data) {
     data.args = args
     //---------------cache----------------
     delete data.vars
-    var fn = cacheExprs.get(exprId) //直接从缓存，免得重复生成
+    var fn = evaluatorPool.get(exprId) //直接从缓存，免得重复生成
     if (fn) {
         data.evaluator = fn
         return
@@ -3763,7 +3750,7 @@ function parseExpr(code, scopes, data) {
                 "= vvv;\n} "
         try {
             fn = Function.apply(noop, names.concat(_body))
-            data.evaluator = cacheExprs.put(exprId, fn)
+            data.evaluator = evaluatorPool.put(exprId, fn)
         } catch (e) {
             log("debug: parse error," + e.message)
         }
@@ -3785,7 +3772,7 @@ function parseExpr(code, scopes, data) {
     }
     try {
         fn = Function.apply(noop, names.concat("'use strict';\n" + prefix + code))
-        data.evaluator = cacheExprs.put(exprId, fn)
+        data.evaluator = evaluatorPool.put(exprId, fn)
     } catch (e) {
         log("debug: parse error," + e.message)
     } finally {
@@ -4005,7 +3992,7 @@ var rnoscanNodeBinding = /^each|with|html|include$/
 //IE67下，在循环绑定中，一个节点如果是通过cloneNode得到，自定义属性的specified为false，无法进入里面的分支，
 //但如果我们去掉scanAttr中的attr.specified检测，一个元素会有80+个特性节点（因为它不区分固有属性与自定义属性），很容易卡死页面
 if (!"1" [0]) {
-    var cacheAttrs = new Cache(512)
+    var attrPool = new Cache(512)
     var rattrs = /\s+([^=\s]+)(?:=("[^"]*"|'[^']*'|[^\s>]+))?/g,
             rquote = /^['"]/,
             rtag = /<\w+\b(?:(["'])[^"]*?(\1)|[^>])*>/i,
@@ -4029,7 +4016,7 @@ if (!"1" [0]) {
         var attributes = [],
                 match,
                 k, v
-        var ret = cacheAttrs.get(str)
+        var ret = attrPool.get(str)
         if (ret) {
             return ret
         }
@@ -4047,7 +4034,7 @@ if (!"1" [0]) {
             }
             attributes.push(binding)
         }
-        return cacheAttrs.put(str, attributes)
+        return attrPool.put(str, attributes)
     }
 }
 
