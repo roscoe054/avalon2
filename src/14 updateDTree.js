@@ -91,7 +91,6 @@ var updateDTree = {
         avalon.log("repeat")
         var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
-
         var collect = false, token
         var keys = {}, newRepeatNodes = [], oldRepeatNodes = [], index = 0
         //收集从<!--v-repeat1213--> 到<!--v-repeat1213:end-->之间的节点,包括第一个<!--v-repeat1213-->
@@ -117,7 +116,6 @@ var updateDTree = {
                 index++
             }
         }
-      
         //对真实DOM根据keys给出的顺序进行重排，并删掉没用的旧节点，与生成缺少的新节点
         for (var i = 0, node; node = rnodes[i]; i++) {
             if (node.nodeType === 8 && /^v-(repeat|with|each)/.test(node.nodeValue)) {
@@ -160,47 +158,78 @@ var updateDTree = {
             }
         }
         vnode.style = {}
-    },
-    attr: function (vnode, elem) {
-        for (var attrName in vnode.props) {
-            if (vnode.props.hasOwnProperty(attrName)) {
-                var val = vnode.props[attrName]
-                var toRemove = (val === false) || (val === null) || (val === void 0)
-                if (val && typeof val === "object") {//处理ms-data-xxx="[object]"
-                    elem[attrName] = val
-                    continue
+    }
+
+}
+
+//=================
+
+var bools = ["autofocus,autoplay,async,allowTransparency,checked,controls",
+    "declare,disabled,defer,defaultChecked,defaultSelected",
+    "contentEditable,isMap,loop,multiple,noHref,noResize,noShade",
+    "open,readOnly,selected"
+].join(",")
+var boolMap = {}
+bools.replace(rword, function (name) {
+    boolMap[name.toLowerCase()] = name
+})
+
+var propMap = {//属性名映射
+    "accept-charset": "acceptCharset",
+    "char": "ch",
+    "charoff": "chOff",
+    "class": "className",
+    "for": "htmlFor",
+    "http-equiv": "httpEquiv"
+}
+
+var anomaly = ["accessKey,bgColor,cellPadding,cellSpacing,codeBase,codeType,colSpan",
+    "dateTime,defaultValue,frameBorder,longDesc,maxLength,marginWidth,marginHeight",
+    "rowSpan,tabIndex,useMap,vSpace,valueType,vAlign"
+].join(",")
+anomaly.replace(rword, function (name) {
+    propMap[name.toLowerCase()] = name
+})
+
+updateDTree.attr = function (vnode, elem) {
+    for (var attrName in vnode.props) {
+        if (vnode.props.hasOwnProperty(attrName)) {
+            var val = vnode.props[attrName]
+            var toRemove = (val === false) || (val === null) || (val === void 0)
+            if (val && typeof val === "object") {//处理ms-data-xxx="[object]"
+                elem[attrName] = val
+                continue
+            }
+            if (!W3C && propMap[attrName]) { //旧式IE下需要进行名字映射
+                attrName = propMap[attrName]
+            }
+            var bool = boolMap[attrName]
+            if (typeof elem[bool] === "boolean") {
+                elem[bool] = !!val //布尔属性必须使用el.xxx = true|false方式设值
+                if (!val) { //如果为false, IE全系列下相当于setAttribute(xxx,''),会影响到样式,需要进一步处理
+                    toRemove = true
                 }
-                if (!W3C && propMap[attrName]) { //旧式IE下需要进行名字映射
-                    attrName = propMap[attrName]
+            }
+            if (toRemove) {
+                elem.removeAttribute(attrName)
+                continue
+            }
+            if (attrName === "src" || attrName === "href") {
+                elem[attrName] = val
+                if (window.chrome && elem.tagName === "EMBED") {
+                    var parent = elem.parentNode //#525  chrome1-37下embed标签动态设置src不能发生请求
+                    var comment = document.createComment("ms-src")
+                    parent.replaceChild(comment, elem)
+                    parent.replaceChild(elem, comment)
                 }
-                var bool = boolMap[attrName]
-                if (typeof elem[bool] === "boolean") {
-                    elem[bool] = !!val //布尔属性必须使用el.xxx = true|false方式设值
-                    if (!val) { //如果为false, IE全系列下相当于setAttribute(xxx,''),会影响到样式,需要进一步处理
-                        toRemove = true
-                    }
-                }
-                if (toRemove) {
-                    elem.removeAttribute(attrName)
-                    continue
-                }
-                if (attrName === "src" || attrName === "href") {
-                    elem[attrName] = val
-                    if (window.chrome && elem.tagName === "EMBED") {
-                        var parent = elem.parentNode //#525  chrome1-37下embed标签动态设置src不能发生请求
-                        var comment = document.createComment("ms-src")
-                        parent.replaceChild(comment, elem)
-                        parent.replaceChild(elem, comment)
-                    }
-                    continue
-                }
-                //SVG只能使用setAttribute(xxx, yyy), VML只能使用elem.xxx = yyy ,HTML的固有属性必须elem.xxx = yyy
-                var isInnate = rsvg.test(elem) ? false : (DOC.namespaces && isVML(elem)) ? true : attrName in elem.cloneNode(false)
-                if (isInnate) {
-                    elem[attrName] = val
-                } else {
-                    elem.setAttribute(attrName, val)
-                }
+                continue
+            }
+            //SVG只能使用setAttribute(xxx, yyy), VML只能使用elem.xxx = yyy ,HTML的固有属性必须elem.xxx = yyy
+            var isInnate = rsvg.test(elem) ? false : (DOC.namespaces && isVML(elem)) ? true : attrName in elem.cloneNode(false)
+            if (isInnate) {
+                elem[attrName] = val
+            } else {
+                elem.setAttribute(attrName, val)
             }
         }
     }

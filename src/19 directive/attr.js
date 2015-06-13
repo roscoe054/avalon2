@@ -1,29 +1,4 @@
-var bools = ["autofocus,autoplay,async,allowTransparency,checked,controls",
-    "declare,disabled,defer,defaultChecked,defaultSelected",
-    "contentEditable,isMap,loop,multiple,noHref,noResize,noShade",
-    "open,readOnly,selected"
-].join(",")
-var boolMap = {}
-bools.replace(rword, function (name) {
-    boolMap[name.toLowerCase()] = name
-})
 
-var propMap = {//属性名映射
-    "accept-charset": "acceptCharset",
-    "char": "ch",
-    "charoff": "chOff",
-    "class": "className",
-    "for": "htmlFor",
-    "http-equiv": "httpEquiv"
-}
-
-var anomaly = ["accessKey,bgColor,cellPadding,cellSpacing,codeBase,codeType,colSpan",
-    "dateTime,defaultValue,frameBorder,longDesc,maxLength,marginWidth,marginHeight",
-    "rowSpan,tabIndex,useMap,vSpace,valueType,vAlign"
-].join(",")
-anomaly.replace(rword, function (name) {
-    propMap[name.toLowerCase()] = name
-})
 
 bindingHandlers.attr = function (data, vmodels) {
     var text = data.value.trim(),

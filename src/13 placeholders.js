@@ -81,7 +81,8 @@ function appendPlaceholders(elem, data, replace) {
             var pid = buildVTree(parent)
             
             var node = VTree.queryVID(pid)
-            node.childNodes = (new VNode(parent)).childNodes
+            node.childNodes.length = 0
+            node.appendChild( (new VNode(parent)).childNodes )
             
         }
         
@@ -89,6 +90,15 @@ function appendPlaceholders(elem, data, replace) {
         avalon.clearHTML(elem)
         elem.appendChild(start)
         elem.appendChild(end)
+        if(!elem.isVirtual){
+            
+            var pid = buildVTree(elem)
+            
+            var node = VTree.queryVID(pid)
+            node.childNodes.length = 0
+            node.appendChild( (new VNode(parent)).childNodes )
+            
+        }
         
         
     }

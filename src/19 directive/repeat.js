@@ -27,35 +27,32 @@ bindingHandlers.repeat = function (data, vmodels) {
     }
 
     var elem = data.element
-    elem.removeAttribute(data.name)
-    data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
-    data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
+   
+    if(!elem.isVirtual){
+        //如果elem还是真实DOM, 那收集其回调函数
+        elem.removeAttribute(data.name)
+        data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
+        data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
+        var target = type === "repeat" ? elem.parentNode : elem
+        var tempate = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
+        var pid = buildVTree(target)//添加到VTree
+        data.signature = "v-" + type + pid + "." + elem._mountIndex
+        var vnode = VTree.queryVID(pid)
+        data.vnode = vnode
+        data.parsedTemplate = new VNode(avalon.parseHTML(tempate))
+        //添加两个注释节点在其内部或两边
+        appendPlaceholders(elem, data, type === "repeat")
+        var comments = getPlaceholders(vnode, data.signature)
+        data.element = comments[1]
+        data.handler = bindingExecutors.repeat
+    }
+    
 
-    var parent = type === "repeat" ? elem.parentNode : elem
-    var pid = buildVTree(parent)
-    data.signature = "v-" + type + pid + "." + elem._mountIndex
-    var innerHTML = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
-
-
-    appendPlaceholders(elem, data, type === "repeat")
-
-
-    data.template = new VNode(avalon.parseHTML(innerHTML))
-
-
-    data.handler = bindingExecutors.repeat
     data.rollback = function () {
         var elem = data.element
         if (!elem)
             return
         data.handler("clear")
-        var parentNode = elem.parentNode
-        var content = data.template
-        var target = content.firstChild
-        parentNode.replaceChild(content, elem)
-        var start = data.$with
-        start && start.parentNode && start.parentNode.removeChild(start)
-        target = data.element = data.type === "repeat" ? target : parentNode
     }
     if (freturn) {
         return
@@ -108,12 +105,9 @@ bindingExecutors.repeat = function (method, pos, el) {
         var pid = data.signature.replace(rvtext, function (a, b) {
             return b
         })
-        var vnode = VTree.queryVID(parent.getAttribute("data-vid"))
-        // console.log(parent.getAttribute("data-vid") + "--------")
-        data.vnode = vnode
-
+     //   var vnode = VTree.queryVID(parent.getAttribute("data-vid"))
+        var vnode = data.vnode 
         var comments = getPlaceholders(vnode, data.signature)
-
         var start = comments[0]
         var end = comments[comments.length - 1]
         var startIndex = vnode.childNodes.indexOf(start)
@@ -198,10 +192,6 @@ bindingExecutors.repeat = function (method, pos, el) {
                     }
                 }
                 data.$with = start
-                var pid = data.signature.replace(rvtext, function (a, b) {
-                    return b
-                })
-                //  console.log(pid+"!!!!!!!!!!!!")
                 vnode.insertBefore(transation, end)
                 var mountIndex = 0
                 for (i = 0; fragment = fragments[i++]; ) {
@@ -230,8 +220,8 @@ bindingExecutors.repeat = function (method, pos, el) {
 })
 avalon.pool = eachProxyPool
 
-function shimController(data, transation, proxy, fragments, index) {
-    var content = cloneVNode(data.template)//.cloneNode(true)
+function shimController(data, transation, proxy, fragments) {
+    var content = cloneVNode(data.parsedTemplate)
     var nodes = avalon.slice(content.childNodes)
     if (!data.$with) {
         var comment = new VComment(data.signature)

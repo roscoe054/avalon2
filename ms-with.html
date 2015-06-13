@@ -9,13 +9,20 @@
 
             var vm = avalon.define({
                 $id: "test",
+                change: function(){
+                    vm.array = {
+                        d: 1,
+                        b: 2,
+                        c: 4
+                    }
+                },
                 array: {
                     a: 1,
                     b: 2,
                     c: 3
                 }
             })
-     
+           
         </script>
     </head>
     <body ms-controller="test">
@@ -24,6 +31,6 @@
         <ul>
             <li ms-repeat="array">{{$key}}*{{$val}}</li> 
         </ul>
-
+        <div ms-click="change">change</div>
     </body>
 </html>
