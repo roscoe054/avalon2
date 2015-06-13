@@ -50,9 +50,9 @@ var updateDTree = {
                 continue
             } else if (placeholder === virtual.nodeValue) {
                 if (nodesBetweenPlaceholders.length) {
-                   searchIndexInDom = updateNodesBetweenPlaceholders(
+                    searchIndexInDom = updateNodesBetweenPlaceholders(
                             nodesBetweenPlaceholders, parent,
-                            searchIndexInDom, placeholder.slice(0,-4))
+                            searchIndexInDom, placeholder.slice(0, -4))
                     nodesBetweenPlaceholders.length = 0
                 }
                 placeholder = false
@@ -73,9 +73,9 @@ var updateDTree = {
                 continue
             } else if (placeholder === virtual.nodeValue) {
                 if (nodesBetweenPlaceholders.length) {
-                   searchIndexInDom = updateNodesBetweenPlaceholders(
+                    searchIndexInDom = updateNodesBetweenPlaceholders(
                             nodesBetweenPlaceholders, parent,
-                            searchIndexInDom, placeholder.slice(0,-4))
+                            searchIndexInDom, placeholder.slice(0, -4))
                     nodesBetweenPlaceholders.length = 0
                 }
                 placeholder = false
@@ -105,18 +105,19 @@ var updateDTree = {
             }
             if (collect) {
                 if (virtual.nodeType === 1) {
-                    keys[virtual.vid] = index
+                    keys[virtual.vid ] = index
                 } else {
-                    if (keys[ virtual.nodeValue]) {
-                        keys[ virtual.nodeValue].push(index)
+                    if (keys[ virtual.nodeValue ]) {
+                        keys[ virtual.nodeValue ].push(index)
                     } else {
-                        keys[ virtual.nodeValue] = [index]
+                        keys[ virtual.nodeValue ] = [index]
                     }
                 }
                 newRepeatNodes[index] = virtual
                 index++
             }
         }
+      
         //对真实DOM根据keys给出的顺序进行重排，并删掉没用的旧节点，与生成缺少的新节点
         for (var i = 0, node; node = rnodes[i]; i++) {
             if (node.nodeType === 8 && /^v-(repeat|with|each)/.test(node.nodeValue)) {
@@ -131,7 +132,7 @@ var updateDTree = {
                     //收集符合要求的真实DOM
                     parent.removeChild(node)
                     if (node.nodeType === 1) {
-                        oldRepeatNodes[keys[node.vid]] = node
+                        oldRepeatNodes[keys[node.getAttribute("data-vid")]] = node
                     } else {
                         if (keys[node.nodeValue]) {
                             oldRepeatNodes[ keys[node.nodeValue].shift()] = node
@@ -205,12 +206,12 @@ var updateDTree = {
     }
 }
 
-function logger2(a){
+function logger2(a) {
     var parentNode = a.parentNode
     var childNodes = a.childNodes
     delete a.parentNode
     delete a.childNodes
-    console.log( JSON.stringify(a) )
+    console.log(JSON.stringify(a))
     a.parentNode = parentNode
     a.childNodes = childNodes
 }

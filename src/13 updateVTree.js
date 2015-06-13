@@ -81,7 +81,7 @@ function buidVID(elem) {//为元素生成data-vid
         if (parent && parent.nodeType === 1) {
             var pid = parent.getAttribute("data-vid")
             if (pid) {
-                vid = pid + "." + indexElement(elem, parent.childNodes)
+                vid = pid + "." + elem._mountIndex || indexElement(elem, parent.childNodes)
             } else {
                 vid = "." + rootID++
             }

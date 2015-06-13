@@ -9,7 +9,13 @@
 
             var vm = avalon.define({
                 $id: "test",
-                array: ["a", "b", "c", "d"]
+                array: ["a", "b", "c", "d"],
+                refresh: function(){
+                  vm.array = ["1","2","c","d","22"]
+                },
+                 reverse: function(){
+                  vm.array.reverse()
+                }
             })
             setTimeout(function () {
                 // vm.array.pop()
@@ -18,8 +24,8 @@
 //                vm.array.set(1, "11")
 //                vm.array.set(2, "111")
 //                vm.array.set(3, "222")
-                // vm.array = ["1","2","c","d","22"]
-                vm.array.reverse()
+                // 
+          //     vm.array.reverse()
 
                 //    vm.array.push(5, 6)
                 //  vm.array.splice(0,3)
@@ -32,6 +38,7 @@
         <ul>
             <li ms-repeat="array">{{el}}*{{$index}}</li> 
         </ul>
-
+        <div><button type="button" ms-click="refresh">refresh</button></div>
+        <div><button type="button" ms-click="reverse">reverse</button></div>
     </body>
 </html>
