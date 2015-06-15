@@ -32,6 +32,7 @@ function mutateArray(method, pos, n, index, method2, pos2, n2) {
             case "add":
                 /* jshint ignore:start */
                 var m = pos + n
+                var now = new Date - 0
                 var array = this.$model.slice(pos, m).map(function (el) {
                     if (rcomplexType.test(avalon.type(el))) {//转换为VM
                         return el.$id ? el : modelFactory(el, 0, el)
@@ -39,12 +40,17 @@ function mutateArray(method, pos, n, index, method2, pos2, n2) {
                         return el
                     }
                 })
+               // console.log(array)
+                console.log("创建子VM花去的时间",new Date - now)
                 _splice.apply(this, [pos, 0].concat(array))
                 /* jshint ignore:end */
+                now = new Date-0
                 for (var i = pos; i < m; i++) {//生成代理VM
                     var proxy = eachProxyAgent(i, this)
                     this.$proxy.splice(i, 0, proxy)
                 }
+                console.log("创建代理VM花去的时间",new Date - now)
+
                 this._fire("add", pos, n)
                 break
             case "del":

@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <title>ms-repeat</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
+        <script src="avalon.js" ></script>
+
+        <script >
+
+            function createData(num) {
+                var array = []
+                for (var i = 0; i < num; i++) {
+                    array.push([Math.random(), Math.random()])
+                }
+                return array
+            }
+            var vm = avalon.define({
+                $id: "test",
+                double_: createData(20),
+                change: function () {
+                    console.log("========")
+                    vm.double_ = createData(40)
+                }
+            })
+
+
+
+
+
+        </script>
+        <style>
+            table{
+                border-collapse: collapse;
+                border:1px solid black;
+                width:100%;
+            }
+            td{
+                border:1px solid black;
+            }
+        </style>
+    </head>
+    <body>
+        <fieldset ms-controller="test">
+
+            <h3>这是单个循环，原数组是一个一维数组</h3>
+
+            <h3>这是双重循环，原数组是一个二维数组</h3>
+            <table>
+                <tr ms-repeat-elem="double_">
+                    <td ms-repeat="elem">{{el}}</td>
+                </tr>
+            </table>
+
+            <div><button ms-click="change">button</button></div>
+
+        </fieldset>
+
+
+    </body>
+</html>

@@ -27,33 +27,38 @@ bindingHandlers.repeat = function (data, vmodels) {
     }
 
     var elem = data.element
-   
-    if(!elem.isVirtual){
+  
+    if (!elem.signature) {
         //如果elem还是真实DOM, 那收集其回调函数
         elem.removeAttribute(data.name)
         data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
         data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
         var target = type === "repeat" ? elem.parentNode : elem
-        var tempate = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
+        var nodes = type === "repeat" ? [elem] : avalon.slice(elem.childNodes)
         var pid = buildVTree(target)//添加到VTree
         data.signature = "v-" + type + pid + "." + elem._mountIndex
         var vnode = VTree.queryVID(pid)
         data.vnode = vnode
-        data.parsedTemplate = new VNode(avalon.parseHTML(tempate))
         //添加两个注释节点在其内部或两边
         appendPlaceholders(elem, data, type === "repeat")
         var comments = getPlaceholders(vnode, data.signature)
         data.element = comments[1]
-        data.handler = bindingExecutors.repeat
-    }
-    
 
-    data.rollback = function () {
-        var elem = data.element
-        if (!elem)
-            return
-        data.handler("clear")
+        var template = new VDocumentFragment()
+        avalon.each(nodes, function (index, node) {
+            template.appendChild(new VNode(node))//添加孩子
+        })
+        data.template = template
+
+        data.handler = bindingExecutors.repeat
+        data.rollback = function () {
+            var elem = data.element
+            if (!elem)
+                return
+            data.handler("clear")
+        }
     }
+
     if (freturn) {
         return
     }
@@ -105,8 +110,8 @@ bindingExecutors.repeat = function (method, pos, el) {
         var pid = data.signature.replace(rvtext, function (a, b) {
             return b
         })
-     //   var vnode = VTree.queryVID(parent.getAttribute("data-vid"))
-        var vnode = data.vnode 
+        //   var vnode = VTree.queryVID(parent.getAttribute("data-vid"))
+        var vnode = data.vnode
         var comments = getPlaceholders(vnode, data.signature)
         var start = comments[0]
         var end = comments[comments.length - 1]
@@ -220,8 +225,10 @@ bindingExecutors.repeat = function (method, pos, el) {
 })
 avalon.pool = eachProxyPool
 
+
+
 function shimController(data, transation, proxy, fragments) {
-    var content = cloneVNode(data.parsedTemplate)
+    var content = cloneVNode(data.template)
     var nodes = avalon.slice(content.childNodes)
     if (!data.$with) {
         var comment = new VComment(data.signature)

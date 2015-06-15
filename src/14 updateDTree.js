@@ -88,7 +88,7 @@ var updateDTree = {
         }
     },
     repeat: function (vnode, parent) {
-        avalon.log("repeat")
+       // avalon.log("repeat")
         var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
         var collect = false, token
@@ -240,7 +240,7 @@ function logger2(a) {
     var childNodes = a.childNodes
     delete a.parentNode
     delete a.childNodes
-    console.log(JSON.stringify(a))
+   // console.log(JSON.stringify(a))
     a.parentNode = parentNode
     a.childNodes = childNodes
 }
@@ -251,16 +251,15 @@ var VTree = avalon.VTree = new VElement("HTML")
 VTree.vid = ".0"
 //scanTag 遇到ms-controller会创建一个VElement添加到VTree
 var reID
-function globalRender() {
-    clearTimeout(reID)
-    reID = setTimeout(function () {//以后这里改为Promise
-        refreshTree()
-    }, 4)
-}
-function refreshTree() {
-    avalon.log("更新视图")
-    updateTree(VTree)
-}
+var refreshing = false
+
+setInterval(function () {//以后这里改为Promise
+    if(refreshing){
+        console.log("更新视图")
+       updateTree(VTree)
+       refreshing = false
+    }
+  }, 300)
 function querySelector(tag, vid, root) {
     root = root || document
     var nodes = root.getElementsByTagName(tag)

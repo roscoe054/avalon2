@@ -61,7 +61,10 @@ VElement.prototype = {
         if (task) {
             this.dirty = true
             avalon.Array.ensure(this.tasks, task)
-            globalRender(elem)
+            if(!refreshing){
+                refreshing = true
+               // globalRender(elem)
+            }
         }
     },
     queryVID: function (vid) {
@@ -269,6 +272,7 @@ function VNode(element) {
             })
             ret.className = element.className
             ret.textContent = element.innerHTML
+            //ret.outerHTML = element.outerHTML
             return ret
         case 3:
             return new VText(element.nodeValue)

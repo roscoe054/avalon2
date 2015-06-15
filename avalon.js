@@ -1534,6 +1534,7 @@ function mutateArray(method, pos, n, index, method2, pos2, n2) {
             case "add":
                 /* jshint ignore:start */
                 var m = pos + n
+                var now = new Date - 0
                 var array = this.$model.slice(pos, m).map(function (el) {
                     if (rcomplexType.test(avalon.type(el))) {//转换为VM
                         return el.$id ? el : modelFactory(el, 0, el)
@@ -1541,12 +1542,17 @@ function mutateArray(method, pos, n, index, method2, pos2, n2) {
                         return el
                     }
                 })
+               // console.log(array)
+                console.log("创建子VM花去的时间",new Date - now)
                 _splice.apply(this, [pos, 0].concat(array))
                 /* jshint ignore:end */
+                now = new Date-0
                 for (var i = pos; i < m; i++) {//生成代理VM
                     var proxy = eachProxyAgent(i, this)
                     this.$proxy.splice(i, 0, proxy)
                 }
+                console.log("创建代理VM花去的时间",new Date - now)
+
                 this._fire("add", pos, n)
                 break
             case "del":
@@ -2079,7 +2085,10 @@ VElement.prototype = {
         if (task) {
             this.dirty = true
             avalon.Array.ensure(this.tasks, task)
-            globalRender(elem)
+            if(!refreshing){
+                refreshing = true
+               // globalRender(elem)
+            }
         }
     },
     queryVID: function (vid) {
@@ -2287,6 +2296,7 @@ function VNode(element) {
             })
             ret.className = element.className
             ret.textContent = element.innerHTML
+            //ret.outerHTML = element.outerHTML
             return ret
         case 3:
             return new VText(element.nodeValue)
@@ -2677,7 +2687,7 @@ var updateDTree = {
         }
     },
     repeat: function (vnode, parent) {
-        avalon.log("repeat")
+       // avalon.log("repeat")
         var rnodes = parent.childNodes
         var vnodes = vnode.childNodes
         var collect = false, token
@@ -2829,7 +2839,7 @@ function logger2(a) {
     var childNodes = a.childNodes
     delete a.parentNode
     delete a.childNodes
-    console.log(JSON.stringify(a))
+   // console.log(JSON.stringify(a))
     a.parentNode = parentNode
     a.childNodes = childNodes
 }
@@ -2840,16 +2850,15 @@ var VTree = avalon.VTree = new VElement("HTML")
 VTree.vid = ".0"
 //scanTag 遇到ms-controller会创建一个VElement添加到VTree
 var reID
-function globalRender() {
-    clearTimeout(reID)
-    reID = setTimeout(function () {//以后这里改为Promise
-        refreshTree()
-    }, 4)
-}
-function refreshTree() {
-    avalon.log("更新视图")
-    updateTree(VTree)
-}
+var refreshing = false
+
+setInterval(function () {//以后这里改为Promise
+    if(refreshing){
+        console.log("更新视图")
+       updateTree(VTree)
+       refreshing = false
+    }
+  }, 300)
 function querySelector(tag, vid, root) {
     root = root || document
     var nodes = root.getElementsByTagName(tag)
@@ -5073,33 +5082,38 @@ bindingHandlers.repeat = function (data, vmodels) {
     }
 
     var elem = data.element
-   
-    if(!elem.isVirtual){
+  
+    if (!elem.signature) {
         //如果elem还是真实DOM, 那收集其回调函数
         elem.removeAttribute(data.name)
         data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
         data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
         var target = type === "repeat" ? elem.parentNode : elem
-        var tempate = type === "repeat" ? elem.outerHTML.trim() : elem.innerHTML.trim()
+        var nodes = type === "repeat" ? [elem] : avalon.slice(elem.childNodes)
         var pid = buildVTree(target)//添加到VTree
         data.signature = "v-" + type + pid + "." + elem._mountIndex
         var vnode = VTree.queryVID(pid)
         data.vnode = vnode
-        data.parsedTemplate = new VNode(avalon.parseHTML(tempate))
         //添加两个注释节点在其内部或两边
         appendPlaceholders(elem, data, type === "repeat")
         var comments = getPlaceholders(vnode, data.signature)
         data.element = comments[1]
-        data.handler = bindingExecutors.repeat
-    }
-    
 
-    data.rollback = function () {
-        var elem = data.element
-        if (!elem)
-            return
-        data.handler("clear")
+        var template = new VDocumentFragment()
+        avalon.each(nodes, function (index, node) {
+            template.appendChild(new VNode(node))//添加孩子
+        })
+        data.template = template
+
+        data.handler = bindingExecutors.repeat
+        data.rollback = function () {
+            var elem = data.element
+            if (!elem)
+                return
+            data.handler("clear")
+        }
     }
+
     if (freturn) {
         return
     }
@@ -5151,8 +5165,8 @@ bindingExecutors.repeat = function (method, pos, el) {
         var pid = data.signature.replace(rvtext, function (a, b) {
             return b
         })
-     //   var vnode = VTree.queryVID(parent.getAttribute("data-vid"))
-        var vnode = data.vnode 
+        //   var vnode = VTree.queryVID(parent.getAttribute("data-vid"))
+        var vnode = data.vnode
         var comments = getPlaceholders(vnode, data.signature)
         var start = comments[0]
         var end = comments[comments.length - 1]
@@ -5266,8 +5280,10 @@ bindingExecutors.repeat = function (method, pos, el) {
 })
 avalon.pool = eachProxyPool
 
+
+
 function shimController(data, transation, proxy, fragments) {
-    var content = cloneVNode(data.parsedTemplate)
+    var content = cloneVNode(data.template)
     var nodes = avalon.slice(content.childNodes)
     if (!data.$with) {
         var comment = new VComment(data.signature)
