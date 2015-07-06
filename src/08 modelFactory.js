@@ -3,142 +3,87 @@
  **********************************************************************/
 //avalon最核心的方法的两个方法之一（另一个是avalon.scan），返回一个ViewModel(VM)
 var VMODELS = avalon.vmodels = {} //所有vmodel都储存在这里
-avalon.define = function (id, factory) {
-    var $id = id.$id || id
+avalon.define = function (definition) {
+    var $id = definition.$id
     if (!$id) {
         log("warning: vm必须指定$id")
     }
     if (VMODELS[$id]) {
         log("warning: " + $id + " 已经存在于avalon.vmodels中")
     }
-    if (typeof id === "object") {
-        var model = modelFactory(id)
-    } else {
-        var scope = {
-            $watch: noop
-        }
-        factory(scope) //得到所有定义
-        model = modelFactory(scope) //偷天换日，将scope换为model
-        stopRepeatAssign = true
-        factory(model)
-        stopRepeatAssign = false
-    }
-    model.$id = $id
-    return VMODELS[$id] = model
+    return VMODELS[$id] = modelFactory($id)
 }
 
 //一些不需要被监听的属性
-var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$proxy").match(rword)
-var defineProperty = Object.defineProperty
-var canHideOwn = true
-//如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
-//标准浏览器使用__defineGetter__, __defineSetter__实现
-try {
-    defineProperty({}, "_", {
-        value: "x"
+
+var $reserve = ["$watchers", "$id", "$data", "$parent", "$compute"]
+var $reserveObject = oneObject($reserve, true)
+
+function hackDescriptor(definition, name, value) {
+    var descriptor = makeDescriptor(value, name)
+    Object.defineProperty(definition, name, {
+        get: descriptor,
+        set: descriptor,
+        enumerable: true,
+        configurable: true
     })
-    var defineProperties = Object.defineProperties
-} catch (e) {
-    canHideOwn = false
 }
 
-function modelFactory(source, $special, $model) {
-    if (Array.isArray(source)) {
-        var arr = source.concat()
-        source.length = 0
-        var collection = arrayFactory(source)
-        collection.pushArray(arr)
-        return collection
-    }
-    //0 null undefined || Node || VModel(fix IE6-8 createWithProxy $val: val引发的BUG)
-    if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
-        return source
-    }
-    var $skipArray = Array.isArray(source.$skipArray) ? source.$skipArray : []
-    $skipArray.$special = $special || {} //强制要监听的属性
-    var $vmodel = {} //要返回的对象, 它在IE6-8下可能被偷龙转凤
-    $model = $model || {} //vmodels.$model属性
-    var $events = {} //vmodel.$events属性
-    var accessors = {} //监控属性
-    var initCallbacks = [] //初始化才执行的函数
-
-    $$skipArray.forEach(function (name) {
-        delete source[name]
-    })
-
-    for (var i in source) {
-        (function (name, val, accessor) {
-            $model[name] = val
-            if (!isObservable(name, val, $skipArray)) {
-                return //过滤所有非监控属性
+function makeDescriptor(name, value) {
+    function descriptor(value) {
+        var oldValue = descriptor._value
+        if (arguments.length > 0) {
+            if (!isEqual(value, oldValue)) {
+                descriptor.updateValue(this, value)
+                descriptor.notify(this, value, oldValue)
             }
-            //总共产生三种accessor
-            $events[name] = []
-            var valueType = avalon.type(val)
-            //总共产生三种accessor
-            if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
-                accessor = makeComputedAccessor(name, val)
-                initCallbacks.push(accessor)
-            } else if (rcomplexType.test(valueType)) {
-                accessor = makeComplexAccessor(name, val, valueType)
-                initCallbacks.push(function () {
-                    var son = accessor._vmodel
-                    son.$events[subscribers] = this.$events[name]
-                })
-            } else {
-                accessor = makeSimpleAccessor(name, val)
-            }
-            accessors[name] = accessor
-        })(i, source[i])// jshint ignore:line
-    }
-
-    $vmodel = defineProperties($vmodel, descriptorFactory(accessors), source) //生成一个空的ViewModel
-    for (var name in source) {
-        if (!accessors[name]) {
-            $vmodel[name] = source[name]
+            return this
+        } else {
+            dependencyDetection.collectDependency(this, descriptor)
+            return oldValue
         }
     }
-    //添加$id, $model, $events, $watch, $unwatch, $fire
-    $vmodel.$id = generateID()
-    $vmodel.$model = $model
-    $vmodel.$events = $events
-    for (i in EventBus) {
-        var fn = EventBus[i]
-        if (!W3C) { //在IE6-8下，VB对象的方法里的this并不指向自身，需要用bind处理一下
-            fn = fn.bind($vmodel)
-        }
-        $vmodel[i] = fn
-    }
-    if (canHideOwn) {
-        Object.defineProperty($vmodel, "hasOwnProperty", {
-            value: function (name) {
-                return name in this.$model
-            },
-            writable: false,
-            enumerable: false,
-            configurable: true
-        })
-
-    } else {
-        /* jshint ignore:start */
-        $vmodel.hasOwnProperty = function (name) {
-            return name in $vmodel.$model
-        }
-        /* jshint ignore:end */
-    }
-    initCallbacks.forEach(function (cb) { //收集依赖
-        cb.call($vmodel)
-    })
-    return $vmodel
+    descriptorFactory(accessor, name)
+    tryHackObjectDescriptor(accessor, value)
+    return descriptor;
 }
+
+function hackCompute() {
+}
+
+function makeCompute(){
+}
+function modelFactory(definition) {
+
+    for (var name in definition) {
+        if (definition.hasOwnProperty(name)) {
+            if (!$reserveObject[name] || typeof $reserveObject[name] === "function") {
+                hackDescriptor(definition, name, definition[name])
+            }
+        }
+    }
+    definition.$parent = null
+    var computes = definition.$compute
+    if (typeof computes === "object") {
+        for (var name in computes) {
+            if (computes.hasOwnProperty(name)) {
+                hackDescriptor(definition, name, computes[name])
+            }
+        }
+    }
+
+    definition.$watchers = []
+    definition.__proto__ = vmProto
+
+    return definition
+}
+var vmProto = {}
 //创建一个简单访问器
 function makeSimpleAccessor(name, value) {
     function accessor(value) {
         var oldValue = accessor._value
+        hackDescriptors(value, this)
         if (arguments.length > 0) {
-            if (stopRepeatAssign) {
-                return this
-            }
             if (!isEqual(value, oldValue)) {
                 accessor.updateValue(this, value)
                 accessor.notify(this, value, oldValue)
@@ -221,7 +166,7 @@ function makeComplexAccessor(name, initValue, valueType) {
                 return this
             }
             if (valueType === "array") {
-            
+
                 var old = son._
                 son._ = []
                 son.clear()
@@ -286,34 +231,5 @@ var isEqual = Object.is || function (v1, v2) {
     } else {
         return v1 === v2
     }
-}
-
-function isObservable(name, value, $skipArray) {
-    if (isFunction(value) || value && value.nodeType) {
-        return false
-    }
-    if ($skipArray.indexOf(name) !== -1) {
-        return false
-    }
-    var $special = $skipArray.$special
-    if (name && name.charAt(0) === "$" && !$special[name]) {
-        return false
-    }
-    return true
-}
-
-var descriptorFactory = W3C ? function (obj) {
-    var descriptors = {}
-    for (var i in obj) {
-        descriptors[i] = {
-            get: obj[i],
-            set: obj[i],
-            enumerable: true,
-            configurable: true
-        }
-    }
-    return descriptors
-} : function (a) {
-    return a
 }
 
