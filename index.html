@@ -6,8 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
         <script>
-            avalon.templateCache["aa.html"] = "<strong>111</strong>"
-            avalon.templateCache["bb.html"] = "<em>222222222222</em>"
+       
             var vm = avalon.define({
                 $id: "test",
                 aaa: 222,
@@ -16,36 +15,20 @@
                 toggle: false,
                 tmpl: "aa.html",
                 color:"red",
-                ddd: "<b>{{bbb}}</b><span ms-css-color='color'>avalon</span>",
+                ddd: {
+                    a: 1
+                },
                 array: [1,2,3,4]
             })
-            setTimeout(function () {
-
-             
-                console.log("=================")
-                vm.aaa = 33
-                vm.color = "blue"
-                vm.toggle = true
-                vm.ccc = 999
-          //      vm.ddd = "<b>{{bbb}}</b><b>333</b><b>111</b><b>111</b>"
-                vm.bbb = 66
-                vm.tmpl = "bb.html"
-            }, 300)
+         setTimeout(function(){
+          //   console.log("******************")
+             vm.ddd = {
+                 a: 3
+             }
+         }, 3000)
         </script>
     </head>
     <body ms-controller="test">
-        <h1>测试虚拟DOM</h1>
-        <ol>
-            <li>11</li><script>1111</script><style></style><b>dd</b>   <li>11</li>
-        </ol>
-<!--        <div ms-css-left="aaa" ms-attr-kkk="aaa" ms-data-kkk="aaa">{{aaa}}x{{bbb}}={{aaa * bbb}}</div>
-        <div ms-text="ccc">ccc</div>
-        <div ms-visible="toggle">visible</div>
-        <div ms-if="toggle">if</div>-->
-        <div>222{{ddd|html}}333</div>
-<!--        <a ms-href="{{aaa}}/{{bbb}}.html"><div ms-html="ddd">sdfdfdf</div></a>
-        <div id="include1" ms-include-src="tmpl"></div>
-        <div id="include2" ms-include-src="tmpl" data-include-replace="true"></div>-->
-<ul><li ms-repeat="array">{{el}}x{{$index}}</li></ul>
+     {{ddd.a}}
     </body>
 </html>

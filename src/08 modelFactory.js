@@ -3,223 +3,92 @@
  **********************************************************************/
 //avalon最核心的方法的两个方法之一（另一个是avalon.scan），返回一个ViewModel(VM)
 var VMODELS = avalon.vmodels = {} //所有vmodel都储存在这里
-avalon.define = function (definition) {
-    var $id = definition.$id
+avalon.define = function (id, factory) {
+    var $id = id.$id || id
     if (!$id) {
         log("warning: vm必须指定$id")
     }
     if (VMODELS[$id]) {
         log("warning: " + $id + " 已经存在于avalon.vmodels中")
     }
-    return VMODELS[$id] = modelFactory($id)
+    if (typeof id === "object") {
+        var model = modelFactory(id)
+    } else {
+        var scope = {
+            $watch: noop
+        }
+        factory(scope) //得到所有定义
+
+        model = modelFactory(scope) //偷天换日，将scope换为model
+        stopRepeatAssign = true
+        factory(model)
+        stopRepeatAssign = false
+    }
+    model.$id = $id
+    return VMODELS[$id] = model
 }
 
 //一些不需要被监听的属性
+var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$proxy,$active,$deps").match(rword)
+var defineProperty = Object.defineProperty
+var canHideOwn = true
+//如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
+//标准浏览器使用__defineGetter__, __defineSetter__实现
+try {
+    defineProperty({}, "_", {
+        value: "x"
+    })
+    var defineProperties = Object.defineProperties
+} catch (e) {
+    canHideOwn = false
+}
+var nullSpecial = {}
+function modelFactory(source, $special) {
+    return observeObject(source, $special)
+}
 
-var $reserve = ["$watchers", "$id", "$data", "$parent", "$compute"]
-var $reserveObject = oneObject($reserve, true)
-
-function hackDescriptor(definition, name, value) {
-    var descriptor = makeDescriptor(value, name)
-    Object.defineProperty(definition, name, {
-        get: descriptor,
-        set: descriptor,
+var hasOwnDescriptor = {
+    value: function (name) {
+        return name in this
+    },
+    writable: false,
+    enumerable: false,
+    configurable: true
+}
+function makeGetSet(key, value) {
+    var childOb = observe(value)
+    
+    var dep = new Dep()
+    if (childOb) {
+        childOb.$deps.push(dep)
+        value = childOb
+    }
+    return {
+        key: key,
+        get: function () {
+            if (this.$active) {
+                dep.depend()//collectDependency
+            }
+            return value
+        },
+        set: function (newVal) {
+            if (newVal === value)
+                return
+            if (childOb) {
+                avalon.Array.remove(childOb.$deps, dep)
+            }
+            value = newVal
+            // add dep to new value
+            var newChildOb = observe(newVal)
+            if (newChildOb) {
+                newChildOb.$deps.push(dep)
+                value = newChildOb
+            }
+            dep.notify()
+        },
         enumerable: true,
         configurable: true
-    })
-}
-
-function makeDescriptor(name, value) {
-    function descriptor(value) {
-        var oldValue = descriptor._value
-        if (arguments.length > 0) {
-            if (!isEqual(value, oldValue)) {
-                descriptor.updateValue(this, value)
-                descriptor.notify(this, value, oldValue)
-            }
-            return this
-        } else {
-            dependencyDetection.collectDependency(this, descriptor)
-            return oldValue
-        }
     }
-    descriptorFactory(accessor, name)
-    tryHackObjectDescriptor(accessor, value)
-    return descriptor;
-}
-
-function hackCompute() {
-}
-
-function makeCompute(){
-}
-function modelFactory(definition) {
-
-    for (var name in definition) {
-        if (definition.hasOwnProperty(name)) {
-            if (!$reserveObject[name] || typeof $reserveObject[name] === "function") {
-                hackDescriptor(definition, name, definition[name])
-            }
-        }
-    }
-    definition.$parent = null
-    var computes = definition.$compute
-    if (typeof computes === "object") {
-        for (var name in computes) {
-            if (computes.hasOwnProperty(name)) {
-                hackDescriptor(definition, name, computes[name])
-            }
-        }
-    }
-
-    definition.$watchers = []
-    definition.__proto__ = vmProto
-
-    return definition
-}
-var vmProto = {}
-//创建一个简单访问器
-function makeSimpleAccessor(name, value) {
-    function accessor(value) {
-        var oldValue = accessor._value
-        hackDescriptors(value, this)
-        if (arguments.length > 0) {
-            if (!isEqual(value, oldValue)) {
-                accessor.updateValue(this, value)
-                accessor.notify(this, value, oldValue)
-            }
-            return this
-        } else {
-            dependencyDetection.collectDependency(this, accessor)
-            return oldValue
-        }
-    }
-    accessorFactory(accessor, name)
-    accessor._value = value
-    return accessor;
-}
-
-//创建一个计算访问器
-function makeComputedAccessor(name, options) {
-    options.set = options.set || noop
-    function accessor(value) {//计算属性
-        var oldValue = accessor._value
-        var init = "_value" in accessor
-        if (arguments.length > 0) {
-            if (stopRepeatAssign) {
-                return this
-            }
-            accessor.set.call(this, value)
-            return this
-        } else {
-            //将依赖于自己的高层访问器或视图刷新函数（以绑定对象形式）放到自己的订阅数组中
-            dependencyDetection.collectDependency(this, accessor)
-            if (!accessor.digest) {
-                var vm = this
-                var id
-                accessor.digest = function () {
-                    accessor.updateValue = globalUpdateModelValue
-                    accessor.notify = noop
-                    accessor.call(vm)
-                    clearTimeout(id)//如果计算属性存在多个依赖项，那么等它们都更新了才更新视图
-                    id = setTimeout(function () {
-                        accessorFactory(accessor, accessor._name)
-                        accessor.call(vm)
-                    })
-                }
-            }
-            dependencyDetection.begin({
-                callback: function (vm, dependency) {//dependency为一个accessor
-                    var name = dependency._name
-                    if (dependency !== accessor) {
-                        var list = vm.$events[name]
-                        injectDependency(list, accessor.digest)
-                    }
-                }
-            })
-            try {
-                value = accessor.get.call(this)
-            } finally {
-                dependencyDetection.end()
-            }
-            if (oldValue !== value) {
-                accessor.updateValue(this, value)
-                init && accessor.notify(this, value, oldValue) //触发$watch回调
-            }
-            //将自己注入到低层访问器的订阅数组中
-            return value
-        }
-    }
-    accessor.set = options.set || noop
-    accessor.get = options.get
-    accessorFactory(accessor, name)
-    return accessor
-}
-
-//创建一个复杂访问器
-function makeComplexAccessor(name, initValue, valueType) {
-    function accessor(value) {
-        var oldValue = accessor._value
-        var son = accessor._vmodel
-        if (arguments.length > 0) {
-            if (stopRepeatAssign) {
-                return this
-            }
-            if (valueType === "array") {
-
-                var old = son._
-                son._ = []
-                son.clear()
-                son._ = old
-                son.pushArray(value)
-            } else if (valueType === "object") {
-                var $proxy = son.$proxy
-                var observes = this.$events[name] || []
-                son = accessor._vmodel = modelFactory(value)
-                son.$proxy = $proxy
-                if (observes.length) {
-                    observes.forEach(function (data) {
-                        if (data.rollback) {
-                            data.rollback() //还原 ms-with ms-on
-                            bindingHandlers[data.type](data, data.vmodels)
-                        }
-                    })
-                    son.$events[name] = observes
-                }
-            }
-            accessor.updateValue(this, son.$model)
-            accessor.notify(this, this._value, oldValue)
-            return this
-        } else {
-            dependencyDetection.collectDependency(this, accessor)
-            return son
-        }
-    }
-    accessorFactory(accessor, name)
-    accessor._vmodel = modelFactory(initValue)
-    return accessor
-}
-
-function globalUpdateValue(vmodel, value) {
-    vmodel.$model[this._name] = this._value = value
-}
-function globalUpdateModelValue(vmodel, value) {
-    vmodel.$model[this._name] = value
-}
-function globalNotify(vmodel, value, oldValue) {
-    var name = this._name
-    var array = vmodel.$events[name] //刷新值
-    if (array) {
-        fireDependencies(array) //同步视图
-        EventBus.$fire.call(vmodel, name, value, oldValue) //触发$watch回调
-    }
-}
-
-function accessorFactory(accessor, name) {
-    accessor._name = name
-    //同时更新_value与model
-    accessor.updateValue = globalUpdateValue
-    accessor.notify = globalNotify
 }
 
 //比较两个值是否相等
@@ -231,5 +100,215 @@ var isEqual = Object.is || function (v1, v2) {
     } else {
         return v1 === v2
     }
+}
+
+function isObservable(name, value, $skipArray, $special) {
+    
+    if (isFunction(value) || value && value.nodeType) {
+        return false
+    }
+    if ($skipArray.indexOf(name) !== -1) {
+        return false
+    }
+    if (name && name.charAt(0) === "$" &&  $special[name]) {
+        return false
+    }
+    return true
+}
+
+var descriptorFactory = W3C ? function (obj) {
+    var descriptors = {}
+    for (var i in obj) {
+        descriptors[i] = {
+            get: obj[i],
+            set: obj[i],
+            enumerable: true,
+            configurable: true
+        }
+    }
+    return descriptors
+} : function (a) {
+    return a
+}
+
+
+function Dep() {
+    this.subs = []
+}
+
+// the current target watcher being evaluated.
+// this is globally unique because there could be only one
+// watcher being evaluated at any time.
+Dep.target = null
+
+var p = Dep.prototype
+
+/**
+ * Add a directive subscriber.
+ *
+ * @param {Directive} sub
+ */
+
+p.addSub = function (sub) {
+    this.subs.push(sub)
+}
+
+/**
+ * Remove a directive subscriber.
+ *
+ * @param {Directive} sub
+ */
+
+p.removeSub = function (sub) {
+    var index = this.subs.indexOf(sub)
+    if (index !== -1) {
+        this.subs.splice(index, 1)
+    }
+}
+
+/**
+ * Add self as a dependency to the target watcher.
+ */
+
+p.depend = function () {
+    dependencyDetection.collectDependency(this.subs)
+}
+
+/**
+ * Notify all subscribers of a new value.
+ */
+
+p.notify = function () {
+    // stablize the subscriber list first
+    var subs = this.subs
+    console.log(subs)
+    for (var i = 0, l = subs.length; i < l; i++) {
+        subs[i].update()
+    }
+}
+
+function observe(obj) {
+    if (!obj || obj.$id) {
+        return obj
+    }
+    if (Array.isArray(obj)) {
+        return observeArray(obj)
+    } else if(avalon.isPlainObject(obj)){
+        return observeObject(obj)
+    }
+}
+
+function observeArray(array){
+    for(var i in newProto){
+        array[i] = newProto[i]
+    }
+    array.$active = true
+    array.$deps = [] 
+    observeItem(array)
+    return array
+}
+function observeObject (source, $special) {
+ if (!source || source.nodeType > 0 || (source.$id && source.$deps)) {
+        return source
+    }
+    var $skipArray = Array.isArray(source.$skipArray) ? source.$skipArray : []
+     $special = $special || nullSpecial 
+   
+    var $vmodel = {} //要返回的对象, 它在IE6-8下可能被偷龙转凤
+    var accessors = {} //监控属性
+    $$skipArray.forEach(function (name) {
+        delete source[name]
+    })
+    var names = Object.keys(source)
+    /* jshint ignore:start */
+    names.forEach(function (name) {
+        var val = source[name]
+
+        if (isObservable(name, val, $skipArray, $special)) {
+            var valueType = avalon.type(val)
+            if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
+                accessors[name] = {
+                    get: function () {
+                        return val.get.call(this)
+                    },
+                    set: function (a) {
+                        if (!stopRepeatAssign && typeof val.set === "function") {
+                            val.set.call(a)
+                        }
+                    },
+                    enumerable: true,
+                    configurable: true
+                }
+            } else {
+                accessors[name] = makeGetSet(name,val)
+            }
+        }
+    })
+    /* jshint ignore:end */
+
+    $vmodel = Object.defineProperties($vmodel, accessors)
+  $vmodel.$active = true
+    $vmodel.$id = new Date -0
+    $vmodel.$deps = [] 
+    return $vmodel
+}
+
+observeItem = function (items) {
+  var i = items.length
+  while (i--) {
+    observe(items[i])
+  }
+}
+
+var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse']
+var arrayProto = Array.prototype
+var newProto = {}
+
+arrayMethods.forEach(function (method, index) {
+    var original = arrayProto[method]
+    newProto[method] = function () {
+        // avoid leaking arguments:
+        // http://jsperf.com/closure-with-arguments
+        var i = arguments.length
+        var args = new Array(i)
+        while (i--) {
+            args[i] = arguments[i]
+        }
+        var result = original.apply(this, args)
+        var ob = this
+        var inserted
+        switch (method) {
+            case 'push':
+                inserted = args
+                break
+            case 'unshift':
+                inserted = args
+                break
+            case 'splice':
+                inserted = args.slice(2)
+                break
+        }
+        if (inserted)
+            observeItem(inserted)
+        // notify change
+        ob.notify()
+        return result
+    }
+})
+
+newProto.notify = function () {
+  var deps = this.$deps
+  for (var i = 0, l = deps.length; i < l; i++) {
+    deps[i].notify()
+  }
+}
+newProto.remove = function (el) { //移除第一个等于给定值的元素
+    return this.removeAt(this.indexOf(el))
+}
+newProto.removeAt = function (index) { //移除指定索引上的元素
+    if (index >= 0) {
+        this.splice(index, 1)
+    }
+    return  []
 }
 

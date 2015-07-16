@@ -37,6 +37,12 @@ var demo = new Vue({
     }
   }
 })
+demo.$watch("a",function(){
+    console.log(arguments)
+})
+demo.$watch("aPlus",function(){
+    console.log(arguments)
+})
 setTimeout(function(){
     demo.aPlus = 30
     console.log(demo.a)

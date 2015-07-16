@@ -1,6 +1,7 @@
 /*********************************************************************
  *                           扫描系统                                 *
  **********************************************************************/
+
 avalon.scan = function(elem, vmodel) {
     elem = elem || root
     var vmodels = vmodel ? [].concat(vmodel) : []
@@ -26,7 +27,7 @@ function checkScan(elem, callback, innerHTML) {
 function createSignalTower(elem, vmodel) {
     var id = elem.getAttribute("avalonctrl") || vmodel.$id
     elem.setAttribute("avalonctrl", id)
-    vmodel.$events.expr = elem.tagName + '[avalonctrl="' + id + '"]'
+  //  vmodel.$events.expr = elem.tagName + '[avalonctrl="' + id + '"]'
 }
 
 var getBindingCallback = function(elem, name, vmodels) {
@@ -54,8 +55,6 @@ function executeBindings(bindings, vmodels) {
 
 //https://github.com/RubyLouvre/avalon/issues/636
 var mergeTextNodes = IEVersion && window.MutationObserver ? function (elem) {
-    if(elem.isVirtual)
-        return
     var node = elem.firstChild, text
     while (node) {
         var aaa = node.nextSibling
@@ -72,7 +71,7 @@ var mergeTextNodes = IEVersion && window.MutationObserver ? function (elem) {
         node = aaa
     }
 } : 0
-
+var roneTime = /^\s*::/
 var rmsAttr = /ms-(\w+)-?(.*)/
 var priorityMap = {
     "if": 10,

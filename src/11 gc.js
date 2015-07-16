@@ -5,10 +5,17 @@ var disposeCount = 0
 var disposeQueue = avalon.$$subscribers = []
 var beginTime = new Date()
 var oldInfo = {}
-function getUid(obj) { //IE9+,标准浏览器
-    return obj.vid || (obj.vid = ++disposeCount)
+var uuid2Node = {}
+function getUid(obj, makeID) { //IE9+,标准浏览器
+    if (!obj.uuid && !makeID) {
+        obj.uuid = ++disposeCount
+        uuid2Node[obj.uuid] = obj
+    }
+    return obj.uuid
 }
-
+function getNode(uuid) {
+    return uuid2Node[uuid]
+}
 //添加到回收列队中
 function injectDisposeQueue(data, list) {
     var elem = data.element
@@ -22,7 +29,6 @@ function injectDisposeQueue(data, list) {
     var lists = data.lists || (data.lists = [])
     avalon.Array.ensure(lists, list)
     list.$uuid = list.$uuid || generateID()
-
     if (!disposeQueue[data.uuid]) {
         disposeQueue[data.uuid] = 1
         disposeQueue.push(data)
@@ -30,6 +36,8 @@ function injectDisposeQueue(data, list) {
 }
 
 function rejectDisposeQueue(data) {
+    if (avalon.optimize)
+        return
     var i = disposeQueue.length
     var n = i
     var allTypes = []
@@ -60,6 +68,7 @@ function rejectDisposeQueue(data) {
             if (iffishTypes[data.type] && shouldDispose(data.element)) { //如果它没有在DOM树
                 disposeQueue.splice(i, 1)
                 delete disposeQueue[data.uuid]
+                delete uuid2Node[data.element.uuid]
                 var lists = data.lists
                 for (var k = 0, list; list = lists[k++]; ) {
                     avalon.Array.remove(lists, list)
@@ -74,9 +83,6 @@ function rejectDisposeQueue(data) {
 }
 
 function disposeData(data) {
-//    console.log("dispose")
-//    console.log(data.type)
-//    console.log(data.element)
     data.element = null
     data.rollback && data.rollback()
     for (var key in data) {
@@ -92,22 +98,6 @@ function shouldDispose(el) {
     } catch (e) {
         return true
     }
-    if (el.isVirtual) {
-//        if (el.nodeType === 1) {
-//            return !VTree.queryVID(el.vid)
-//        } else {
-//            if (!VTree.queryVID(el.parentNode.vid)) {
-//                var notInVTree = true//如果它父亲不在VTree
-//            } else {
-//                //如果它现在也不是它父亲的孩子
-//                notInVTree = el.parentNode.childNodes.indexOf(el) === -1
-//            }
-//        }
-//        if (notInVTree) {
-//            el.parentNode = null
-//            return true
-//        }
-    } else {
-        return el.msRetain ? 0 : (el.nodeType === 1 ? !root.contains(el) : !avalon.contains(root, el))
-    }
+
+    return el.msRetain ? 0 : (el.nodeType === 1 ? !root.contains(el) : !avalon.contains(root, el))
 }
