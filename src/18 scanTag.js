@@ -15,7 +15,6 @@ function scanTag(elem, vmodels, node) {
         if (!newVmodel) {
             return
         }
-
         //ms-important不包含父VM，ms-controller相反
         vmodels = node === b ? [newVmodel] : [newVmodel].concat(vmodels)
         var name = node.name

@@ -44,7 +44,7 @@ avalon.injectBinding = function (data) {
             }
             data.update()
         } catch (e) {
-            //log("warning:exception throwed in [avalon.injectBinding] " + e)
+            log("warning:exception throwed in [avalon.injectBinding] " + e)
             delete data.evaluator
             var node = data.element
             if (node.nodeType === 3) {
@@ -76,21 +76,23 @@ function fireDependencies(list) {
         if (new Date() - beginTime > 444 && typeof list[0] === "object") {
             rejectDisposeQueue()
         }
-        var args = aslice.call(arguments, 1)
+//        var args = aslice.call(arguments, 1)
         for (var i = list.length, fn; fn = list[--i]; ) {
             var el = fn.element
             if (el && el.parentNode) {
                 try {
                     var valueFn = fn.evaluator
-                    if (fn.$repeat) {
-                        fn.handler.apply(fn, args) //处理监控数组的方法
-                    } else if ("$repeat" in fn || !valueFn) {//如果没有eval,先eval
+//                    if (fn.$repeat) {
+//                        fn.handler.apply(fn, args) //处理监控数组的方法
+//                    } else 
+                    if ("$repeat" in fn || !valueFn) {//如果没有eval,先eval
                         bindingHandlers[fn.type](fn, fn.vmodels)
                     } else if (fn.type !== "on") { //事件绑定只能由用户触发,不能由程序触发
                         var value = valueFn.apply(0, fn.args || [])
                         fn.handler(value, el, fn)
                     }
                 } catch (e) {
+                    avalon.log(e)
                 }
             }
         }

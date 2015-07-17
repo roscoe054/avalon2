@@ -57,8 +57,9 @@ var hasOwnDescriptor = {
 }
 function makeGetSet(key, value) {
     var childOb = observe(value)
-    
+ 
     var dep = new Dep()
+ 
     if (childOb) {
         childOb.$deps.push(dep)
         value = childOb
@@ -67,6 +68,9 @@ function makeGetSet(key, value) {
         key: key,
         get: function () {
             if (this.$active) {
+                if(   !this.$events[key] ){
+                    this.$events[key] = dep
+                }
                 dep.depend()//collectDependency
             }
             return value
@@ -110,7 +114,7 @@ function isObservable(name, value, $skipArray, $special) {
     if ($skipArray.indexOf(name) !== -1) {
         return false
     }
-    if (name && name.charAt(0) === "$" &&  $special[name]) {
+    if (name && name.charAt(0) === "$" && !$special[name]) {
         return false
     }
     return true
@@ -136,10 +140,6 @@ function Dep() {
     this.subs = []
 }
 
-// the current target watcher being evaluated.
-// this is globally unique because there could be only one
-// watcher being evaluated at any time.
-Dep.target = null
 
 var p = Dep.prototype
 
@@ -153,11 +153,6 @@ p.addSub = function (sub) {
     this.subs.push(sub)
 }
 
-/**
- * Remove a directive subscriber.
- *
- * @param {Directive} sub
- */
 
 p.removeSub = function (sub) {
     var index = this.subs.indexOf(sub)
@@ -166,29 +161,22 @@ p.removeSub = function (sub) {
     }
 }
 
-/**
- * Add self as a dependency to the target watcher.
- */
 
 p.depend = function () {
     dependencyDetection.collectDependency(this.subs)
 }
 
-/**
- * Notify all subscribers of a new value.
- */
+
 
 p.notify = function () {
-    // stablize the subscriber list first
     var subs = this.subs
-    console.log(subs)
     for (var i = 0, l = subs.length; i < l; i++) {
         subs[i].update()
     }
 }
 
 function observe(obj) {
-    if (!obj || obj.$id) {
+    if (!obj || (obj.$id && obj.$deps)) {
         return obj
     }
     if (Array.isArray(obj)) {
@@ -247,7 +235,8 @@ function observeObject (source, $special) {
     /* jshint ignore:end */
 
     $vmodel = Object.defineProperties($vmodel, accessors)
-  $vmodel.$active = true
+    $vmodel.$active = true
+     $vmodel.$events = {}
     $vmodel.$id = new Date -0
     $vmodel.$deps = [] 
     return $vmodel
@@ -290,7 +279,6 @@ arrayMethods.forEach(function (method, index) {
         }
         if (inserted)
             observeItem(inserted)
-        // notify change
         ob.notify()
         return result
     }
@@ -301,6 +289,12 @@ newProto.notify = function () {
   for (var i = 0, l = deps.length; i < l; i++) {
     deps[i].notify()
   }
+}
+newProto.set = function (index, val) {
+   if (index >= this.length) {
+      this.length = index + 1
+    }
+    return this.splice(index, 1, val)[0]
 }
 newProto.remove = function (el) { //移除第一个等于给定值的元素
     return this.removeAt(this.indexOf(el))
