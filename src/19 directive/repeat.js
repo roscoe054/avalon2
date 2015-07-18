@@ -24,6 +24,7 @@ bindingHandlers.repeat = function (data, vmodels) {
         var start = DOC.createComment(signature + ":start")
         var end = DOC.createComment(signature + ":end")
         data.signature = signature
+        data.start = start
         data.template = avalonFragment.cloneNode(false)
         if (type === "repeat") {
             var parent = elem.parentNode
@@ -42,7 +43,7 @@ bindingHandlers.repeat = function (data, vmodels) {
     parseExprProxy(data.value, vmodels, data)
 }
 bindingExecutors.repeat = function (value, elem, data) {
-    // console.log("========同步视图=============")
+
     var xtype
     var parent = elem.parentNode
     var renderKeys = []
@@ -52,10 +53,14 @@ bindingExecutors.repeat = function (value, elem, data) {
 
     } else if (value && typeof value === "object") {
         xtype = "object"
-        var keys = Object.keys(value)
+        for (var key in value) {
+            if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) == -1) {
+                renderKeys.push(key)
+            }
+        }
 
         if (data.sortedCallback) { //如果有回调，则让它们排序
-            var keys2 = data.sortedCallback.call(parent, keys)
+            var keys2 = data.sortedCallback.call(parent, renderKeys)
             if (keys2 && Array.isArray(keys2)) {
                 renderKeys = keys2
             }
@@ -64,6 +69,7 @@ bindingExecutors.repeat = function (value, elem, data) {
         avalon.log("warning:" + data.value + "只能是对象或数组")
         return
     }
+    console.log("========同步视图=============" + xtype)
     var init = !data.oldValue
     if (init) {
         data.xtype = xtype
@@ -111,7 +117,7 @@ bindingExecutors.repeat = function (value, elem, data) {
             }
         } else {
             proxy.$key = index
-            proxy.$val = i === length - 1
+            proxy.$val = value[index]
         }
     }
     if (init) {
@@ -133,21 +139,29 @@ bindingExecutors.repeat = function (value, elem, data) {
             } else {
                 keys.push(key)
             }
-            retain[key] = null
+            //retain[key] = null
         }
         //处理移动与新增节点
-
+        console.log(renderKeys)
         for (i = 0; i < renderKeys.length; i++) {
             var cur = xtype === "object" ? renderKeys[i] : i
+            var pre = xtype === "object" ? renderKeys[i - 1] : i - 1
             var old = keys[i]
-            if (old === cur) {
-                console.log(old, cur, "一样")
-            } else if (old === void 0) {
-                var fragment = fragments[i]
-                parent.insertBefore(fragment.content, elem)
+            var preEl = data.cache[pre] ? data.cache[pre].$anchor : data.start
+            var fragment = fragments[i]
+            if (!retain[cur]) {//如果还有插入节点，那么将它插入到preEl的后面
+                parent.insertBefore(fragment.content, preEl.nextSibling)
                 scanNodeArray(fragment.nodes, fragment.vmodels)
                 fragment.nodes = fragment.vmodels = null
+            } else {
+                if (old !== cur) {
+                    var curNode = removeItem(data.cache[cur].$anchor)
+                    parent.insertBefore(curNode, preEl.nextSibling)
+                } else {
+                    //什么也不用做
+                }
             }
+
         }
 
     }
@@ -158,22 +172,27 @@ bindingExecutors.repeat = function (value, elem, data) {
     bindingHandlers[name] = bindingHandlers.repeat
 })
 
+
 function removeItem(node) {
+    var fragment = avalonFragment.cloneNode(false)
     var self = node
-    var parent = node.parentNode
-    while (node = node.nextSibling) {
+    while (node = node.previousSibling) {
         if ((node.nodeValue || "").indexOf(self.nodeValue) === 0) {
             break
         }
-        parent.removeChild(node)
+        fragment.insertBefore(node, fragment.firstChild)
+
     }
-    parent.removeChild(self)
+    fragment.appendChild(self)
+    console.log(fragment)
+    return fragment
 }
 
 function shimController(data, transation, proxy, fragments, init) {
     var content = data.template.cloneNode(true)
     var nodes = avalon.slice(content.childNodes)
-    content.insertBefore(proxy.$anchor, content.firstChild)
+    content.appendChild(proxy.$anchor)
+    // content.insertBefore(proxy.$anchor, content.firstChild)
     init && transation.appendChild(content)
     var nv = [proxy].concat(data.vmodels)
     var fragment = {

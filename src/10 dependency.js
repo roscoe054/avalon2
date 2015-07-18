@@ -33,7 +33,6 @@ avalon.injectBinding = function (data) {
             }
         })
         try {
-
             data.update = function () {
                 var value = ronduplex.test(data.type) ? data : valueFn.apply(0, data.args)
                 if (data.xtype && value === void 0) {
@@ -51,7 +50,7 @@ avalon.injectBinding = function (data) {
             log(e)
             //  log("warning:exception throwed in [avalon.injectBinding] " + e)
             delete data.evaluator
-            delete data.evaluator
+            delete data.update
             var node = data.element
             if (node.nodeType === 3) {
                 var parent = node.parentNode
