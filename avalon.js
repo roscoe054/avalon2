@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.44 built in 2015.7.17
+ avalon.js 1.44 built in 2015.7.18
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1151,7 +1151,7 @@ function makeGetSet(key, value) {
         key: key,
         get: function () {
             if (this.$active) {
-                if(   !this.$events[key] ){
+                if(!this.$events[key] ){
                     this.$events[key] = dep
                 }
                 dep.depend()//collectDependency
@@ -1304,7 +1304,7 @@ function observeObject (source, $special) {
                     },
                     set: function (a) {
                         if (!stopRepeatAssign && typeof val.set === "function") {
-                            val.set.call(a)
+                            val.set.call(this, a)
                         }
                     },
                     enumerable: true,
@@ -1319,7 +1319,7 @@ function observeObject (source, $special) {
 
     $vmodel = Object.defineProperties($vmodel, accessors)
     $vmodel.$active = true
-     $vmodel.$events = {}
+    $vmodel.$events = {}
     $vmodel.$id = new Date -0
     $vmodel.$deps = [] 
     return $vmodel
@@ -1332,62 +1332,6 @@ observeItem = function (items) {
   }
 }
 
-var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse']
-var arrayProto = Array.prototype
-var newProto = {}
-
-arrayMethods.forEach(function (method, index) {
-    var original = arrayProto[method]
-    newProto[method] = function () {
-        // avoid leaking arguments:
-        // http://jsperf.com/closure-with-arguments
-        var i = arguments.length
-        var args = new Array(i)
-        while (i--) {
-            args[i] = arguments[i]
-        }
-        var result = original.apply(this, args)
-        var ob = this
-        var inserted
-        switch (method) {
-            case 'push':
-                inserted = args
-                break
-            case 'unshift':
-                inserted = args
-                break
-            case 'splice':
-                inserted = args.slice(2)
-                break
-        }
-        if (inserted)
-            observeItem(inserted)
-        ob.notify()
-        return result
-    }
-})
-
-newProto.notify = function () {
-  var deps = this.$deps
-  for (var i = 0, l = deps.length; i < l; i++) {
-    deps[i].notify()
-  }
-}
-newProto.set = function (index, val) {
-   if (index >= this.length) {
-      this.length = index + 1
-    }
-    return this.splice(index, 1, val)[0]
-}
-newProto.remove = function (el) { //移除第一个等于给定值的元素
-    return this.removeAt(this.indexOf(el))
-}
-newProto.removeAt = function (index) { //移除指定索引上的元素
-    if (index >= 0) {
-        this.splice(index, 1)
-    }
-    return  []
-}
 
 
 //===================修复浏览器对Object.defineProperties的支持=================
@@ -1496,252 +1440,65 @@ if (!canHideOwn) {
  *          监控数组（与ms-each, ms-repeat配合使用）                     *
  **********************************************************************/
 
-function arrayFactory(model) {
-    var array = []
-    array.$id = generateID()
-    array.$model = model //数据模型
-    array.$events = {}
-    array.$events[subscribers] = []
-    array._ = modelFactory({
-        length: model.length
-    })
-    array._.$watch("length", function (a, b) {
-        array.$fire("length", a, b)
-    })
-    for (var i in EventBus) {
-        array[i] = EventBus[i]
-    }
-    avalon.mix(array, arrayPrototype)
-    return array
-}
+var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse']
+var arrayProto = Array.prototype
+var newProto = {}
 
-function mutateArray(method, pos, n, index, method2, pos2, n2) {
-    var oldLen = this.length, loop = 2
-    while (--loop) {
+arrayMethods.forEach(function (method, index) {
+    var original = arrayProto[method]
+    newProto[method] = function () {
+        // avoid leaking arguments:
+        // http://jsperf.com/closure-with-arguments
+        var i = arguments.length
+        var args = new Array(i)
+        while (i--) {
+            args[i] = arguments[i]
+        }
+        var result = original.apply(this, args)
+        var ob = this
+        var inserted
         switch (method) {
-      case "add":
-                /* jshint ignore:start */
-                var array = this.$model.slice(pos, pos + n).map(function (el) {
-                    if (rcomplexType.test(avalon.type(el))) {
-                        return el.$id ? el : modelFactory(el, 0, el)
-                    } else {
-                        return el
-                    }
-                })
-                /* jshint ignore:end */
-                _splice.apply(this, [pos, 0].concat(array))
-                this._fire("add", pos, n)
+            case 'push':
+                inserted = args
                 break
-            case "del":
-                var ret = this._splice(pos, n)
-                this._fire("del", pos, n)
+            case 'unshift':
+                inserted = args
+                break
+            case 'splice':
+                inserted = args.slice(2)
                 break
         }
-        if (method2) {
-            method = method2
-            pos = pos2
-            n = n2
-            loop = 2
-            method2 = 0
-        }
-    }
-    this._fire("index", index)
-    if (this.length !== oldLen) {
-        this._.length = this.length
-    }
-    return ret
-}
-
-var _splice = ap.splice
-var arrayPrototype = {
-    _splice: _splice,
-    _fire: function (method, a, b) {
-        fireDependencies(this.$events[subscribers], method, a, b)
-    },
-    size: function () { //取得数组长度，这个函数可以同步视图，length不能
-        return this._.length
-    },
-    pushArray: function (array) {
-        var m = array.length, n = this.length
-        if (m) {
-            ap.push.apply(this.$model, array)
-            mutateArray.call(this, "add", n, m, Math.max(0, n - 1))
-        }
-        return  m + n
-    },
-    push: function () {
-        //http://jsperf.com/closure-with-arguments
-        var array = []
-        var i, n = arguments.length
-        for (i = 0; i < n; i++) {
-            array[i] = arguments[i]
-        }
-        return this.pushArray(array)
-    },
-    unshift: function () {
-        var m = arguments.length, n = this.length
-        if (m) {
-            ap.unshift.apply(this.$model, arguments)
-            mutateArray.call(this, "add", 0, m, 0)
-        }
-        return  m + n //IE67的unshift不会返回长度
-    },
-    shift: function () {
-        if (this.length) {
-            var el = this.$model.shift()
-            mutateArray.call(this, "del", 0, 1, 0)
-            return el //返回被移除的元素
-        }
-    },
-    pop: function () {
-        var n = this.length
-        if (n) {
-            var el = this.$model.pop()
-            mutateArray.call(this, "del", n - 1, 1, Math.max(0, n - 2))
-            return el //返回被移除的元素
-        }
-    },
-    splice: function (start) {
-        var m = arguments.length, args = [], change
-        var removed = _splice.apply(this.$model, arguments)
-        if (removed.length) { //如果用户删掉了元素
-            args.push("del", start, removed.length, 0)
-            change = true
-        }
-        if (m > 2) {  //如果用户添加了元素
-            if (change) {
-                args.splice(3, 1, 0, "add", start, m - 2)
-            } else {
-                args.push("add", start, m - 2, 0)
-            }
-            change = true
-        }
-        if (change) { //返回被移除的元素
-            return mutateArray.apply(this, args)
-        } else {
-            return []
-        }
-    },
-    contains: function (el) { //判定是否包含
-        return this.indexOf(el) !== -1
-    },
-    remove: function (el) { //移除第一个等于给定值的元素
-        return this.removeAt(this.indexOf(el))
-    },
-    removeAt: function (index) { //移除指定索引上的元素
-        if (index >= 0) {
-            this.$model.splice(index, 1)
-            return mutateArray.call(this, "del", index, 1, 0)
-        }
-        return  []
-    },
-    clear: function () {
-        this.$model.length = this.length = this._.length = 0 //清空数组
-        this._fire("clear", 0)
-        return this
-    },
-    removeAll: function (all) { //移除N个元素
-        if (Array.isArray(all)) {
-            for (var i = this.length - 1; i >= 0; i--) {
-                if (all.indexOf(this[i]) !== -1) {
-                    this.removeAt(i)
-                }
-            }
-        } else if (typeof all === "function") {
-            for ( i = this.length - 1; i >= 0; i--) {
-                var el = this[i]
-                if (all(el, i)) {
-                    this.removeAt(i)
-                }
-            }
-        } else {
-            this.clear()
-        }
-    },
-    ensure: function (el) {
-        if (!this.contains(el)) { //只有不存在才push
-            this.push(el)
-        }
-        return this
-    },
-    set: function (index, val) {
-        if (index >= 0) {
-            var valueType = avalon.type(val)
-            if (val && val.$model) {
-                val = val.$model
-            }
-            var target = this[index]
-            if (valueType === "object") {
-                for (var i in val) {
-                    if (target.hasOwnProperty(i)) {
-                        target[i] = val[i]
-                    }
-                }
-            } else if (valueType === "array") {
-                target.clear().push.apply(target, val)
-            } else if (target !== val) {
-                this[index] = val
-                this.$model[index] = val
-                this._fire("set", index, val)
-            }
-        }
-        return this
-    }
-}
-//相当于原来bindingExecutors.repeat 的index分支
-function resetIndex(array, pos) {
-    var last = array.length - 1
-    for (var el; el = array[pos]; pos++) {
-        el.$index = pos
-        el.$first = pos === 0
-        el.$last = pos === last
-    }
-}
-
-function sortByIndex(array, indexes) {
-    var map = {};
-    for (var i = 0, n = indexes.length; i < n; i++) {
-        map[i] = array[i] // preserve
-        var j = indexes[i]
-        if (j in map) {
-            array[i] = map[j]
-            delete map[j]
-        } else {
-            array[i] = array[j]
-        }
-    }
-}
-
-"sort,reverse".replace(rword, function (method) {
-    arrayPrototype[method] = function () {
-        var newArray = this.$model//这是要排序的新数组
-        var oldArray = newArray.concat() //保持原来状态的旧数组
-        var mask = Math.random()
-        var indexes = []
-        var hasSort
-        ap[method].apply(newArray, arguments) //排序
-        for (var i = 0, n = oldArray.length; i < n; i++) {
-            var neo = newArray[i]
-            var old = oldArray[i]
-            if (isEqual(neo, old)) {
-                indexes.push(i)
-            } else {
-                var index = oldArray.indexOf(neo)
-                indexes.push(index)//得到新数组的每个元素在旧数组对应的位置
-                oldArray[index] = mask    //屏蔽已经找过的元素
-                hasSort = true
-            }
-        }
-        if (hasSort) {
-            sortByIndex(this, indexes)
-            // sortByIndex(this.$proxy, indexes)
-            this._fire("move", indexes)
-              this._fire("index", 0)
-        }
-        return this
+        if (inserted)
+            observeItem(inserted)
+        ob.notify()
+        return result
     }
 })
 
+newProto.notify = function () {
+  var deps = this.$deps
+  for (var i = 0, l = deps.length; i < l; i++) {
+    deps[i].notify()
+  }
+}
+//容器的键值对发生变动，容器的子属性发生变动
+newProto.set = function (index, val) {
+   if (index >= this.length) {
+      this.length = index + 1
+    }
+  
+   // proxy = proxies[pos]
+    return this.splice(index, 1, val)[0]
+}
+newProto.remove = function (el) { //移除第一个等于给定值的元素
+    return this.removeAt(this.indexOf(el))
+}
+newProto.removeAt = function (index) { //移除指定索引上的元素
+    if (index >= 0) {
+        this.splice(index, 1)
+    }
+    return  []
+}
 
 /*********************************************************************
  *                           依赖调度系统                             *
@@ -1774,22 +1531,28 @@ avalon.injectBinding = function (data) {
     if (valueFn) { //如果是求值函数
         dependencyDetection.begin({
             callback: function (array) {
-                injectDependency(array, this.data)
-            },
-            data: data
+                injectDependency(array, data)
+            }
         })
         try {
 
             data.update = function () {
                 var value = ronduplex.test(data.type) ? data : valueFn.apply(0, data.args)
-                if (value === void 0) {
+                if (data.xtype && value === void 0) {
                     delete data.evaluator
                 }
-                data.handler(value, data.element, data)
+                if (data.oldValue !== value) {
+                    data.handler(value, data.element, data)
+                    data.oldValue = data.xtype === "array" ? value.concat():
+                            data.xtype === "object" ? avalon.mix({}, value):
+                            value
+                }
             }
             data.update()
         } catch (e) {
-            log("warning:exception throwed in [avalon.injectBinding] " + e)
+            log(e)
+            //  log("warning:exception throwed in [avalon.injectBinding] " + e)
+            delete data.evaluator
             delete data.evaluator
             var node = data.element
             if (node.nodeType === 3) {
@@ -4954,7 +4717,7 @@ bindingExecutors.on = function(callback, elem, data) {
 }
 bindingHandlers.repeat = function (data, vmodels) {
     var type = data.type
-    data.cache = {}
+    data.cache = {} //用于存放代理VM
     var arr = data.value.split(".") || []
     if (arr.length > 1) {
         arr.pop()
@@ -4975,7 +4738,7 @@ bindingHandlers.repeat = function (data, vmodels) {
         data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
         data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
         var signature = generateID(type)
-        var start = DOC.createComment(signature + ":start")
+        var start = DOC.createComment(signature)
         var end = DOC.createComment(signature + ":end")
         data.signature = signature
         data.template = avalonFragment.cloneNode(false)
@@ -5002,7 +4765,7 @@ bindingExecutors.repeat = function (value, elem, data) {
     if (Array.isArray(value)) {
         xtype = "array"
         renderKeys = value
-             
+
     } else if (value && typeof value === "object") {
         xtype = "object"
         var keys = Object.keys(value)
@@ -5016,32 +4779,60 @@ bindingExecutors.repeat = function (value, elem, data) {
     } else {
         avalon.log("warning:" + data.value + "只能是对象或数组")
     }
-    var oldValue = data.$repeat
-    console.log(oldValue)
-    data.$repeat =  xtype = "array" ? value.concat(): avalon.mix({}, value)
+
+    var retain = avalon.mix({}, data.cache)//用于判定哪些代理需要保留下来，哪些需要删除
+    data.xtype = xtype
+    var init = !data.oldValue
+
+    data.$repeat = value
     var fragments = []
     var transation = avalonFragment.cloneNode(false)
-
     for (var i = 0; i < renderKeys.length; i++) {
         var index = xtype === "object" ? renderKeys[i] : i
-        var proxy = data.cache[index]
+        var proxy = retain[index]
         if (!proxy) {
-            proxy = data.cache[index] = eachProxyAgent(i, data)
+            proxy = data.cache[index] = eachProxyAgent(i, data)//创建
+            shimController(data, transation, proxy, fragments, init)
+        } else {
+            if (value[index] != index) {
+                data.cache[index][data.param || "el"] = value[index]
+            }
+            retain[index] = true
         }
-        console.log(proxy) //如果数组的元素值发生变化, proxy.el也应该发生变化
-        shimController(data, transation, proxy, fragments)
+        //如果数组的元素值发生变化, proxy.el也应该发生变化
     }
-    var now = new Date() - 0, fragment
-    avalon.optimize = avalon.optimize || now
-    for (i = 0; fragment = fragments[i++]; ) {
-        scanNodeArray(fragment.nodes, fragment.vmodels)
-        fragment.nodes = fragment.vmodels = null
+    if (init) {
+        var now = new Date() - 0, fragment
+        avalon.optimize = avalon.optimize || now
+        for (i = 0; fragment = fragments[i++]; ) {
+            scanNodeArray(fragment.nodes, fragment.vmodels)
+            fragment.nodes = fragment.vmodels = null
+        }
+        if (avalon.optimize === now) {
+            avalon.optimize = null
+        }
+        parent.insertBefore(transation, elem)
+        avalon.profile("插入操作花费了 " + (new Date - now))
+    } else {
+        //移除没用的
+        for (var key in retain) {
+            if (retain[key] !== true) {
+                // console.log( data.cache[key])
+                console.log(retain[key].$node)
+                removeItem(retain[key].$node)
+                data.cache[key] = null
+
+            }
+            retain[key] = null
+        }
+         //处理移动与新增节点
+
+
     }
-    if (avalon.optimize === now) {
-        avalon.optimize = null
-    }
-    parent.insertBefore(transation, elem)
-    avalon.profile("插入操作花费了 " + (new Date - now))
+
+
+
+
 
 }
 
@@ -5049,11 +4840,22 @@ bindingExecutors.repeat = function (value, elem, data) {
     bindingHandlers[name] = bindingHandlers.repeat
 })
 
-function shimController(data, transation, proxy, fragments) {
+function removeItem(node) {
+    var self = node
+    var parent = node.parentNode
+    while (node = node.nextSibling ) {
+        if ((node.nodeValue || "").indexOf(self.nodeValue) === 0) {
+            break
+        }
+        parent.removeChild(node)
+    }
+    parent.removeChild(self)
+}
+function shimController(data, transation, proxy, fragments, init) {
     var content = data.template.cloneNode(true)
     var nodes = avalon.slice(content.childNodes)
-    content.insertBefore(DOC.createComment(data.signature), content.firstChild)
-    transation.appendChild(content)
+    content.insertBefore(proxy.$node, content.firstChild)
+    init && transation.appendChild(content)
     var nv = [proxy].concat(data.vmodels)
     var fragment = {
         nodes: nodes,
@@ -5125,6 +4927,7 @@ function withProxyAgent(proxy, key, data) {
     proxy.$key = key
     proxy.$host = host
     proxy.$outer = data.$outer
+
     if (host.$events) {
         proxy.$events.$val = host.$events[key]
     } else {
@@ -5153,35 +4956,39 @@ function eachProxyFactory(name) {
         $index: 0,
         $first: false,
         $last: false,
-        $remove: avalon.noop
+        $remove: avalon.noop,
+        $node: {}
     }
-    source[name] = {
-        get: function () {
-            var e = this.$events 
-            var array = e.$index
-            e.$index = e[name] //#817 通过$index为el收集依赖
-            try {
-                return this.$host[this.$index]
-            } finally {
-                e.$index = array
-            }
-        },
-        set: function (val) {
-            try {
-                var e = this.$events 
-                var array = e.$index
-                e.$index = []
-                this.$host.set(this.$index, val)
-            } finally {
-                e.$index = array
-            }
-        }
-    }
+    source[name] = NaN
+//    source[name] = {
+//        get: function () {
+//            var e = this.$events || {}
+//            var array = e.$index
+//            e.$index = e[name] //#817 通过$index为el收集依赖
+//            try {
+//                return this.$host[this.$index]
+//            } finally {
+//                e.$index = array
+//            }
+//        },
+//        set: function (val) {
+//            try {
+//                var e = this.$events || {}
+//                var array = e.$index
+//             
+//                e.$index = []
+//                this.$host.set(this.$index, val)
+//            } finally {
+//                e.$index = array
+//            }
+//        }
+//    }
     var second = {
         $last: 1,
         $first: 1,
-        $index: 1
+        $index: 1,
     }
+    second[name] = 1
     var proxy = modelFactory(source, second)
     proxy.$id = generateID("$proxy$each")
     return proxy
@@ -5201,12 +5008,16 @@ function eachProxyAgent(index, data) {
         proxy = eachProxyFactory(param)
     }
     var host = data.$repeat
+
     var last = host.length - 1
     proxy.$index = index
     proxy.$first = index === 0
     proxy.$last = index === last
     proxy.$host = host
+    proxy[param] = host[index]
     proxy.$outer = data.$outer
+    var node = proxy.$node = data.element.cloneNode(true)
+    node.nodeValue = node.nodeValue.replace(":end", "")
     proxy.$remove = function () {
         return host.removeAt(proxy.$index)
     }
@@ -5235,7 +5046,8 @@ function proxyRecycler(proxy, proxyPool) {
 //ms-skip绑定已经在scanTag 方法中实现
 // bindingHandlers.text 定义在if.js
 bindingExecutors.text = function(val, elem) {
-    val = val == null ? "" : val //不在页面上显示undefined null
+ //   val = val == null ? "" : val //不在页面上显示undefined null
+   
     if (elem.nodeType === 3) { //绑定在文本节点上
         try { //IE对游离于DOM树外的节点赋值会报错
             elem.data = val
@@ -5247,6 +5059,7 @@ bindingExecutors.text = function(val, elem) {
             elem.innerText = val
         }
     }
+   // data.oldValue = val
 }
 function parseDisplay(nodeName, val) {
     //用于取得此类标签的默认display值

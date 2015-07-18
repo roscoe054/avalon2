@@ -68,7 +68,7 @@ function makeGetSet(key, value) {
         key: key,
         get: function () {
             if (this.$active) {
-                if(   !this.$events[key] ){
+                if(!this.$events[key] ){
                     this.$events[key] = dep
                 }
                 dep.depend()//collectDependency
@@ -221,7 +221,7 @@ function observeObject (source, $special) {
                     },
                     set: function (a) {
                         if (!stopRepeatAssign && typeof val.set === "function") {
-                            val.set.call(a)
+                            val.set.call(this, a)
                         }
                     },
                     enumerable: true,
@@ -236,7 +236,7 @@ function observeObject (source, $special) {
 
     $vmodel = Object.defineProperties($vmodel, accessors)
     $vmodel.$active = true
-     $vmodel.$events = {}
+    $vmodel.$events = {}
     $vmodel.$id = new Date -0
     $vmodel.$deps = [] 
     return $vmodel
@@ -249,60 +249,4 @@ observeItem = function (items) {
   }
 }
 
-var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse']
-var arrayProto = Array.prototype
-var newProto = {}
-
-arrayMethods.forEach(function (method, index) {
-    var original = arrayProto[method]
-    newProto[method] = function () {
-        // avoid leaking arguments:
-        // http://jsperf.com/closure-with-arguments
-        var i = arguments.length
-        var args = new Array(i)
-        while (i--) {
-            args[i] = arguments[i]
-        }
-        var result = original.apply(this, args)
-        var ob = this
-        var inserted
-        switch (method) {
-            case 'push':
-                inserted = args
-                break
-            case 'unshift':
-                inserted = args
-                break
-            case 'splice':
-                inserted = args.slice(2)
-                break
-        }
-        if (inserted)
-            observeItem(inserted)
-        ob.notify()
-        return result
-    }
-})
-
-newProto.notify = function () {
-  var deps = this.$deps
-  for (var i = 0, l = deps.length; i < l; i++) {
-    deps[i].notify()
-  }
-}
-newProto.set = function (index, val) {
-   if (index >= this.length) {
-      this.length = index + 1
-    }
-    return this.splice(index, 1, val)[0]
-}
-newProto.remove = function (el) { //移除第一个等于给定值的元素
-    return this.removeAt(this.indexOf(el))
-}
-newProto.removeAt = function (index) { //移除指定索引上的元素
-    if (index >= 0) {
-        this.splice(index, 1)
-    }
-    return  []
-}
 

@@ -29,22 +29,28 @@ avalon.injectBinding = function (data) {
     if (valueFn) { //如果是求值函数
         dependencyDetection.begin({
             callback: function (array) {
-                injectDependency(array, this.data)
-            },
-            data: data
+                injectDependency(array, data)
+            }
         })
         try {
 
             data.update = function () {
                 var value = ronduplex.test(data.type) ? data : valueFn.apply(0, data.args)
-                if (value === void 0) {
+                if (data.xtype && value === void 0) {
                     delete data.evaluator
                 }
-                data.handler(value, data.element, data)
+                if (data.oldValue !== value) {
+                    data.handler(value, data.element, data)
+                    data.oldValue = data.xtype === "array" ? value.concat():
+                            data.xtype === "object" ? avalon.mix({}, value):
+                            value
+                }
             }
             data.update()
         } catch (e) {
-            log("warning:exception throwed in [avalon.injectBinding] " + e)
+            log(e)
+            //  log("warning:exception throwed in [avalon.injectBinding] " + e)
+            delete data.evaluator
             delete data.evaluator
             var node = data.element
             if (node.nodeType === 3) {
