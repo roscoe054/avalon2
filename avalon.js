@@ -4790,6 +4790,7 @@ bindingHandlers.repeat = function (data, vmodels) {
     parseExprProxy(data.value, vmodels, data)
 }
 bindingExecutors.repeat = function (value, elem, data) {
+    // console.log("========同步视图=============")
     var xtype
     var parent = elem.parentNode
     var renderKeys = []
@@ -4811,10 +4812,24 @@ bindingExecutors.repeat = function (value, elem, data) {
         avalon.log("warning:" + data.value + "只能是对象或数组")
         return
     }
-
-    var retain = avalon.mix({}, data.cache)//用于判定哪些代理需要保留下来，哪些需要删除
-    data.xtype = xtype
     var init = !data.oldValue
+    if (init) {
+        data.xtype = xtype
+        data.$outer = {}
+        var check0 = "$key"
+        var check1 = "$val"
+        if (xtype === "array") {
+            check0 = "$first"
+            check1 = "$last"
+        }
+        for (var i = 0, v; v = data.vmodels[i++]; ) {
+            if (v.hasOwnProperty(check0) && v.hasOwnProperty(check1)) {
+                data.$outer = v
+                break
+            }
+        }
+    }
+    var retain = avalon.mix({}, data.cache)//用于判定哪些代理需要保留下来，哪些需要删除
 
     data.$repeat = value
     var fragments = []
@@ -4833,12 +4848,12 @@ bindingExecutors.repeat = function (value, elem, data) {
         }
         //重写proxy
         proxy.$index = i
+        proxy.$outer = data.$outer
         if (xtype == "array") {
             proxy.$first = i === 0
             proxy.$last = i === length - 1
-            console.log(value[index])
             proxy[itemName] = value[index]
-            proxy.$outer = data.$outer
+
             proxy.$remove = function () {
                 return value.removeAt(proxy.$index)
             }
@@ -4860,9 +4875,9 @@ bindingExecutors.repeat = function (value, elem, data) {
         //移除没用的
         var keys = []
         for (var key in retain) {
-            if (retain[key] && retain[key] !== true ) {
+            if (retain[key] && retain[key] !== true) {
                 removeItem(retain[key].$anchor)
-                data.cache[key] = null //这里应该回收代理VM
+                delete data.cache[key]  //这里应该回收代理VM
             } else {
                 keys.push(key)
             }
