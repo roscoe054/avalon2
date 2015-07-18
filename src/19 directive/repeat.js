@@ -43,7 +43,7 @@ bindingHandlers.repeat = function (data, vmodels) {
     parseExprProxy(data.value, vmodels, data)
 }
 bindingExecutors.repeat = function (value, elem, data) {
-
+    var now = new Date -0
     var xtype
     var parent = elem.parentNode
     var renderKeys = []
@@ -69,7 +69,6 @@ bindingExecutors.repeat = function (value, elem, data) {
         avalon.log("warning:" + data.value + "只能是对象或数组")
         return
     }
-    console.log("========同步视图=============" + xtype)
     var init = !data.oldValue
     if (init) {
         data.xtype = xtype
@@ -91,7 +90,7 @@ bindingExecutors.repeat = function (value, elem, data) {
 
     data.$repeat = value
     var fragments = []
-    var transation = avalonFragment.cloneNode(false)
+    var transation = init && avalonFragment.cloneNode(false)
     var length = renderKeys.length
     var itemName = data.param || "el"
     for (var i = 0; i < length; i++) {
@@ -121,29 +120,27 @@ bindingExecutors.repeat = function (value, elem, data) {
         }
     }
     if (init) {
+        
         parent.insertBefore(transation, elem)
-
         fragments.forEach(function (fragment) {
             scanNodeArray(fragment.nodes, fragment.vmodels)
             fragment.nodes = fragment.vmodels = null
         })
 
-
     } else {
-        //移除没用的
+        //移除节点
         var keys = []
         for (var key in retain) {
             if (retain[key] && retain[key] !== true) {
                 removeItem(retain[key].$anchor)
                 delete data.cache[key]  //这里应该回收代理VM
+                retain[key] = null
             } else {
                 keys.push(key)
             }
-            //retain[key] = null
         }
-        //处理移动与新增节点
-        console.log(renderKeys)
-        for (i = 0; i < renderKeys.length; i++) {
+        //移动或新增节点
+        for (i = 0; i < length; i++) {
             var cur = xtype === "object" ? renderKeys[i] : i
             var pre = xtype === "object" ? renderKeys[i - 1] : i - 1
             var old = keys[i]
@@ -165,7 +162,7 @@ bindingExecutors.repeat = function (value, elem, data) {
         }
 
     }
-
+    avalon.log("耗时 ",new Date - now)
 }
 
 "with,each".replace(rword, function (name) {
@@ -184,7 +181,6 @@ function removeItem(node) {
 
     }
     fragment.appendChild(self)
-    console.log(fragment)
     return fragment
 }
 
@@ -192,7 +188,6 @@ function shimController(data, transation, proxy, fragments, init) {
     var content = data.template.cloneNode(true)
     var nodes = avalon.slice(content.childNodes)
     content.appendChild(proxy.$anchor)
-    // content.insertBefore(proxy.$anchor, content.firstChild)
     init && transation.appendChild(content)
     var nv = [proxy].concat(data.vmodels)
     var fragment = {

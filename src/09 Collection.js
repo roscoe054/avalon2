@@ -8,7 +8,7 @@ var newProto = {
     notify: function () {
         var deps = this.$deps
         for (var i = 0, l = deps.length; i < l; i++) {
-            deps[i].notify()
+            notifySubscribers(deps[i])
         }
     },
     set: function (index, val) {
