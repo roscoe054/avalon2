@@ -1442,9 +1442,65 @@ if (!canHideOwn) {
 
 var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse']
 var arrayProto = Array.prototype
-var newProto = {}
-
-arrayMethods.forEach(function (method, index) {
+var newProto = {
+    notify: function () {
+        var deps = this.$deps
+        for (var i = 0, l = deps.length; i < l; i++) {
+            deps[i].notify()
+        }
+    },
+    set: function (index, val) {
+        if (index >= this.length) {
+            this.length = index + 1
+        }
+        return this.splice(index, 1, val)[0]
+    },
+    contains: function (el) { //判定是否包含
+        return this.indexOf(el) !== -1
+    },
+    ensure: function (el) {
+        if (!this.contains(el)) { //只有不存在才push
+            this.push(el)
+        }
+        return this
+    },
+    pushArray: function (arr) {
+        return this.push.apply(this, arr)
+    },
+    remove: function (el) { //移除第一个等于给定值的元素
+        return this.removeAt(this.indexOf(el))
+    },
+    removeAt: function (index) { //移除指定索引上的元素
+        if (index >= 0) {
+            this.splice(index, 1)
+        }
+        return  []
+    },
+    removeAll: function (all) { //移除N个元素
+        if (Array.isArray(all)) {
+            for (var i = this.length - 1; i >= 0; i--) {
+                if (all.indexOf(this[i]) !== -1) {
+                    _splice.apply(this, i, 1)
+                }
+            }
+        } else if (typeof all === "function") {
+            for (i = this.length - 1; i >= 0; i--) {
+                var el = this[i]
+                if (all(el, i)) {
+                    _splice.apply(this, i, 1)
+                }
+            }
+        } else {
+            _splice.apply(this, 0, this.length)
+        }
+        this.notify()
+    },
+    clear: function () {
+        return this.removeAll()
+    }
+}
+var _splice = arrayProto.splice
+arrayMethods.forEach(function (method) {
     var original = arrayProto[method]
     newProto[method] = function () {
         // avoid leaking arguments:
@@ -1455,7 +1511,6 @@ arrayMethods.forEach(function (method, index) {
             args[i] = arguments[i]
         }
         var result = original.apply(this, args)
-        var ob = this
         var inserted
         switch (method) {
             case 'push':
@@ -1470,35 +1525,11 @@ arrayMethods.forEach(function (method, index) {
         }
         if (inserted)
             observeItem(inserted)
-        ob.notify()
+        this.notify()
         return result
     }
 })
 
-newProto.notify = function () {
-  var deps = this.$deps
-  for (var i = 0, l = deps.length; i < l; i++) {
-    deps[i].notify()
-  }
-}
-//容器的键值对发生变动，容器的子属性发生变动
-newProto.set = function (index, val) {
-   if (index >= this.length) {
-      this.length = index + 1
-    }
-  
-   // proxy = proxies[pos]
-    return this.splice(index, 1, val)[0]
-}
-newProto.remove = function (el) { //移除第一个等于给定值的元素
-    return this.removeAt(this.indexOf(el))
-}
-newProto.removeAt = function (index) { //移除指定索引上的元素
-    if (index >= 0) {
-        this.splice(index, 1)
-    }
-    return  []
-}
 
 /*********************************************************************
  *                           依赖调度系统                             *
@@ -4718,19 +4749,19 @@ bindingExecutors.on = function(callback, elem, data) {
 bindingHandlers.repeat = function (data, vmodels) {
     var type = data.type
     data.cache = {} //用于存放代理VM
-    var arr = data.value.split(".") || []
-    if (arr.length > 1) {
-        arr.pop()
-        var n = arr[0]
-        for (var i = 0, v; v = vmodels[i++]; ) {
-            if (v && v.hasOwnProperty(n)) {
-                var events = v[n].$events || {}
-                events[subscribers] = events[subscribers] || []
-                events[subscribers].push(data)
-                break
-            }
-        }
-    }
+//    var arr = data.value.split(".") || []
+//    if (arr.length > 1) {
+//        arr.pop()
+//        var n = arr[0]
+//        for (var i = 0, v; v = vmodels[i++]; ) {
+//            if (v && v.hasOwnProperty(n)) {
+//                var events = v[n].$events || {}
+//                events[subscribers] = events[subscribers] || []
+//                events[subscribers].push(data)
+//                break
+//            }
+//        }
+//    }
 
     var elem = data.element
     if (elem.nodeType === 1) {
@@ -4738,7 +4769,7 @@ bindingHandlers.repeat = function (data, vmodels) {
         data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
         data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
         var signature = generateID(type)
-        var start = DOC.createComment(signature)
+        var start = DOC.createComment(signature + ":start")
         var end = DOC.createComment(signature + ":end")
         data.signature = signature
         data.template = avalonFragment.cloneNode(false)
@@ -4778,6 +4809,7 @@ bindingExecutors.repeat = function (value, elem, data) {
         }
     } else {
         avalon.log("warning:" + data.value + "只能是对象或数组")
+        return
     }
 
     var retain = avalon.mix({}, data.cache)//用于判定哪些代理需要保留下来，哪些需要删除
@@ -4787,52 +4819,71 @@ bindingExecutors.repeat = function (value, elem, data) {
     data.$repeat = value
     var fragments = []
     var transation = avalonFragment.cloneNode(false)
-    for (var i = 0; i < renderKeys.length; i++) {
+    var length = renderKeys.length
+    var itemName = data.param || "el"
+    for (var i = 0; i < length; i++) {
         var index = xtype === "object" ? renderKeys[i] : i
         var proxy = retain[index]
         if (!proxy) {
-            proxy = data.cache[index] = eachProxyAgent(i, data)//创建
+            proxy = data.cache[index] = getProxyVM(data)//创建
             shimController(data, transation, proxy, fragments, init)
         } else {
-            if (value[index] != index) {
-                data.cache[index][data.param || "el"] = value[index]
-            }
+            fragments.push({})
             retain[index] = true
         }
-        //如果数组的元素值发生变化, proxy.el也应该发生变化
+        //重写proxy
+        proxy.$index = i
+        if (xtype == "array") {
+            proxy.$first = i === 0
+            proxy.$last = i === length - 1
+            console.log(value[index])
+            proxy[itemName] = value[index]
+            proxy.$outer = data.$outer
+            proxy.$remove = function () {
+                return value.removeAt(proxy.$index)
+            }
+        } else {
+            proxy.$key = index
+            proxy.$val = i === length - 1
+        }
     }
     if (init) {
-        var now = new Date() - 0, fragment
-        avalon.optimize = avalon.optimize || now
-        for (i = 0; fragment = fragments[i++]; ) {
+        parent.insertBefore(transation, elem)
+
+        fragments.forEach(function (fragment) {
             scanNodeArray(fragment.nodes, fragment.vmodels)
             fragment.nodes = fragment.vmodels = null
-        }
-        if (avalon.optimize === now) {
-            avalon.optimize = null
-        }
-        parent.insertBefore(transation, elem)
-        avalon.profile("插入操作花费了 " + (new Date - now))
+        })
+
+
     } else {
         //移除没用的
+        var keys = []
         for (var key in retain) {
-            if (retain[key] !== true) {
-                // console.log( data.cache[key])
-                console.log(retain[key].$node)
-                removeItem(retain[key].$node)
-                data.cache[key] = null
-
+            if (retain[key] && retain[key] !== true ) {
+                removeItem(retain[key].$anchor)
+                data.cache[key] = null //这里应该回收代理VM
+            } else {
+                keys.push(key)
             }
             retain[key] = null
         }
-         //处理移动与新增节点
+        //处理移动与新增节点
 
+        for (i = 0; i < renderKeys.length; i++) {
+            var cur = xtype === "object" ? renderKeys[i] : i
+            var old = keys[i]
+            if (old === cur) {
+                console.log(old, cur, "一样")
+            } else if (old === void 0) {
+                var fragment = fragments[i]
+                parent.insertBefore(fragment.content, elem)
+                scanNodeArray(fragment.nodes, fragment.vmodels)
+                fragment.nodes = fragment.vmodels = null
+            }
+        }
 
     }
-
-
-
-
 
 }
 
@@ -4843,7 +4894,7 @@ bindingExecutors.repeat = function (value, elem, data) {
 function removeItem(node) {
     var self = node
     var parent = node.parentNode
-    while (node = node.nextSibling ) {
+    while (node = node.nextSibling) {
         if ((node.nodeValue || "").indexOf(self.nodeValue) === 0) {
             break
         }
@@ -4851,194 +4902,84 @@ function removeItem(node) {
     }
     parent.removeChild(self)
 }
+
 function shimController(data, transation, proxy, fragments, init) {
     var content = data.template.cloneNode(true)
     var nodes = avalon.slice(content.childNodes)
-    content.insertBefore(proxy.$node, content.firstChild)
+    content.insertBefore(proxy.$anchor, content.firstChild)
     init && transation.appendChild(content)
     var nv = [proxy].concat(data.vmodels)
     var fragment = {
         nodes: nodes,
-        vmodels: nv
+        vmodels: nv,
+        content: content
     }
     fragments.push(fragment)
 }
 
-function getComments(data) {
-    var ret = []
-    var nodes = data.element.parentNode.childNodes
-    for (var i = 0, node; node = nodes[i++]; ) {
-        if (node.nodeValue === data.signature) {
-            ret.push(node)
-        } else if (node.nodeValue === data.signature + ":end") {
-            break
-        }
-    }
-    return ret
-}
 
-
-//移除掉start与end之间的节点(保留end)
-function sweepNodes(start, end, callback) {
-    while (true) {
-        var node = end.previousSibling
-        if (!node)
-            break
-        node.parentNode.removeChild(node)
-        callback && callback.call(node)
-        if (node === start) {
-            break
-        }
-    }
-}
-
-// 为ms-each,ms-with, ms-repeat会创建一个代理VM，
-// 通过它们保持一个下上文，让用户能调用$index,$first,$last,$remove,$key,$val,$outer等属性与方法
-// 所有代理VM的产生,消费,收集,存放通过xxxProxyFactory,xxxProxyAgent, recycleProxies,xxxProxyPool实现
-var withProxyPool = []
-function withProxyFactory() {
-    var proxy = modelFactory({
-        $key: "",
-        $outer: {},
-        $host: {},
-        $val: {
-            get: function () {
-                return this.$host[this.$key]
-            },
-            set: function (val) {
-                this.$host[this.$key] = val
-            }
-        }
-    }, {
-        $val: 1
-    })
-    proxy.$id = generateID("$proxy$with")
-    return proxy
-}
-
-function withProxyAgent(proxy, key, data) {
-    proxy = proxy || withProxyPool.pop()
-    if (!proxy) {
-        proxy = withProxyFactory()
-    } else {
-        proxy.$reinitialize()
-    }
-    var host = data.$repeat
-    proxy.$key = key
-    proxy.$host = host
+function getProxyVM(data) {
+    var factory = data.xtype === "object" ? withProxyAgent : eachProxyAgent
+    var proxy = factory(data)
+    var node = proxy.$anchor = proxy.$anchor || data.element.cloneNode(false)
+    node.nodeValue = data.signature
     proxy.$outer = data.$outer
-
-    if (host.$events) {
-        proxy.$events.$val = host.$events[key]
-    } else {
-        proxy.$events = {}
-    }
     return proxy
 }
-
-
-function  recycleProxies(proxies) {
-    eachProxyRecycler(proxies)
-}
-function eachProxyRecycler(proxies) {
-    proxies.forEach(function (proxy) {
-        proxyRecycler(proxy, eachProxyPool)
-    })
-    proxies.length = 0
-}
-
 
 var eachProxyPool = []
-function eachProxyFactory(name) {
+function eachProxyAgent(data) {
+    var itemName = data.param || "el"
+    for (var i = 0, n = eachProxyPool.length; i < n; i++) {
+        var candidate = eachProxyPool[i]
+        if (candidate && candidate.hasOwnProperty(itemName)) {
+            eachProxyPool.splice(i, 1)
+            return candidate
+        }
+    }
+    return eachProxyFactory(itemName)
+}
+function eachProxyFactory(itemName) {
     var source = {
-        $host: [],
         $outer: {},
         $index: 0,
+        $anchor: {},
+        //-----
         $first: false,
         $last: false,
-        $remove: avalon.noop,
-        $node: {}
+        $remove: avalon.noop
     }
-    source[name] = NaN
-//    source[name] = {
-//        get: function () {
-//            var e = this.$events || {}
-//            var array = e.$index
-//            e.$index = e[name] //#817 通过$index为el收集依赖
-//            try {
-//                return this.$host[this.$index]
-//            } finally {
-//                e.$index = array
-//            }
-//        },
-//        set: function (val) {
-//            try {
-//                var e = this.$events || {}
-//                var array = e.$index
-//             
-//                e.$index = []
-//                this.$host.set(this.$index, val)
-//            } finally {
-//                e.$index = array
-//            }
-//        }
-//    }
+    source[itemName] = NaN
     var second = {
         $last: 1,
         $first: 1,
-        $index: 1,
+        $index: 1
     }
-    second[name] = 1
+    second[itemName] = 1
     var proxy = modelFactory(source, second)
     proxy.$id = generateID("$proxy$each")
     return proxy
 }
 
-function eachProxyAgent(index, data) {
-    var param = data.param || "el",
-            proxy
-    for (var i = 0, n = eachProxyPool.length; i < n; i++) {
-        var candidate = eachProxyPool[i]
-        if (candidate && candidate.hasOwnProperty(param)) {
-            proxy = candidate
-            eachProxyPool.splice(i, 1)
-        }
-    }
-    if (!proxy) {
-        proxy = eachProxyFactory(param)
-    }
-    var host = data.$repeat
-
-    var last = host.length - 1
-    proxy.$index = index
-    proxy.$first = index === 0
-    proxy.$last = index === last
-    proxy.$host = host
-    proxy[param] = host[index]
-    proxy.$outer = data.$outer
-    var node = proxy.$node = data.element.cloneNode(true)
-    node.nodeValue = node.nodeValue.replace(":end", "")
-    proxy.$remove = function () {
-        return host.removeAt(proxy.$index)
-    }
-    return proxy
+var withProxyPool = []
+function withProxyAgent() {
+    return  withProxyPool.pop() || withProxyFactory()
 }
 
-
-function proxyRecycler(proxy, proxyPool) {
-    for (var i in proxy.$events) {
-        if (Array.isArray(proxy.$events[i])) {
-            proxy.$events[i].forEach(function (data) {
-                if (typeof data === "object")
-                    disposeData(data)
-            })// jshint ignore:line
-            proxy.$events[i].length = 0
-        }
-    }
-    proxy.$host = proxy.$outer = {}
-    if (proxyPool.unshift(proxy) > kernel.maxRepeatSize) {
-        proxyPool.pop()
-    }
+function withProxyFactory() {
+    var proxy = modelFactory({
+        $key: "",
+        $val: "",
+        $index: 0,
+        $outer: {},
+        $anchor: {}
+    }, {
+        $key: 1,
+        $val: 1,
+        $index: 1
+    })
+    proxy.$id = generateID("$proxy$with")
+    return proxy
 }
 /*********************************************************************
  *                         各种指令                                  *

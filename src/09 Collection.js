@@ -4,9 +4,65 @@
 
 var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse']
 var arrayProto = Array.prototype
-var newProto = {}
-
-arrayMethods.forEach(function (method, index) {
+var newProto = {
+    notify: function () {
+        var deps = this.$deps
+        for (var i = 0, l = deps.length; i < l; i++) {
+            deps[i].notify()
+        }
+    },
+    set: function (index, val) {
+        if (index >= this.length) {
+            this.length = index + 1
+        }
+        return this.splice(index, 1, val)[0]
+    },
+    contains: function (el) { //判定是否包含
+        return this.indexOf(el) !== -1
+    },
+    ensure: function (el) {
+        if (!this.contains(el)) { //只有不存在才push
+            this.push(el)
+        }
+        return this
+    },
+    pushArray: function (arr) {
+        return this.push.apply(this, arr)
+    },
+    remove: function (el) { //移除第一个等于给定值的元素
+        return this.removeAt(this.indexOf(el))
+    },
+    removeAt: function (index) { //移除指定索引上的元素
+        if (index >= 0) {
+            this.splice(index, 1)
+        }
+        return  []
+    },
+    removeAll: function (all) { //移除N个元素
+        if (Array.isArray(all)) {
+            for (var i = this.length - 1; i >= 0; i--) {
+                if (all.indexOf(this[i]) !== -1) {
+                    _splice.apply(this, i, 1)
+                }
+            }
+        } else if (typeof all === "function") {
+            for (i = this.length - 1; i >= 0; i--) {
+                var el = this[i]
+                if (all(el, i)) {
+                    _splice.apply(this, i, 1)
+                }
+            }
+        } else {
+            _splice.apply(this, 0, this.length)
+        }
+        this.notify()
+    },
+    clear: function () {
+        return this.removeAll()
+    }
+}
+var _splice = arrayProto.splice
+arrayMethods.forEach(function (method) {
     var original = arrayProto[method]
     newProto[method] = function () {
         // avoid leaking arguments:
@@ -17,7 +73,6 @@ arrayMethods.forEach(function (method, index) {
             args[i] = arguments[i]
         }
         var result = original.apply(this, args)
-        var ob = this
         var inserted
         switch (method) {
             case 'push':
@@ -32,32 +87,8 @@ arrayMethods.forEach(function (method, index) {
         }
         if (inserted)
             observeItem(inserted)
-        ob.notify()
+        this.notify()
         return result
     }
 })
 
-newProto.notify = function () {
-  var deps = this.$deps
-  for (var i = 0, l = deps.length; i < l; i++) {
-    deps[i].notify()
-  }
-}
-//容器的键值对发生变动，容器的子属性发生变动
-newProto.set = function (index, val) {
-   if (index >= this.length) {
-      this.length = index + 1
-    }
-  
-   // proxy = proxies[pos]
-    return this.splice(index, 1, val)[0]
-}
-newProto.remove = function (el) { //移除第一个等于给定值的元素
-    return this.removeAt(this.indexOf(el))
-}
-newProto.removeAt = function (index) { //移除指定索引上的元素
-    if (index >= 0) {
-        this.splice(index, 1)
-    }
-    return  []
-}
