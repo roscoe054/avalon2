@@ -26,7 +26,7 @@ avalon.define = function (id, factory) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$proxy,$active,$deps").match(rword)
+var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$proxy,$active,$deps,$ownkeys").match(rword)
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -44,14 +44,29 @@ function modelFactory(source, $special) {
     return observeObject(source, $special)
 }
 
-function observe(obj) {
+function observe(obj, old) {
     if (!obj || (obj.$id && obj.$deps)) {
         return obj
     }
     if (Array.isArray(obj)) {
         return observeArray(obj)
     } else if (avalon.isPlainObject(obj)) {
-        return observeObject(obj)
+        if (old) {
+          
+            var keys = Object.keys(obj)
+            var keys2 = Object.keys(old)
+            if (keys.join(";") === keys2.join(";")) {
+                for (var i in obj) {
+                    if (obj.hasOwnProperty(i)) {
+                        old[i] = obj[i]
+                    }
+                }
+                return old
+            }
+           // old.$active = false
+            console.log(keys, keys)
+        }
+        return observeObject(obj, null, old )
     }
 }
 
@@ -71,13 +86,13 @@ function observeItem(items) {
     }
 }
 
-function observeObject(source, $special) {
+function observeObject(source, $special, old) {
     if (!source || source.nodeType > 0 || (source.$id && source.$deps)) {
         return source
     }
     var $skipArray = Array.isArray(source.$skipArray) ? source.$skipArray : []
     $special = $special || nullSpecial
-    // oldAccessors = oldAccessors || nullSpecial
+    var oldAccessors = old ?  old.$accessors : nullSpecial
     var $vmodel = {} //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
     $$skipArray.forEach(function (name) {
@@ -104,7 +119,13 @@ function observeObject(source, $special) {
                     configurable: true
                 }
             } else {
-                accessors[name] = makeGetSet(name, val)
+                if (oldAccessors[name]) {
+                    accessors[name] = oldAccessors[name]
+
+                } else {
+                    accessors[name] = makeGetSet(name, val)
+                }
+                //   accessors[name] = oldAccessors[name] || makeGetSet(name, val)
             }
         }
     })
@@ -116,8 +137,14 @@ function observeObject(source, $special) {
             return names.indexOf(name) !== -1
         }
     }
+    names.forEach(function (name) {
+        if(oldAccessors[name]){
+           $vmodel[name] = source[name]
+        }
+    })
+   // hideProperty($vmodel, "$ownkeys", names)
     hideProperty($vmodel, "$active", true)
-    //  hideProperty($vmodel, "$accessors", accessors)
+    hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "$events", {})
     hideProperty($vmodel, "$id", new Date - 0)
     hideProperty($vmodel, "$deps", [])
@@ -150,6 +177,7 @@ function makeGetSet(key, value) {
             }
             value = newVal
             // add dep to new value
+          //  console.log(newVal, childOb)
             var newChildOb = observe(newVal, childOb)
             if (newChildOb) {
                 newChildOb.$deps.push(subs)

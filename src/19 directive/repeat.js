@@ -53,6 +53,7 @@ bindingExecutors.repeat = function (value, elem, data) {
 
     } else if (value && typeof value === "object") {
         xtype = "object"
+    //    renderKeys = value
         for (var key in value) {
             if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) == -1) {
                 renderKeys.push(key)
