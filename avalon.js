@@ -1146,7 +1146,7 @@ function observe(obj, old) {
                 }
                 return old
             }
-           // old.$active = false
+            old.$active = false
             console.log(keys, keys)
         }
         return observeObject(obj, null, old )
@@ -1221,9 +1221,9 @@ function observeObject(source, $special, old) {
         }
     }
     names.forEach(function (name) {
-        if(oldAccessors[name]){
+        if(oldAccessors[name] || !accessors[name]){
            $vmodel[name] = source[name]
-        }
+       }
     })
    // hideProperty($vmodel, "$ownkeys", names)
     hideProperty($vmodel, "$active", true)
@@ -1245,9 +1245,9 @@ function makeGetSet(key, value) {
         key: key,
         get: function () {
             if (this.$active) {
-                if (!this.$events[key]) {
-                    this.$events[key] = subs
-                }
+//                if (!this.$events[key]) {
+//                    this.$events[key] = subs
+//                }
                 collectDependency(subs)
             }
             return value
@@ -1547,8 +1547,11 @@ var dependencyDetection = (function () {
 })()
 //将绑定对象注入到其依赖项的订阅数组中
 var ronduplex = /^(duplex|on)$/
+function returnTrue(){
+    return true
+}
 avalon.injectBinding = function (data) {
-    var valueFn = data.evaluator
+    var valueFn =  ronduplex.test(data.type) ? returnTrue : data.evaluator
     
     if (valueFn) { //如果是求值函数
         dependencyDetection.begin({
@@ -1558,10 +1561,11 @@ avalon.injectBinding = function (data) {
         })
         try {
             data.update = function () {
-                var value = ronduplex.test(data.type) ? data : valueFn.apply(0, data.args)
+                var value = valueFn.apply(0, data.args)
                 if (data.xtype && value === void 0) {
                     delete data.evaluator
                 }
+                
                 if (data.oldValue !== value) {
                     data.handler(value, data.element, data)
                     data.oldValue = data.xtype === "array" ? value.concat():
@@ -3340,92 +3344,96 @@ bindingExecutors.data = function(val, elem, data) {
 	}
 }
 //双工绑定
-var duplexBinding = bindingHandlers.duplex = function(data, vmodels) {
-    var elem = data.element,
-        hasCast
-        parseExprProxy(data.value, vmodels, data, 0, 1)
-
-        data.changed = getBindingCallback(elem, "data-duplex-changed", vmodels) || noop
-    if (data.evaluator && data.args) {
-        var params = []
-        var casting = oneObject("string,number,boolean,checked")
-        if (elem.type === "radio" && data.param === "") {
-            data.param = "checked"
-        }
-        if (elem.msData) {
-            elem.msData["ms-duplex"] = data.value
-        }
-        data.param.replace(/\w+/g, function(name) {
-            if (/^(checkbox|radio)$/.test(elem.type) && /^(radio|checked)$/.test(name)) {
-                if (name === "radio")
-                    log("ms-duplex-radio已经更名为ms-duplex-checked")
-                name = "checked"
-                data.isChecked = true
-            }
-            if (name === "bool") {
-                name = "boolean"
-                log("ms-duplex-bool已经更名为ms-duplex-boolean")
-            } else if (name === "text") {
-                name = "string"
-                log("ms-duplex-text已经更名为ms-duplex-string")
-            }
-            if (casting[name]) {
-                hasCast = true
-            }
-            avalon.Array.ensure(params, name)
-        })
-        if (!hasCast) {
-            params.push("string")
-        }
-        data.param = params.join("-")
-        data.bound = function(type, callback) {
-            if (elem.addEventListener) {
-                elem.addEventListener(type, callback, false)
-            } else {
-                elem.attachEvent("on" + type, callback)
-            }
-            var old = data.rollback
-            data.rollback = function() {
-                elem.avalonSetter = null
-                avalon.unbind(elem, type, callback)
-                old && old()
-            }
-        }
-        for (var i in avalon.vmodels) {
-            var v = avalon.vmodels[i]
-            v.$fire("avalon-ms-duplex-init", data)
-        }
-        var cpipe = data.pipe || (data.pipe = pipe)
-        cpipe(null, data, "init")
-        var tagName = elem.tagName
-        duplexBinding[tagName] && duplexBinding[tagName](elem, data.evaluator.apply(null, data.args), data)
-    }
+var duplexBinding = bindingHandlers.duplex = function (data, vmodels) {
+    parseExprProxy(data.value, vmodels, data)
 }
+bindingExecutors.duplex = function (value, elem, data) {
+    if (data.bound)
+        return
+    console.log(value)
+    data.changed = getBindingCallback(elem, "data-duplex-changed", data.vmodels) || noop
+    var params = []
+    var casting = oneObject("string,number,boolean,checked")
+    if (elem.type === "radio" && data.param === "") {
+        data.param = "checked"
+    }
+    if (elem.msData) {
+        elem.msData["ms-duplex"] = data.value
+    }
+    var hasCast
+    data.param.replace(/\w+/g, function (name) {
+        if (/^(checkbox|radio)$/.test(elem.type) && /^(radio|checked)$/.test(name)) {
+            if (name === "radio")
+                log("ms-duplex-radio已经更名为ms-duplex-checked")
+            name = "checked"
+            data.isChecked = true
+        }
+        if (name === "bool") {
+            name = "boolean"
+            log("ms-duplex-bool已经更名为ms-duplex-boolean")
+        } else if (name === "text") {
+            name = "string"
+            log("ms-duplex-text已经更名为ms-duplex-string")
+        }
+        if (casting[name]) {
+            hasCast = true
+        }
+        avalon.Array.ensure(params, name)
+    })
+    if (!hasCast) {
+        params.push("string")
+    }
+    data.param = params.join("-")
+    data.bound = function (type, callback) {
+        if (elem.addEventListener) {
+            elem.addEventListener(type, callback, false)
+        } else {
+            elem.attachEvent("on" + type, callback)
+        }
+        var old = data.rollback
+        data.rollback = function () {
+            elem.avalonSetter = null
+            avalon.unbind(elem, type, callback)
+            old && old()
+        }
+    }
+    for (var i in avalon.vmodels) {
+        var v = avalon.vmodels[i]
+      //  v.$fire("avalon-ms-duplex-init", data)
+    }
+    var cpipe = data.pipe || (data.pipe = pipe)
+    cpipe(null, data, "init")
+    var tagName = elem.tagName
+    duplexBinding[tagName] && duplexBinding[tagName](elem, data.evaluator.apply(null, data.args), data)
+
+}
+
+
 //不存在 bindingExecutors.duplex
 
-    function fixNull(val) {
-        return val == null ? "" : val
-    }
+function fixNull(val) {
+    return val == null ? "" : val
+}
 avalon.duplexHooks = {
     checked: {
-        get: function(val, data) {
+        get: function (val, data) {
             return !data.element.oldValue
         }
     },
     string: {
-        get: function(val) { //同步到VM
+        get: function (val) { //同步到VM
             return val
         },
         set: fixNull
     },
     "boolean": {
-        get: function(val) {
+        get: function (val) {
             return val === "true"
         },
         set: fixNull
     },
     number: {
-        get: function(val, data) {
+        get: function (val, data) {
             var number = parseFloat(val)
             if (-val === -number) {
                 return number
@@ -3445,7 +3453,7 @@ avalon.duplexHooks = {
 }
 
 function pipe(val, data, action, e) {
-    data.param.replace(/\w+/g, function(name) {
+    data.param.replace(/\w+/g, function (name) {
         var hook = avalon.duplexHooks[name]
         if (hook && typeof hook[action] === "function") {
             val = hook[action](val, data)
@@ -3456,41 +3464,41 @@ function pipe(val, data, action, e) {
 
 var TimerID, ribbon = []
 
-    avalon.tick = function(fn) {
-        if (ribbon.push(fn) === 1) {
-            TimerID = setInterval(ticker, 60)
-        }
+avalon.tick = function (fn) {
+    if (ribbon.push(fn) === 1) {
+        TimerID = setInterval(ticker, 60)
     }
+}
 
-    function ticker() {
-        for (var n = ribbon.length - 1; n >= 0; n--) {
-            var el = ribbon[n]
-            if (el() === false) {
-                ribbon.splice(n, 1)
-            }
-        }
-        if (!ribbon.length) {
-            clearInterval(TimerID)
+function ticker() {
+    for (var n = ribbon.length - 1; n >= 0; n--) {
+        var el = ribbon[n]
+        if (el() === false) {
+            ribbon.splice(n, 1)
         }
     }
+    if (!ribbon.length) {
+        clearInterval(TimerID)
+    }
+}
 
 var watchValueInTimer = noop
 var rmsinput = /text|password|hidden/
-new function() { // jshint ignore:line
+new function () { // jshint ignore:line
     try { //#272 IE9-IE11, firefox
         var setters = {}
         var aproto = HTMLInputElement.prototype
         var bproto = HTMLTextAreaElement.prototype
         function newSetter(value) { // jshint ignore:line
-                setters[this.tagName].call(this, value)
-                if (rmsinput.test(this.type) && !this.msFocus && this.avalonSetter) {
-                    this.avalonSetter()
-                }
+            setters[this.tagName].call(this, value)
+            if (rmsinput.test(this.type) && !this.msFocus && this.avalonSetter) {
+                this.avalonSetter()
+            }
         }
         var inputProto = HTMLInputElement.prototype
         Object.getOwnPropertyNames(inputProto) //故意引发IE6-8等浏览器报错
         setters["INPUT"] = Object.getOwnPropertyDescriptor(aproto, "value").set
-    
+
         Object.defineProperty(aproto, "value", {
             set: newSetter
         })
@@ -3666,8 +3674,9 @@ duplexBinding.INPUT = function(element, evaluator, data) {
     }
 
     element.oldValue = element.value
-    avalon.injectBinding(data)
+    data.handler()
     callback.call(element, element.value)
+  
 }
 duplexBinding.TEXTAREA = duplexBinding.INPUT
 duplexBinding.SELECT = function(element, evaluator, data) {
@@ -3710,7 +3719,7 @@ duplexBinding.SELECT = function(element, evaluator, data) {
     }
     data.bound("change", updateVModel)
     element.msCallback = function() {
-        avalon.injectBinding(data)
+        data.handler()
         data.changed.call(element, evaluator(), data)
     }
 }
@@ -3822,6 +3831,8 @@ bindingHandlers.on = function(data, vmodels) {
 }
 
 bindingExecutors.on = function(callback, elem, data) {
+    if( data.rollback )
+        return
     callback = function(e) {
         var fn = data.evaluator || noop
         return fn.apply(this, data.args.concat(e))

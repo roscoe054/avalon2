@@ -39,7 +39,7 @@ try {
 } catch (e) {
     canHideOwn = false
 }
-var nullSpecial = {}
+
 function modelFactory(source, $special) {
     return observeObject(source, $special)
 }
@@ -63,7 +63,7 @@ function observe(obj, old) {
                 }
                 return old
             }
-           // old.$active = false
+            old.$active = false
             console.log(keys, keys)
         }
         return observeObject(obj, null, old )
@@ -91,8 +91,8 @@ function observeObject(source, $special, old) {
         return source
     }
     var $skipArray = Array.isArray(source.$skipArray) ? source.$skipArray : []
-    $special = $special || nullSpecial
-    var oldAccessors = old ?  old.$accessors : nullSpecial
+    $special = $special || nullObject
+    var oldAccessors = old ?  old.$accessors : nullObject
     var $vmodel = {} //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
     $$skipArray.forEach(function (name) {
@@ -138,9 +138,9 @@ function observeObject(source, $special, old) {
         }
     }
     names.forEach(function (name) {
-        if(oldAccessors[name]){
+        if(oldAccessors[name] || !accessors[name]){
            $vmodel[name] = source[name]
-        }
+       }
     })
    // hideProperty($vmodel, "$ownkeys", names)
     hideProperty($vmodel, "$active", true)
@@ -162,9 +162,9 @@ function makeGetSet(key, value) {
         key: key,
         get: function () {
             if (this.$active) {
-                if (!this.$events[key]) {
-                    this.$events[key] = subs
-                }
+//                if (!this.$events[key]) {
+//                    this.$events[key] = subs
+//                }
                 collectDependency(subs)
             }
             return value

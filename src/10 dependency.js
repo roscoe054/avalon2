@@ -24,8 +24,11 @@ var dependencyDetection = (function () {
 })()
 //将绑定对象注入到其依赖项的订阅数组中
 var ronduplex = /^(duplex|on)$/
+function returnTrue(){
+    return true
+}
 avalon.injectBinding = function (data) {
-    var valueFn = data.evaluator
+    var valueFn =  ronduplex.test(data.type) ? returnTrue : data.evaluator
     
     if (valueFn) { //如果是求值函数
         dependencyDetection.begin({
@@ -35,10 +38,11 @@ avalon.injectBinding = function (data) {
         })
         try {
             data.update = function () {
-                var value = ronduplex.test(data.type) ? data : valueFn.apply(0, data.args)
+                var value = valueFn.apply(0, data.args)
                 if (data.xtype && value === void 0) {
                     delete data.evaluator
                 }
+                
                 if (data.oldValue !== value) {
                     data.handler(value, data.element, data)
                     data.oldValue = data.xtype === "array" ? value.concat():

@@ -159,7 +159,8 @@ duplexBinding.INPUT = function(element, evaluator, data) {
     }
 
     element.oldValue = element.value
-    avalon.injectBinding(data)
+    data.handler()
     callback.call(element, element.value)
+  
 }
 duplexBinding.TEXTAREA = duplexBinding.INPUT
