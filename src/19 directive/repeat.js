@@ -1,173 +1,161 @@
-bindingHandlers.repeat = function (data, vmodels) {
-    var type = data.type
-    data.cache = {} //用于存放代理VM
-//    var arr = data.value.split(".") || []
-//    if (arr.length > 1) {
-//        arr.pop()
-//        var n = arr[0]
-//        for (var i = 0, v; v = vmodels[i++]; ) {
-//            if (v && v.hasOwnProperty(n)) {
-//                var events = v[n].$events || {}
-//                events[subscribers] = events[subscribers] || []
-//                events[subscribers].push(data)
-//                break
-//            }
-//        }
-//    }
+avalon.directive("repeat", {
+    priority:90,
+    init: function (binding) {
+        var type = binding.type
+        binding.cache = {} //用于存放代理VM
 
-    var elem = data.element
-    if (elem.nodeType === 1) {
-        elem.removeAttribute(data.name)
-        data.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
-        data.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
-        var signature = generateID(type)
-        var start = DOC.createComment(signature + ":start")
-        var end = DOC.createComment(signature + ":end")
-        data.signature = signature
-        data.start = start
-        data.template = avalonFragment.cloneNode(false)
-        if (type === "repeat") {
-            var parent = elem.parentNode
-            parent.replaceChild(end, elem)
-            parent.insertBefore(start, end)
-            data.template.appendChild(elem)
-        } else {
-            while (elem.firstChild) {
-                data.template.appendChild(elem.firstChild)
-            }
-            elem.appendChild(start)
-            elem.appendChild(end)
-        }
-        data.element = end
-    }
-    parseExprProxy(data.value, vmodels, data)
-}
-bindingExecutors.repeat = function (value, elem, data) {
-    var now = new Date -0
-    var xtype
-    var parent = elem.parentNode
-    var renderKeys = []
-    if (Array.isArray(value)) {
-        xtype = "array"
-        renderKeys = value
-
-    } else if (value && typeof value === "object") {
-        xtype = "object"
-    //    renderKeys = value
-        for (var key in value) {
-            if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) == -1) {
-                renderKeys.push(key)
-            }
-        }
-
-        if (data.sortedCallback) { //如果有回调，则让它们排序
-            var keys2 = data.sortedCallback.call(parent, renderKeys)
-            if (keys2 && Array.isArray(keys2)) {
-                renderKeys = keys2
-            }
-        }
-    } else {
-        avalon.log("warning:" + data.value + "只能是对象或数组")
-        return
-    }
-    var init = !data.oldValue
-    if (init) {
-        data.xtype = xtype
-        data.$outer = {}
-        var check0 = "$key"
-        var check1 = "$val"
-        if (xtype === "array") {
-            check0 = "$first"
-            check1 = "$last"
-        }
-        for (var i = 0, v; v = data.vmodels[i++]; ) {
-            if (v.hasOwnProperty(check0) && v.hasOwnProperty(check1)) {
-                data.$outer = v
-                break
-            }
-        }
-    }
-    var retain = avalon.mix({}, data.cache)//用于判定哪些代理需要保留下来，哪些需要删除
-
-    data.$repeat = value
-    var fragments = []
-    var transation = init && avalonFragment.cloneNode(false)
-    var length = renderKeys.length
-    var itemName = data.param || "el"
-    for (var i = 0; i < length; i++) {
-        var index = xtype === "object" ? renderKeys[i] : i
-        var proxy = retain[index]
-        if (!proxy) {
-            proxy = data.cache[index] = getProxyVM(data)//创建
-            shimController(data, transation, proxy, fragments, init)
-        } else {
-            fragments.push({})
-            retain[index] = true
-        }
-        //重写proxy
-        proxy.$index = i
-        proxy.$outer = data.$outer
-        if (xtype == "array") {
-            proxy.$first = i === 0
-            proxy.$last = i === length - 1
-            proxy[itemName] = value[index]
-
-            proxy.$remove = function () {
-                return value.removeAt(proxy.$index)
-            }
-        } else {
-            proxy.$key = index
-            proxy.$val = value[index]
-        }
-    }
-    if (init) {
-        
-        parent.insertBefore(transation, elem)
-        fragments.forEach(function (fragment) {
-            scanNodeArray(fragment.nodes, fragment.vmodels)
-            fragment.nodes = fragment.vmodels = null
-        })
-
-    } else {
-        //移除节点
-        var keys = []
-        for (var key in retain) {
-            if (retain[key] && retain[key] !== true) {
-                removeItem(retain[key].$anchor)
-                delete data.cache[key]  //这里应该回收代理VM
-                retain[key] = null
+        var elem = binding.element
+        if (elem.nodeType === 1) {
+            elem.removeAttribute(binding.name)
+            binding.sortedCallback = getBindingCallback(elem, "binding-with-sorted", vmodels)
+            binding.renderedCallback = getBindingCallback(elem, "binding-" + type + "-rendered", vmodels)
+            var signature = generateID(type)
+            var start = DOC.createComment(signature + ":start")
+            var end = DOC.createComment(signature + ":end")
+            binding.signature = signature
+            binding.start = start
+            binding.template = avalonFragment.cloneNode(false)
+            if (type === "repeat") {
+                var parent = elem.parentNode
+                parent.replaceChild(end, elem)
+                parent.insertBefore(start, end)
+                binding.template.appendChild(elem)
             } else {
-                keys.push(key)
+                while (elem.firstChild) {
+                    binding.template.appendChild(elem.firstChild)
+                }
+                elem.appendChild(start)
+                elem.appendChild(end)
             }
+            binding.element = end
         }
-        //移动或新增节点
-        for (i = 0; i < length; i++) {
-            var cur = xtype === "object" ? renderKeys[i] : i
-            var pre = xtype === "object" ? renderKeys[i - 1] : i - 1
-            var old = keys[i]
-            var preEl = data.cache[pre] ? data.cache[pre].$anchor : data.start
-            var fragment = fragments[i]
-            if (!retain[cur]) {//如果还有插入节点，那么将它插入到preEl的后面
-                parent.insertBefore(fragment.content, preEl.nextSibling)
-                scanNodeArray(fragment.nodes, fragment.vmodels)
-                fragment.nodes = fragment.vmodels = null
-            } else {
-                if (old !== cur) {
-                    var curNode = removeItem(data.cache[cur].$anchor)
-                    parent.insertBefore(curNode, preEl.nextSibling)
-                } else {
-                    //什么也不用做
+    },
+    update: function (value, elem, binding) {
+        var now = new Date - 0
+        var xtype
+        var parent = elem.parentNode
+        var renderKeys = []
+        if (Array.isArray(value)) {
+            xtype = "array"
+            renderKeys = value
+
+        } else if (value && typeof value === "object") {
+            xtype = "object"
+            //    renderKeys = value
+            for (var key in value) {
+                if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) == -1) {
+                    renderKeys.push(key)
                 }
             }
 
+            if (binding.sortedCallback) { //如果有回调，则让它们排序
+                var keys2 = binding.sortedCallback.call(parent, renderKeys)
+                if (keys2 && Array.isArray(keys2)) {
+                    renderKeys = keys2
+                }
+            }
+        } else {
+            avalon.log("warning:" + binding.value + "只能是对象或数组")
+            return
         }
+        var init = !binding.oldValue
+        if (init) {
+            binding.xtype = xtype
+            binding.$outer = {}
+            var check0 = "$key"
+            var check1 = "$val"
+            if (xtype === "array") {
+                check0 = "$first"
+                check1 = "$last"
+            }
+            for (var i = 0, v; v = binding.vmodels[i++]; ) {
+                if (v.hasOwnProperty(check0) && v.hasOwnProperty(check1)) {
+                    binding.$outer = v
+                    break
+                }
+            }
+        }
+        var retain = avalon.mix({}, binding.cache)//用于判定哪些代理需要保留下来，哪些需要删除
 
+        binding.$repeat = value
+        var fragments = []
+        var transation = init && avalonFragment.cloneNode(false)
+        var length = renderKeys.length
+        var itemName = binding.param || "el"
+        for (var i = 0; i < length; i++) {
+            var index = xtype === "object" ? renderKeys[i] : i
+            var proxy = retain[index]
+            if (!proxy) {
+                proxy = binding.cache[index] = getProxyVM(binding)//创建
+                shimController(binding, transation, proxy, fragments, init)
+            } else {
+                fragments.push({})
+                retain[index] = true
+            }
+            //重写proxy
+            proxy.$index = i
+            proxy.$outer = binding.$outer
+            if (xtype == "array") {
+                proxy.$first = i === 0
+                proxy.$last = i === length - 1
+                proxy[itemName] = value[index]
+
+                proxy.$remove = function () {
+                    return value.removeAt(proxy.$index)
+                }
+            } else {
+                proxy.$key = index
+                proxy.$val = value[index]
+            }
+        }
+        if (init) {
+
+            parent.insertBefore(transation, elem)
+            fragments.forEach(function (fragment) {
+                scanNodeArray(fragment.nodes, fragment.vmodels)
+                fragment.nodes = fragment.vmodels = null
+            })
+
+        } else {
+            //移除节点
+            var keys = []
+            for (var key in retain) {
+                if (retain[key] && retain[key] !== true) {
+                    removeItem(retain[key].$anchor)
+                    delete binding.cache[key]  //这里应该回收代理VM
+                    retain[key] = null
+                } else {
+                    keys.push(key)
+                }
+            }
+            //移动或新增节点
+            for (i = 0; i < length; i++) {
+                var cur = xtype === "object" ? renderKeys[i] : i
+                var pre = xtype === "object" ? renderKeys[i - 1] : i - 1
+                var old = keys[i]
+                var preEl = binding.cache[pre] ? binding.cache[pre].$anchor : binding.start
+                var fragment = fragments[i]
+                if (!retain[cur]) {//如果还有插入节点，那么将它插入到preEl的后面
+                    parent.insertBefore(fragment.content, preEl.nextSibling)
+                    scanNodeArray(fragment.nodes, fragment.vmodels)
+                    fragment.nodes = fragment.vmodels = null
+                } else {
+                    if (old !== cur) {
+                        var curNode = removeItem(binding.cache[cur].$anchor)
+                        parent.insertBefore(curNode, preEl.nextSibling)
+                    } else {
+                        //什么也不用做
+                    }
+                }
+
+            }
+        }
+        avalon.log("耗时 ", new Date - now)
     }
-    avalon.log("耗时 ",new Date - now)
-}
+})
 
 "with,each".replace(rword, function (name) {
-    bindingHandlers[name] = bindingHandlers.repeat
+    avalon.directives[name] = avalon.mix({},avalon.directive.repeat, {priority:1400})
 })
 
 

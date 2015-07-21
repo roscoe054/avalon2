@@ -17,16 +17,16 @@ function parseDisplay(nodeName, val) {
 
 avalon.parseDisplay = parseDisplay
 
-bindingHandlers.visible = function(data, vmodels) {
-    var elem = data.element
-    var display = elem.style.display
-    if(display === "none"){
-        display = parseDisplay(elem.nodeName)
+avalon.directive("visible", {
+    init: function (binding) {
+        var elem = binding.element
+        var display = elem.style.display
+        if (display === "none") {
+            display = parseDisplay(elem.nodeName)
+        }
+        binding.display = display
+    },
+    update: function (val, elem, binding) {
+        elem.style.display = val ? binding.display : "none"
     }
-    data.display = display
-    parseExprProxy(data.value, vmodels, data)
-}
-
-bindingExecutors.visible = function(val, elem, data) {
-    elem.style.display = val ? data.display : "none"
-}
+})
