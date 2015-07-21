@@ -1,6 +1,3 @@
-/*********************************************************************
- *                           modelFactory                             *
- **********************************************************************/
 //avalon最核心的方法的两个方法之一（另一个是avalon.scan），返回一个ViewModel(VM)
 var VMODELS = avalon.vmodels = {} //所有vmodel都储存在这里
 avalon.define = function (id, factory) {
@@ -29,7 +26,7 @@ avalon.define = function (id, factory) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$proxy,$active,$deps").match(rword)
+var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$proxy,$active,$deps,$ownkeys").match(rword)
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -42,178 +39,60 @@ try {
 } catch (e) {
     canHideOwn = false
 }
-var nullSpecial = {}
+
 function modelFactory(source, $special) {
     return observeObject(source, $special)
 }
 
-var hasOwnDescriptor = {
-    value: function (name) {
-        return name in this
-    },
-    writable: false,
-    enumerable: false,
-    configurable: true
-}
-function makeGetSet(key, value) {
-    var childOb = observe(value)
-    
-    var dep = new Dep()
-    if (childOb) {
-        childOb.$deps.push(dep)
-        value = childOb
-    }
-    return {
-        key: key,
-        get: function () {
-            if (this.$active) {
-                dep.depend()//collectDependency
-            }
-            return value
-        },
-        set: function (newVal) {
-            if (newVal === value)
-                return
-            if (childOb) {
-                avalon.Array.remove(childOb.$deps, dep)
-            }
-            value = newVal
-            // add dep to new value
-            var newChildOb = observe(newVal)
-            if (newChildOb) {
-                newChildOb.$deps.push(dep)
-                value = newChildOb
-            }
-            dep.notify()
-        },
-        enumerable: true,
-        configurable: true
-    }
-}
-
-//比较两个值是否相等
-var isEqual = Object.is || function (v1, v2) {
-    if (v1 === 0 && v2 === 0) {
-        return 1 / v1 === 1 / v2
-    } else if (v1 !== v1) {
-        return v2 !== v2
-    } else {
-        return v1 === v2
-    }
-}
-
-function isObservable(name, value, $skipArray, $special) {
-    
-    if (isFunction(value) || value && value.nodeType) {
-        return false
-    }
-    if ($skipArray.indexOf(name) !== -1) {
-        return false
-    }
-    if (name && name.charAt(0) === "$" &&  $special[name]) {
-        return false
-    }
-    return true
-}
-
-var descriptorFactory = W3C ? function (obj) {
-    var descriptors = {}
-    for (var i in obj) {
-        descriptors[i] = {
-            get: obj[i],
-            set: obj[i],
-            enumerable: true,
-            configurable: true
-        }
-    }
-    return descriptors
-} : function (a) {
-    return a
-}
-
-
-function Dep() {
-    this.subs = []
-}
-
-// the current target watcher being evaluated.
-// this is globally unique because there could be only one
-// watcher being evaluated at any time.
-Dep.target = null
-
-var p = Dep.prototype
-
-/**
- * Add a directive subscriber.
- *
- * @param {Directive} sub
- */
-
-p.addSub = function (sub) {
-    this.subs.push(sub)
-}
-
-/**
- * Remove a directive subscriber.
- *
- * @param {Directive} sub
- */
-
-p.removeSub = function (sub) {
-    var index = this.subs.indexOf(sub)
-    if (index !== -1) {
-        this.subs.splice(index, 1)
-    }
-}
-
-/**
- * Add self as a dependency to the target watcher.
- */
-
-p.depend = function () {
-    dependencyDetection.collectDependency(this.subs)
-}
-
-/**
- * Notify all subscribers of a new value.
- */
-
-p.notify = function () {
-    // stablize the subscriber list first
-    var subs = this.subs
-    console.log(subs)
-    for (var i = 0, l = subs.length; i < l; i++) {
-        subs[i].update()
-    }
-}
-
-function observe(obj) {
-    if (!obj || obj.$id) {
+function observe(obj, old) {
+    if (!obj || (obj.$id && obj.$deps)) {
         return obj
     }
     if (Array.isArray(obj)) {
         return observeArray(obj)
-    } else if(avalon.isPlainObject(obj)){
-        return observeObject(obj)
+    } else if (avalon.isPlainObject(obj)) {
+        if (old) {
+          
+            var keys = Object.keys(obj)
+            var keys2 = Object.keys(old)
+            if (keys.join(";") === keys2.join(";")) {
+                for (var i in obj) {
+                    if (obj.hasOwnProperty(i)) {
+                        old[i] = obj[i]
+                    }
+                }
+                return old
+            }
+            old.$active = false
+            console.log(keys, keys)
+        }
+        return observeObject(obj, null, old )
     }
 }
 
-function observeArray(array){
-    for(var i in newProto){
+function observeArray(array) {
+    for (var i in newProto) {
         array[i] = newProto[i]
     }
     array.$active = true
-    array.$deps = [] 
+    array.$deps = []
     observeItem(array)
     return array
 }
-function observeObject (source, $special) {
- if (!source || source.nodeType > 0 || (source.$id && source.$deps)) {
+function observeItem(items) {
+    var i = items.length
+    while (i--) {
+        observe(items[i])
+    }
+}
+
+function observeObject(source, $special, old) {
+    if (!source || source.nodeType > 0 || (source.$id && source.$deps)) {
         return source
     }
     var $skipArray = Array.isArray(source.$skipArray) ? source.$skipArray : []
-     $special = $special || nullSpecial 
-   
+    $special = $special || nullObject
+    var oldAccessors = old ?  old.$accessors : nullObject
     var $vmodel = {} //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
     $$skipArray.forEach(function (name) {
@@ -233,82 +112,132 @@ function observeObject (source, $special) {
                     },
                     set: function (a) {
                         if (!stopRepeatAssign && typeof val.set === "function") {
-                            val.set.call(a)
+                            val.set.call(this, a)
                         }
                     },
                     enumerable: true,
                     configurable: true
                 }
             } else {
-                accessors[name] = makeGetSet(name,val)
+                if (oldAccessors[name]) {
+                    accessors[name] = oldAccessors[name]
+
+                } else {
+                    accessors[name] = makeGetSet(name, val)
+                }
+                //   accessors[name] = oldAccessors[name] || makeGetSet(name, val)
             }
         }
     })
     /* jshint ignore:end */
 
     $vmodel = Object.defineProperties($vmodel, accessors)
-  $vmodel.$active = true
-    $vmodel.$id = new Date -0
-    $vmodel.$deps = [] 
+    if (!W3C) {
+        $vmodel.hasOwnProperty = function (name) {
+            return names.indexOf(name) !== -1
+        }
+    }
+    names.forEach(function (name) {
+        if(oldAccessors[name] || !accessors[name]){
+           $vmodel[name] = source[name]
+       }
+    })
+   // hideProperty($vmodel, "$ownkeys", names)
+    hideProperty($vmodel, "$active", true)
+    hideProperty($vmodel, "$accessors", accessors)
+    hideProperty($vmodel, "$events", {})
+    hideProperty($vmodel, "$id", new Date - 0)
+    hideProperty($vmodel, "$deps", [])
     return $vmodel
 }
 
-observeItem = function (items) {
-  var i = items.length
-  while (i--) {
-    observe(items[i])
-  }
-}
-
-var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'reverse']
-var arrayProto = Array.prototype
-var newProto = {}
-
-arrayMethods.forEach(function (method, index) {
-    var original = arrayProto[method]
-    newProto[method] = function () {
-        // avoid leaking arguments:
-        // http://jsperf.com/closure-with-arguments
-        var i = arguments.length
-        var args = new Array(i)
-        while (i--) {
-            args[i] = arguments[i]
-        }
-        var result = original.apply(this, args)
-        var ob = this
-        var inserted
-        switch (method) {
-            case 'push':
-                inserted = args
-                break
-            case 'unshift':
-                inserted = args
-                break
-            case 'splice':
-                inserted = args.slice(2)
-                break
-        }
-        if (inserted)
-            observeItem(inserted)
-        // notify change
-        ob.notify()
-        return result
+function makeGetSet(key, value) {
+    var childOb = observe(value)
+    var subs = []
+    if (childOb) {
+        childOb.$deps.push(subs)
+        value = childOb
     }
-})
-
-newProto.notify = function () {
-  var deps = this.$deps
-  for (var i = 0, l = deps.length; i < l; i++) {
-    deps[i].notify()
-  }
-}
-newProto.remove = function (el) { //移除第一个等于给定值的元素
-    return this.removeAt(this.indexOf(el))
-}
-newProto.removeAt = function (index) { //移除指定索引上的元素
-    if (index >= 0) {
-        this.splice(index, 1)
+    return {
+        key: key,
+        get: function () {
+            if (this.$active) {
+//                if (!this.$events[key]) {
+//                    this.$events[key] = subs
+//                }
+                collectDependency(subs)
+            }
+            return value
+        },
+        set: function (newVal) {
+            if (newVal === value)
+                return
+            if (childOb) {
+                avalon.Array.remove(childOb.$deps, subs)
+            }
+            value = newVal
+            // add dep to new value
+          //  console.log(newVal, childOb)
+            var newChildOb = observe(newVal, childOb)
+            if (newChildOb) {
+                newChildOb.$deps.push(subs)
+                value = newChildOb
+            }
+            notifySubscribers(subs)
+        },
+        enumerable: true,
+        configurable: true
     }
-    return  []
 }
 
+//比较两个值是否相等
+var isEqual = Object.is || function (v1, v2) {
+    if (v1 === 0 && v2 === 0) {
+        return 1 / v1 === 1 / v2
+    } else if (v1 !== v1) {
+        return v2 !== v2
+    } else {
+        return v1 === v2
+    }
+}
+
+function isObservable(name, value, $skipArray, $special) {
+
+    if (isFunction(value) || value && value.nodeType) {
+        return false
+    }
+    if ($skipArray.indexOf(name) !== -1) {
+        return false
+    }
+    if (name && name.charAt(0) === "$" && !$special[name]) {
+        return false
+    }
+    return true
+}
+
+
+
+
+function collectDependency(subs) {
+    dependencyDetection.collectDependency(subs)
+}
+
+function notifySubscribers(subs) {
+    for (var i = 0, l = subs.length; i < l; i++) {
+        subs[i].update()
+    }
+}
+
+
+function hideProperty(host, name, value) {
+    if (Object.defineProperty) {
+        Object.defineProperty(host, name, {
+            value: value,
+            writable: true,
+            enumerable: false,
+            configurable: true
+        })
+    } else {
+        host[name] = value
+    }
+}

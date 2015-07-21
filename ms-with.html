@@ -22,6 +22,15 @@
                     c: 3
                 }
             })
+            
+            setTimeout(function(){
+                  vm.array = {
+                        d: 1,
+                        c: 2,
+                        b: 4,
+                        k: 5
+                    }
+            },1000)
            
         </script>
     </head>
@@ -29,7 +38,7 @@
         <h1>测试虚拟DOM</h1>
 
         <ul>
-            <li ms-repeat="array">{{$key}}*{{$val}}</li> 
+            <li ms-repeat="array">{{$key}}*{{$val}}*{{$index}}</li> 
         </ul>
         <div ms-click="change">change</div>
     </body>
