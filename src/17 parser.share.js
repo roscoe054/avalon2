@@ -1,4 +1,3 @@
-
 var keywords = [
     "break,case,catch,continue,debugger,default,delete,do,else,false",
     "finally,for,function,if,in,instanceof,new,null,return,switch,this",
@@ -7,7 +6,8 @@ var keywords = [
     "final,float,goto,implements,import,int,interface,long,native",
     "package,private,protected,public,short,static,super,synchronized",
     "throws,transient,volatile", /*保留字*/
-    "arguments,let,yield,undefined" /* ECMA 5 - use strict*/].join(",")
+    "arguments,let,yield,undefined" /* ECMA 5 - use strict*/
+].join(",")
 var rrexpstr = /\/\*[\w\W]*?\*\/|\/\/[^\n]*\n|\/\/[^\n]*$|"(?:[^"\\]|\\[\w\W])*"|'(?:[^'\\]|\\[\w\W])*'|[\s\t\n]*\.[\s\t\n]*[$\w\.]+/g
 var rsplit = /[^\w$]+/g
 var rkeywords = new RegExp(["\\b" + keywords.replace(/,/g, '\\b|\\b') + "\\b"].join('|'), 'g')
@@ -15,26 +15,26 @@ var rnumber = /\b\d[^,]*/g
 var rcomma = /^,+|,+$/g
 var variablePool = new Cache(512)
 var getVariables = function (code) {
-    var key = "," + code.trim()
-    var ret = variablePool.get(key)
-    if (ret) {
-        return ret
-    }
-    var match = code
+        var key = "," + code.trim()
+        var ret = variablePool.get(key)
+        if (ret) {
+            return ret
+        }
+        var match = code
             .replace(rrexpstr, "")
             .replace(rsplit, ",")
             .replace(rkeywords, "")
             .replace(rnumber, "")
             .replace(rcomma, "")
             .split(/^$|,+/)
-    return variablePool.put(key, uniqSet(match))
-}
-/*添加赋值语句*/
+        return variablePool.put(key, uniqSet(match))
+    }
+    /*添加赋值语句*/
 
 function addAssign(vars, scope, name, data) {
     var ret = [],
-            prefix = " = " + name + "."
-    for (var i = vars.length, prop; prop = vars[--i]; ) {
+        prefix = " = " + name + "."
+    for (var i = vars.length, prop; prop = vars[--i];) {
         if (scope.hasOwnProperty(prop)) {
             ret.push(prop + prefix + prop)
             data.vars.push(prop)
@@ -49,7 +49,7 @@ function addAssign(vars, scope, name, data) {
 
 function uniqSet(array) {
     var ret = [],
-            unique = {}
+        unique = {}
     for (var i = 0; i < array.length; i++) {
         var el = array[i]
         var id = el && typeof el.$id === "string" ? el.$id : el
@@ -61,7 +61,7 @@ function uniqSet(array) {
 }
 //缓存求值函数，以便多次利用
 var evaluatorPool = new Cache(128)
-//取得求值函数及其传参
+    //取得求值函数及其传参
 var rduplex = /\w\[.*\]|\w\.\w/
 var rproxy = /(\$proxy\$[a-z]+)\d+$/
 var rthimRightParentheses = /\)\s*$/
@@ -69,22 +69,23 @@ var rthimOtherParentheses = /\)\s*\|/g
 var rquoteFilterName = /\|\s*([$\w]+)/g
 var rpatchBracket = /"\s*\["/g
 var rthimLeftParentheses = /"\s*\(/g
+
 function parseFilter(val, filters) {
     filters = filters
-            .replace(rthimRightParentheses, "")//处理最后的小括号
-            .replace(rthimOtherParentheses, function () {//处理其他小括号
-                return "],|"
-            })
-            .replace(rquoteFilterName, function (a, b) { //处理|及它后面的过滤器的名字
-                return "[" + quote(b)
-            })
-            .replace(rpatchBracket, function () {
-                return '"],["'
-            })
-            .replace(rthimLeftParentheses, function () {
-                return '",'
-            }) + "]"
-    return  "return avalon.filters.$filter(" + val + ", " + filters + ")"
+        .replace(rthimRightParentheses, "") //处理最后的小括号
+        .replace(rthimOtherParentheses, function () { //处理其他小括号
+            return "],|"
+        })
+        .replace(rquoteFilterName, function (a, b) { //处理|及它后面的过滤器的名字
+            return "[" + quote(b)
+        })
+        .replace(rpatchBracket, function () {
+            return '"],["'
+        })
+        .replace(rthimLeftParentheses, function () {
+            return '",'
+        }) + "]"
+    return "return avalon.filters.$filter(" + val + ", " + filters + ")"
 }
 
 function parseExpr(code, scopes, data) {
@@ -94,11 +95,11 @@ function parseExpr(code, scopes, data) {
         return String(el.$id).replace(rproxy, "$1")
     }) + code + dataType + filters
     var vars = getVariables(code).concat(),
-            assigns = [],
-            names = [],
-            args = [],
-            prefix = ""
-    //args 是一个对象数组， names 是将要生成的求值函数的参数
+        assigns = [],
+        names = [],
+        args = [],
+        prefix = ""
+        //args 是一个对象数组， names 是将要生成的求值函数的参数
     scopes = uniqSet(scopes)
     data.vars = []
     for (var i = 0, sn = scopes.length; i < sn; i++) {
@@ -120,9 +121,9 @@ function parseExpr(code, scopes, data) {
                 var c = _.charAt(v.length)
                 var r = IEVersion ? code.slice(arguments[1] + _.length) : RegExp.rightContext
                 var method = /^\s*\(/.test(r)
-                if (c === "." || c === "[" || method) {//比如v为aa,我们只匹配aa.bb,aa[cc],不匹配aaa.xxx
+                if (c === "." || c === "[" || method) { //比如v为aa,我们只匹配aa.bb,aa[cc],不匹配aaa.xxx
                     var name = "var" + String(Math.random()).replace(/^0\./, "")
-                    if (method) {//array.size()
+                    if (method) { //array.size()
                         var array = _.split(".")
                         if (array.length > 2) {
                             var last = array.pop()
@@ -142,7 +143,7 @@ function parseExpr(code, scopes, data) {
     }
     //---------------args----------------
     data.args = args
-    //---------------cache----------------
+        //---------------cache----------------
     delete data.vars
     var fn = evaluatorPool.get(exprId) //直接从缓存，免得重复生成
     if (fn) {
@@ -161,11 +162,11 @@ function parseExpr(code, scopes, data) {
         code += parseFilter("ret" + expose, filters)
     } else if (dataType === "duplex") { //双工绑定
         var _body = "'use strict';\nreturn function(vvv){\n\t" +
-                prefix +
-                ";\n\tif(!arguments.length){\n\t\treturn " +
-                code +
-                "\n\t}\n\t" + (!rduplex.test(code) ? vars.get : code) +
-                "= vvv;\n} "
+            prefix +
+            ";\n\tif(!arguments.length){\n\t\treturn " +
+            code +
+            "\n\t}\n\t" + (!rduplex.test(code) ? vars.get : code) +
+            "= vvv;\n} "
         try {
             fn = Function.apply(noop, names.concat(_body))
             data.evaluator = evaluatorPool.put(exprId, fn)
@@ -210,9 +211,9 @@ function parseExprProxy(code, scopes, data, tokens, noRegister) {
     parseExpr(code, scopes, data)
     if (data.evaluator && !noRegister) {
         data.handler = bindingExecutors[data.handlerName || data.type]
-        //方便调试
-        //这里非常重要,我们通过判定视图刷新函数的element是否在DOM树决定
-        //将它移出订阅者列表
+            //方便调试
+            //这里非常重要,我们通过判定视图刷新函数的element是否在DOM树决定
+            //将它移出订阅者列表
         avalon.injectBinding(data)
     }
 }

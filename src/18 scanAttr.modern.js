@@ -5,7 +5,7 @@ function scanAttr(elem, vmodels, match) {
         var bindings = []
         var fixAttrs = []
         var msData = createMap()
-        for (var i = 0, attr; attr = attributes[i++]; ) {
+        for (var i = 0, attr; attr = attributes[i++];) {
             if (attr.specified) {
                 if (match = attr.name.match(rmsAttr)) {
                     //如果是以指定前缀命名的
@@ -17,14 +17,14 @@ function scanAttr(elem, vmodels, match) {
                         param = type
                         type = "on"
                     } else if (obsoleteAttrs[type]) {
-                        if (type === "enabled") {//吃掉ms-enabled绑定,用ms-disabled代替
+                        if (type === "enabled") { //吃掉ms-enabled绑定,用ms-disabled代替
                             log("warning!ms-enabled或ms-attr-enabled已经被废弃")
                             type = "disabled"
                             value = "!(" + value + ")"
                         }
                         param = type
                         type = "attr"
-                        name = "ms-" + type +"-" +param
+                        name = "ms-" + type + "-" + param
                         fixAttrs.push([attr.name, name, value])
                     }
                     msData[name] = value
@@ -36,18 +36,18 @@ function scanAttr(elem, vmodels, match) {
                             param: param,
                             element: elem,
                             name: name,
-                            value: newValue,
+                            expr: newValue,
                             oneTime: oneTime,
-                            priority:  (priorityMap[type] || type.charCodeAt(0) * 10 )+ (Number(param.replace(/\D/g, "")) || 0)
+                            priority: (priorityMap[type] || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
                             var token = getToken(value)
                             avalon.mix(binding, token)
                             binding.filters = binding.filters.replace(rhasHtml, function () {
-                                binding.type = "html"
-                                binding.group = 1
-                                return ""
-                            })// jshint ignore:line
+                                    binding.type = "html"
+                                    binding.group = 1
+                                    return ""
+                                }) // jshint ignore:line
                         } else if (type === "duplex") {
                             var hasDuplex = name
                         } else if (name === "ms-if-loop") {

@@ -4,29 +4,30 @@
 //https://www.devbridge.com/articles/understanding-amd-requirejs/
 //http://maxogden.com/nested-dependencies.html
 var modules = avalon.modules = {
-    "domReady!": {
-        exports: avalon,
-        state: 3
-    },
-    "avalon": {
-        exports: avalon,
-        state: 4
+        "domReady!": {
+            exports: avalon,
+            state: 3
+        },
+        "avalon": {
+            exports: avalon,
+            state: 4
+        }
     }
-}
-//Object(modules[id]).state拥有如下值 
-// undefined  没有定义
-// 1(send)    已经发出请求
-// 2(loading) 已经被执行但还没有执行完成，在这个阶段define方法会被执行
-// 3(loaded)  执行完毕，通过onload/onreadystatechange回调判定，在这个阶段checkDeps方法会执行
-// 4(execute)  其依赖也执行完毕, 值放到exports对象上，在这个阶段fireFactory方法会执行
+    //Object(modules[id]).state拥有如下值
+    // undefined  没有定义
+    // 1(send)    已经发出请求
+    // 2(loading) 已经被执行但还没有执行完成，在这个阶段define方法会被执行
+    // 3(loaded)  执行完毕，通过onload/onreadystatechange回调判定，在这个阶段checkDeps方法会执行
+    // 4(execute)  其依赖也执行完毕, 值放到exports对象上，在这个阶段fireFactory方法会执行
 modules.exports = modules.avalon
 
-new function () {// jshint ignore:line
+new function () { // jshint ignore:line
     var loadings = [] //正在加载中的模块列表
     var factorys = [] //放置define方法的factory函数
     var rjsext = /\.js$/i
+
     function makeRequest(name, config) {
-//1. 去掉资源前缀
+        //1. 去掉资源前缀
         var res = "js"
         name = name.replace(/^(\w+)\!/, function (a, b) {
             res = b
@@ -36,13 +37,13 @@ new function () {// jshint ignore:line
             log("debug: ready!已经被废弃，请使用domReady!")
             res = "domReady"
         }
-//2. 去掉querystring, hash
+        //2. 去掉querystring, hash
         var query = ""
         name = name.replace(rquery, function (a) {
-            query = a
-            return ""
-        })
-        //3. 去掉扩展名
+                query = a
+                return ""
+            })
+            //3. 去掉扩展名
         var suffix = "." + res
         var ext = /js|css/.test(suffix) ? suffix : ""
         name = name.replace(/\.[a-z0-9]+$/g, function (a) {
@@ -67,7 +68,7 @@ new function () {// jshint ignore:line
     function fireRequest(req) {
         var name = req.name
         var res = req.res
-        //1. 如果该模块已经发出请求，直接返回
+            //1. 如果该模块已经发出请求，直接返回
         var module = modules[name]
         var urlNoQuery = name && req.urlNoQuery
         if (module && module.state >= 1) {
@@ -103,7 +104,7 @@ new function () {// jshint ignore:line
         return name ? urlNoQuery : res + "!"
     }
 
-//核心API之一 require
+    //核心API之一 require
     var requireQueue = []
     var isUserFirstRequire = false
     innerRequire = avalon.require = function (array, factory, parentUrl, defineConfig) {
@@ -111,7 +112,8 @@ new function () {// jshint ignore:line
             requireQueue.push(avalon.slice(arguments))
             if (arguments.length <= 2) {
                 isUserFirstRequire = true
-                var queue = requireQueue.splice(0, requireQueue.length), args
+                var queue = requireQueue.splice(0, requireQueue.length),
+                    args
                 while (args = queue.shift()) {
                     innerRequire.apply(null, args)
                 }
@@ -124,7 +126,7 @@ new function () {// jshint ignore:line
         }
         var deps = [] // 放置所有依赖项的完整路径
         var uniq = {}
-        var id = parentUrl || "callback" + setTimeout("1")// jshint ignore:line
+        var id = parentUrl || "callback" + setTimeout("1") // jshint ignore:line
         defineConfig = defineConfig || {}
         defineConfig.baseUrl = kernel.baseUrl
         var isBuilt = !!defineConfig.built
@@ -164,59 +166,58 @@ new function () {// jshint ignore:line
         checkDeps()
     }
 
-//核心API之二 require
+    //核心API之二 require
     innerRequire.define = function (name, deps, factory) { //模块名,依赖列表,模块本身
-        if (typeof name !== "string") {
-            factory = deps
-            deps = name
-            name = "anonymous"
-        }
-        if (!Array.isArray(deps)) {
-            factory = deps
-            deps = []
-        }
-        var config = {
-            built: !isUserFirstRequire, //用r.js打包后,所有define会放到requirejs之前
-            defineName: name
-        }
-        var args = [deps, factory, config]
-        factory.require = function (url) {
-            args.splice(2, 0, url)
-            if (modules[url]) {
-                modules[url].state = 3 //loaded
-                var isCycle = false
-                try {
-                    isCycle = checkCycle(modules[url].deps, url)
-                } catch (e) {
-                }
-                if (isCycle) {
-                    avalon.error(url + "模块与之前的模块存在循环依赖，请不要直接用script标签引入" + url + "模块")
-                }
+            if (typeof name !== "string") {
+                factory = deps
+                deps = name
+                name = "anonymous"
             }
-            delete factory.require //释放内存
-            innerRequire.apply(null, args) //0,1,2 --> 1,2,0
-        }
-//根据标准,所有遵循W3C标准的浏览器,script标签会按标签的出现顺序执行。
-//老的浏览器中，加载也是按顺序的：一个文件下载完成后，才开始下载下一个文件。
-//较新的浏览器中（IE8+ 、FireFox3.5+ 、Chrome4+ 、Safari4+），为了减小请求时间以优化体验，
-//下载可以是并行的，但是执行顺序还是按照标签出现的顺序。
-//但如果script标签是动态插入的, 就未必按照先请求先执行的原则了,目测只有firefox遵守
-//唯一比较一致的是,IE10+及其他标准浏览器,一旦开始解析脚本, 就会一直堵在那里,直接脚本解析完毕
-//亦即，先进入loading阶段的script标签(模块)必然会先进入loaded阶段
-        var url = config.built ? "unknown" : getCurrentScript()
-        if (url) {
-            var module = modules[url]
-            if (module) {
-                module.state = 2
+            if (!Array.isArray(deps)) {
+                factory = deps
+                deps = []
             }
-            factory.require(url)
-        } else {//合并前后的safari，合并后的IE6-9走此分支
-            factorys.push(factory)
+            var config = {
+                built: !isUserFirstRequire, //用r.js打包后,所有define会放到requirejs之前
+                defineName: name
+            }
+            var args = [deps, factory, config]
+            factory.require = function (url) {
+                    args.splice(2, 0, url)
+                    if (modules[url]) {
+                        modules[url].state = 3 //loaded
+                        var isCycle = false
+                        try {
+                            isCycle = checkCycle(modules[url].deps, url)
+                        } catch (e) {}
+                        if (isCycle) {
+                            avalon.error(url + "模块与之前的模块存在循环依赖，请不要直接用script标签引入" + url + "模块")
+                        }
+                    }
+                    delete factory.require //释放内存
+                    innerRequire.apply(null, args) //0,1,2 --> 1,2,0
+                }
+                //根据标准,所有遵循W3C标准的浏览器,script标签会按标签的出现顺序执行。
+                //老的浏览器中，加载也是按顺序的：一个文件下载完成后，才开始下载下一个文件。
+                //较新的浏览器中（IE8+ 、FireFox3.5+ 、Chrome4+ 、Safari4+），为了减小请求时间以优化体验，
+                //下载可以是并行的，但是执行顺序还是按照标签出现的顺序。
+                //但如果script标签是动态插入的, 就未必按照先请求先执行的原则了,目测只有firefox遵守
+                //唯一比较一致的是,IE10+及其他标准浏览器,一旦开始解析脚本, 就会一直堵在那里,直接脚本解析完毕
+                //亦即，先进入loading阶段的script标签(模块)必然会先进入loaded阶段
+            var url = config.built ? "unknown" : getCurrentScript()
+            if (url) {
+                var module = modules[url]
+                if (module) {
+                    module.state = 2
+                }
+                factory.require(url)
+            } else { //合并前后的safari，合并后的IE6-9走此分支
+                factorys.push(factory)
+            }
         }
-    }
-//核心API之三 require.config(settings)
+        //核心API之三 require.config(settings)
     innerRequire.config = kernel
-    //核心API之四 define.amd 标识其符合AMD规范
+        //核心API之四 define.amd 标识其符合AMD规范
     innerRequire.define.amd = modules
 
     //==========================对用户配置项进行再加工==========================
@@ -241,8 +242,10 @@ new function () {// jshint ignore:line
             array = array.concat(allpackages)
             var uniq = {}
             var ret = []
-            for (var i = 0, pkg; pkg = array[i++]; ) {
-                pkg = typeof pkg === "string" ? {name: pkg} : pkg
+            for (var i = 0, pkg; pkg = array[i++];) {
+                pkg = typeof pkg === "string" ? {
+                    name: pkg
+                } : pkg
                 var name = pkg.name
                 if (!uniq[name]) {
                     var url = joinPath(pkg.location || name, pkg.main || "main")
@@ -256,7 +259,9 @@ new function () {// jshint ignore:line
         },
         urlArgs: function (hash) {
             if (typeof hash === "string") {
-                hash = {"*": hash}
+                hash = {
+                    "*": hash
+                }
             }
             avalon.mix(allargs, hash)
             kernel.urlArgs = makeIndexArray(allargs, 1)
@@ -298,9 +303,9 @@ new function () {// jshint ignore:line
     //==============================内部方法=================================
     function checkCycle(deps, nick) {
         //检测是否存在循环依赖
-        for (var i = 0, id; id = deps[i++]; ) {
+        for (var i = 0, id; id = deps[i++];) {
             if (modules[id].state !== 4 &&
-                    (id === nick || checkCycle(modules[id].deps, nick))) {
+                (id === nick || checkCycle(modules[id].deps, nick))) {
                 return true
             }
         }
@@ -322,9 +327,9 @@ new function () {// jshint ignore:line
 
     function checkDeps() {
         //检测此JS模块的依赖是否都已安装完毕,是则安装自身
-        loop: for (var i = loadings.length, id; id = loadings[--i]; ) {
+        loop: for (var i = loadings.length, id; id = loadings[--i];) {
             var obj = modules[id],
-                    deps = obj.deps
+                deps = obj.deps
             if (!deps)
                 continue
             for (var j = 0, key; key = deps[j]; j++) {
@@ -342,12 +347,14 @@ new function () {// jshint ignore:line
     }
 
     var rreadyState = /complete|loaded/
+
     function loadJS(url, id, callback) {
         //通过script节点加载目标模块
         var node = DOC.createElement("script")
         node.className = subscribers //让getCurrentScript只处理类名为subscribers的script节点
         var supportLoad = "onload" in node
         var onEvent = supportLoad ? "onload" : "onreadystatechange"
+
         function onload() {
             var factory = factorys.pop()
             factory && factory.require(id)
@@ -360,7 +367,8 @@ new function () {// jshint ignore:line
                 checkDeps()
             }
         }
-        var index = 0, loadID
+        var index = 0,
+            loadID
         node[onEvent] = supportLoad ? onload : function () {
             if (rreadyState.test(node.readyState)) {
                 ++index
@@ -432,10 +440,10 @@ new function () {// jshint ignore:line
                 var time = "_=" + (new Date() - 0)
                 var _url = url.indexOf("?") === -1 ? url + "?" + time : url + "&" + time
                 xhr.open("GET", _url, true)
-                if ("withCredentials" in xhr) {//这是处理跨域
+                if ("withCredentials" in xhr) { //这是处理跨域
                     xhr.withCredentials = true
                 }
-                xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest")//告诉后端这是AJAX请求
+                xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest") //告诉后端这是AJAX请求
                 xhr.send()
                 log("debug: 正准备加载 " + url)
             }
@@ -444,17 +452,18 @@ new function () {// jshint ignore:line
     innerRequire.checkDeps = checkDeps
 
     var rquery = /(\?[^#]*)$/
+
     function trimQuery(url) {
         return (url || "").replace(rquery, "")
     }
 
     function isAbsUrl(path) {
         //http://stackoverflow.com/questions/10687099/how-to-test-if-a-url-string-is-absolute-or-relative
-        return  /^(?:[a-z]+:)?\/\//i.test(String(path))
+        return /^(?:[a-z]+:)?\/\//i.test(String(path))
     }
 
     function getFullUrl(node, src) {
-        return"1"[0] ? node[src] : node.getAttribute(src, 4)
+        return "1" [0] ? node[src] : node.getAttribute(src, 4)
     }
 
     function getCurrentScript() {
@@ -486,7 +495,7 @@ new function () {// jshint ignore:line
             return trimQuery(stack.replace(/(:\d+)?:\d+$/i, "")) //去掉行号与或许存在的出错字符起始位置
         }
         var nodes = head.getElementsByTagName("script") //只在head标签中寻找
-        for (var i = nodes.length, node; node = nodes[--i]; ) {
+        for (var i = nodes.length, node; node = nodes[--i];) {
             if (node.className === subscribers && node.readyState === "interactive") {
                 var url = getFullUrl(node, "src")
                 return node.className = trimQuery(url)
@@ -495,10 +504,11 @@ new function () {// jshint ignore:line
     }
 
     var rcallback = /^callback\d+$/
+
     function fireFactory(id, deps, factory) {
         var module = Object(modules[id])
         module.state = 4
-        for (var i = 0, array = [], d; d = deps[i++]; ) {
+        for (var i = 0, array = [], d; d = deps[i++];) {
             if (d === "exports") {
                 var obj = module.exports || (module.exports = {})
                 array.push(obj)
@@ -520,20 +530,21 @@ new function () {// jshint ignore:line
         delete module.factory
         return ret
     }
+
     function toUrl(id) {
         if (id.indexOf(this.res + "!") === 0) {
             id = id.slice(this.res.length + 1) //处理define("css!style",[], function(){})的情况
         }
         var url = id
-        //1. 是否命中paths配置项
+            //1. 是否命中paths配置项
         var usePath = 0
         var baseUrl = this.baseUrl
         var rootUrl = this.parentUrl || baseUrl
         eachIndexArray(id, kernel.paths, function (value, key) {
-            url = url.replace(key, value)
-            usePath = 1
-        })
-        //2. 是否命中packages配置项
+                url = url.replace(key, value)
+                usePath = 1
+            })
+            //2. 是否命中packages配置项
         if (!usePath) {
             eachIndexArray(id, kernel.packages, function (value, key, item) {
                 url = url.replace(item.name, item.location)
@@ -560,12 +571,12 @@ new function () {// jshint ignore:line
         //5. 还原扩展名，query
         var urlNoQuery = url + ext
         url = urlNoQuery + this.query
-        //6. 处理urlArgs
+            //6. 处理urlArgs
         eachIndexArray(id, kernel.urlArgs, function (value) {
             url += (url.indexOf("?") === -1 ? "?" : "&") + value;
         })
         this.url = url
-        return  this.urlNoQuery = urlNoQuery
+        return this.urlNoQuery = urlNoQuery
     }
 
     function makeIndexArray(hash, useStar, part) {
@@ -610,7 +621,7 @@ new function () {// jshint ignore:line
 
     function eachIndexArray(moduleID, array, matcher) {
         array = array || []
-        for (var i = 0, el; el = array[i++]; ) {
+        for (var i = 0, el; el = array[i++];) {
             if (el.reg.test(moduleID)) {
                 matcher(el.val, el.name, el)
                 return false
@@ -631,6 +642,7 @@ new function () {// jshint ignore:line
     }
 
     var rdeuce = /\/\w+\/\.\./
+
     function joinPath(a, b) {
         if (a.charAt(a.length - 1) !== "/") {
             a += "/"
@@ -673,4 +685,4 @@ new function () {// jshint ignore:line
         var loaderUrl = trimQuery(getFullUrl(mainNode, "src"))
         kernel.baseUrl = loaderUrl.slice(0, loaderUrl.lastIndexOf("/") + 1)
     }
-}// jshint ignore:line
+} // jshint ignore:line

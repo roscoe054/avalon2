@@ -1,7 +1,8 @@
 /*********************************************************************
  *                    DOMReady                                         *
  **********************************************************************/
-var readyList = [], isReady
+var readyList = [],
+    isReady
 var fireReady = function (fn) {
     isReady = true
     if (innerRequire) {
