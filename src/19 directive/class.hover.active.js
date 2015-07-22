@@ -1,4 +1,4 @@
-//根据VM的属性值或表达式的值切换类名，ms-class="xxx yyy zzz:flag" 
+//根据VM的属性值或表达式的值切换类名，ms-class="xxx yyy zzz:flag"
 //http://www.cnblogs.com/rubylouvre/archive/2012/12/17/2818540.html
 bindingHandlers["class"] = function(data, vmodels) {
     var oldStyle = data.param,
@@ -14,7 +14,7 @@ bindingHandlers["class"] = function(data, vmodels) {
         var colonIndex = noExpr.indexOf(":") //取得第一个冒号的位置
         if (colonIndex === -1) { // 比如 ms-class="aaa bbb ccc" 的情况
             var className = text
-        } else { // 比如 ms-class-1="ui-state-active:checked" 的情况 
+        } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
             className = text.slice(0, colonIndex)
             rightExpr = text.slice(colonIndex + 1)
             parseExpr(rightExpr, vmodels, data) //决定是添加还是删除

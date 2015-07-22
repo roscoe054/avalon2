@@ -1,4 +1,3 @@
-// bindingHandlers.html 定义在if.js
 avalon.directive("html", {
     upate: function (val, elem, binding) {
         var isHtmlFilter = elem.nodeType !== 1
