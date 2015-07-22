@@ -44,7 +44,7 @@ var getBindingCallback = function(elem, name, vmodels) {
 function executeBindings(bindings, vmodels) {
     for (var i = 0, data; data = bindings[i++]; ) {
         data.vmodels = vmodels
-        bindingHandlers[data.type](data, vmodels)
+        avalon.directives[binding.type].init(data, vmodels)
         if (data.evaluator && data.element && data.element.nodeType === 1) { //移除数据绑定，防止被二次解析
             //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
             data.element.removeAttribute(data.name)
