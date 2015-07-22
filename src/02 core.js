@@ -12,8 +12,8 @@ avalon.type = function (obj) { //取得目标的类型
     }
     // 早期的webkit内核浏览器实现了已废弃的ecma262v4标准，可以将正则字面量当作函数使用，因此typeof在判定正则时会返回function
     return typeof obj === "object" || typeof obj === "function" ?
-            class2type[serialize.call(obj)] || "object" :
-            typeof obj
+        class2type[serialize.call(obj)] || "object" :
+        typeof obj
 }
 
 var isFunction = typeof alert === "object" ? function (fn) {
@@ -30,8 +30,8 @@ avalon.isFunction = isFunction
 avalon.isWindow = function (obj) {
     if (!obj)
         return false
-    // 利用IE678 window == document为true,document == window竟然为false的神奇特性
-    // 标准浏览器及IE9，IE10等使用 正则检测
+            // 利用IE678 window == document为true,document == window竟然为false的神奇特性
+            // 标准浏览器及IE9，IE10等使用 正则检测
     return obj == obj.document && obj.document != obj //jshint ignore:line
 }
 
@@ -46,7 +46,7 @@ for (enu in avalon({})) {
     break
 }
 var enumerateBUG = enu !== "0" //IE6下为true, 其他为false
-/*判定是否是一个朴素的javascript对象（Object），不是DOM对象，不是BOM对象，不是自定义类的实例*/
+    /*判定是否是一个朴素的javascript对象（Object），不是DOM对象，不是BOM对象，不是自定义类的实例*/
 avalon.isPlainObject = function (obj, key) {
     if (!obj || avalon.type(obj) !== "object" || obj.nodeType || avalon.isWindow(obj)) {
         return false;
@@ -63,8 +63,7 @@ avalon.isPlainObject = function (obj, key) {
             return ohasOwn.call(obj, key)
         }
     }
-    for (key in obj) {
-    }
+    for (key in obj) {}
     return key === void 0 || ohasOwn.call(obj, key)
 }
 if (rnative.test(Object.getPrototypeOf)) {
@@ -76,10 +75,10 @@ if (rnative.test(Object.getPrototypeOf)) {
 //与jQuery.extend方法，可用于浅拷贝，深拷贝
 avalon.mix = avalon.fn.mix = function () {
     var options, name, src, copy, copyIsArray, clone,
-            target = arguments[0] || {},
-            i = 1,
-            length = arguments.length,
-            deep = false
+        target = arguments[0] || {},
+        i = 1,
+        length = arguments.length,
+        deep = false
 
     // 如果第一个参数为布尔,判定是否深拷贝
     if (typeof target === "boolean") {
@@ -163,7 +162,7 @@ avalon.mix({
     noop: noop,
     /*如果不用Error对象封装一下，str在控制台下可能会乱码*/
     error: function (str, e) {
-        throw  (e || Error)(str)
+        throw (e || Error)(str)
     },
     /*将一个以空格或逗号隔开的字符串或数组,转换成一个键值都为1的对象*/
     oneObject: oneObject,
@@ -184,8 +183,8 @@ avalon.mix({
             start = 0
         }
         var index = -1,
-                length = Math.max(0, Math.ceil((end - start) / step)),
-                result = new Array(length)
+            length = Math.max(0, Math.ceil((end - start) / step)),
+            result = new Array(length)
         while (++index < length) {
             result[index] = start
             start += step
@@ -194,16 +193,16 @@ avalon.mix({
     },
     eventHooks: [],
     /*绑定事件*/
-    bind: function(el, type, fn, phase) {
+    bind: function (el, type, fn, phase) {
         var hooks = avalon.eventHooks
         var hook = hooks[type]
         if (typeof hook === "object") {
             type = hook.type
             if (hook.deel) {
-                 fn = hook.deel(el, type, fn, phase)
+                fn = hook.deel(el, type, fn, phase)
             }
         }
-        var callback = W3C ? fn : function(e) {
+        var callback = W3C ? fn : function (e) {
             fn.call(el, fixEvent(e));
         }
         if (W3C) {
@@ -214,7 +213,7 @@ avalon.mix({
         return callback
     },
     /*卸载事件*/
-    unbind: function(el, type, fn, phase) {
+    unbind: function (el, type, fn, phase) {
         var hooks = avalon.eventHooks
         var hook = hooks[type]
         var callback = fn || noop
@@ -235,7 +234,8 @@ avalon.mix({
         if (node instanceof avalon) {
             node = node[0]
         }
-        var prop = /[_-]/.test(name) ? camelize(name) : name, fn
+        var prop = /[_-]/.test(name) ? camelize(name) : name,
+            fn
         name = avalon.cssName(prop) || prop
         if (value === void 0 || typeof value === "boolean") { //获取样式
             fn = cssHooks[prop + ":get"] || cssHooks["@:get"]
@@ -312,6 +312,16 @@ avalon.mix({
 var bindingHandlers = avalon.bindingHandlers = {}
 var bindingExecutors = avalon.bindingExecutors = {}
 
+avalon.directives = {}
+avalon.directive = function (name, defination) {
+    var dir = avalon.mix(defination, {
+        name: name,
+        init: noop,
+        update: noop
+    })
+    return avalon.directives[name] = dir
+}
+
 /*判定是否类数组，如节点集合，纯数组，arguments与拥有非负整数的length属性的纯JS对象*/
 function isArrayLike(obj) {
     if (!obj)
@@ -325,7 +335,7 @@ function isArrayLike(obj) {
             return true
         try {
             if ({}.propertyIsEnumerable.call(obj, "length") === false) { //如果是原生对象
-                return  /^\s?function/.test(obj.item || obj.callee)
+                return /^\s?function/.test(obj.item || obj.callee)
             }
             return true
         } catch (e) { //IE的NodeList直接抛错

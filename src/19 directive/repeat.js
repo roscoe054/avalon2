@@ -1,5 +1,5 @@
 avalon.directive("repeat", {
-    priority:90,
+    priority: 90,
     init: function (binding) {
         var type = binding.type
         binding.cache = {} //用于存放代理VM
@@ -7,8 +7,8 @@ avalon.directive("repeat", {
         var elem = binding.element
         if (elem.nodeType === 1) {
             elem.removeAttribute(binding.name)
-            binding.sortedCallback = getBindingCallback(elem, "binding-with-sorted", vmodels)
-            binding.renderedCallback = getBindingCallback(elem, "binding-" + type + "-rendered", vmodels)
+            binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
+            binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
             var signature = generateID(type)
             var start = DOC.createComment(signature + ":start")
             var end = DOC.createComment(signature + ":end")
@@ -41,7 +41,7 @@ avalon.directive("repeat", {
 
         } else if (value && typeof value === "object") {
             xtype = "object"
-            //    renderKeys = value
+                //    renderKeys = value
             for (var key in value) {
                 if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) == -1) {
                     renderKeys.push(key)
@@ -68,14 +68,14 @@ avalon.directive("repeat", {
                 check0 = "$first"
                 check1 = "$last"
             }
-            for (var i = 0, v; v = binding.vmodels[i++]; ) {
+            for (var i = 0, v; v = binding.vmodels[i++];) {
                 if (v.hasOwnProperty(check0) && v.hasOwnProperty(check1)) {
                     binding.$outer = v
                     break
                 }
             }
         }
-        var retain = avalon.mix({}, binding.cache)//用于判定哪些代理需要保留下来，哪些需要删除
+        var retain = avalon.mix({}, binding.cache) //用于判定哪些代理需要保留下来，哪些需要删除
 
         binding.$repeat = value
         var fragments = []
@@ -86,7 +86,7 @@ avalon.directive("repeat", {
             var index = xtype === "object" ? renderKeys[i] : i
             var proxy = retain[index]
             if (!proxy) {
-                proxy = binding.cache[index] = getProxyVM(binding)//创建
+                proxy = binding.cache[index] = getProxyVM(binding) //创建
                 shimController(binding, transation, proxy, fragments, init)
             } else {
                 fragments.push({})
@@ -122,7 +122,7 @@ avalon.directive("repeat", {
             for (var key in retain) {
                 if (retain[key] && retain[key] !== true) {
                     removeItem(retain[key].$anchor)
-                    delete binding.cache[key]  //这里应该回收代理VM
+                    delete binding.cache[key] //这里应该回收代理VM
                     retain[key] = null
                 } else {
                     keys.push(key)
@@ -135,7 +135,7 @@ avalon.directive("repeat", {
                 var old = keys[i]
                 var preEl = binding.cache[pre] ? binding.cache[pre].$anchor : binding.start
                 var fragment = fragments[i]
-                if (!retain[cur]) {//如果还有插入节点，那么将它插入到preEl的后面
+                if (!retain[cur]) { //如果还有插入节点，那么将它插入到preEl的后面
                     parent.insertBefore(fragment.content, preEl.nextSibling)
                     scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
@@ -155,7 +155,9 @@ avalon.directive("repeat", {
 })
 
 "with,each".replace(rword, function (name) {
-    avalon.directives[name] = avalon.mix({},avalon.directive.repeat, {priority:1400})
+    avalon.directives[name] = avalon.mix({}, avalon.directive.repeat, {
+        priority: 1400
+    })
 })
 
 
@@ -198,6 +200,7 @@ function getProxyVM(data) {
 }
 
 var eachProxyPool = []
+
 function eachProxyAgent(data) {
     var itemName = data.param || "el"
     for (var i = 0, n = eachProxyPool.length; i < n; i++) {
@@ -209,6 +212,7 @@ function eachProxyAgent(data) {
     }
     return eachProxyFactory(itemName)
 }
+
 function eachProxyFactory(itemName) {
     var source = {
         $outer: {},
@@ -232,8 +236,9 @@ function eachProxyFactory(itemName) {
 }
 
 var withProxyPool = []
+
 function withProxyAgent() {
-    return  withProxyPool.pop() || withProxyFactory()
+    return withProxyPool.pop() || withProxyFactory()
 }
 
 function withProxyFactory() {
