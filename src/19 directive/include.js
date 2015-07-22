@@ -10,7 +10,7 @@ var templatePool = avalon.templateCache = {}
 function getTemplateNodes(binding, id, text) {
     var div = binding.templateCache && binding.templateCache[id]
     if (div) {
-        var dom = DOC.createDocumentFragment(),
+        var dom = avalonFragment.cloneNode(false),
             firstChild
         while (firstChild = div.firstChild) {
             dom.appendChild(firstChild)

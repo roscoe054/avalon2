@@ -73,16 +73,16 @@ var mergeTextNodes = IEVersion && window.MutationObserver ? function (elem) {
 } : 0
 var roneTime = /^\s*::/
 var rmsAttr = /ms-(\w+)-?(.*)/
-var priorityMap = {
-    "if": 10,
-    "repeat": 90,
-    "data": 100,
-    "widget": 110,
-    "each": 1400,
-    "with": 1500,
-    "duplex": 2000,
-    "on": 3000
-}
+// var priorityMap = {
+//     "if": 10,
+//     "repeat": 90,
+//     "data": 100,
+//     "widget": 110,
+//     "each": 1400,
+//     "with": 1500,
+//     "duplex": 2000,
+//     "on": 3000
+// }
 
 var events = oneObject("animationend,blur,change,input,click,dblclick,focus,keydown,keypress,keyup,mousedown,mouseenter,mouseleave,mousemove,mouseout,mouseover,mouseup,scan,scroll,submit")
 var obsoleteAttrs = oneObject("value,title,alt,checked,selected,disabled,readonly,enabled")
