@@ -202,6 +202,18 @@ function parseExpr(code, scopes, data) {
 
 //parseExpr的智能引用代理
 
+function stringifyExpr(code){
+  var hasExpr = rexpr.test(code) //比如ms-class="width{{w}}"的情况
+  if (!hasExpr) {
+     var array =   scanExpr(className)
+     return array.map(function (el) {
+        return el.type ? "(" + el.expr + ")" : quote(el.expr)
+     }).join(" + ")
+  }else{
+     return code
+  }
+}
+
 function parseExprProxy(code, scopes, data, tokens, noRegister) {
     if (Array.isArray(tokens)) {
         code = tokens.map(function (el) {

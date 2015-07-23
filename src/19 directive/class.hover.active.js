@@ -14,27 +14,20 @@ bindingHandlers["class"] = function(data, vmodels) {
         var colonIndex = noExpr.indexOf(":") //取得第一个冒号的位置
         if (colonIndex === -1) { // 比如 ms-class="aaa bbb ccc" 的情况
             var className = text
+            var rightExpr = true
         } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
             className = text.slice(0, colonIndex)
             rightExpr = text.slice(colonIndex + 1)
-            parseExpr(rightExpr, vmodels, data) //决定是添加还是删除
-            if (!data.evaluator) {
-                log("debug: ms-class '" + (rightExpr || "").trim() + "' 不存在于VM中")
-                return false
-            } else {
-                data._evaluator = data.evaluator
-                data._args = data.args
-            }
         }
-        var hasExpr = rexpr.test(className) //比如ms-class="width{{w}}"的情况
-        if (!hasExpr) {
-            data.immobileClass = className
-        }
-        parseExprProxy("", vmodels, data, (hasExpr ? scanExpr(className) : 0))
+
+      binding.expr =  "[" + stringifyExpr(className)+","+ rightExpr +"]"
+
     } else {
-        data.immobileClass = data.oldStyle = data.param
-        parseExprProxy(text, vmodels, data)
+      binding.expr = '['+ JSON.stringify(oldStyle)+",true]"
+    //    data.immobileClass = data.oldStyle = data.param
+      //  parseExprProxy(text, vmodels, data)
     }
+    binding.sync()
 }
 
 bindingExecutors["class"] = function(val, elem, data) {

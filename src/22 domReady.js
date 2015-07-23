@@ -2,14 +2,15 @@
  *                           DOMReady                               *
  **********************************************************************/
 
-var readyList = [], isReady
-var fireReady = function(fn) {
+var readyList = [],
+    isReady
+var fireReady = function (fn) {
     isReady = true
     if (innerRequire) {
         modules["domReady!"].state = 4
         innerRequire.checkDeps()
     }
-    while(fn = readyList.shift()){
+    while (fn = readyList.shift()) {
         fn(avalon)
     }
 }
@@ -28,22 +29,21 @@ if (DOC.readyState === "complete") {
 } else if (W3C) {
     DOC.addEventListener("DOMContentLoaded", fireReady)
 } else {
-    DOC.attachEvent("onreadystatechange", function() {
+    DOC.attachEvent("onreadystatechange", function () {
         if (DOC.readyState === "complete") {
             fireReady()
         }
     })
     try {
         var isTop = window.frameElement === null
-    } catch (e) {
-    }
-    if (root.doScroll && isTop && window.external) {//fix IE iframe BUG
+    } catch (e) {}
+    if (root.doScroll && isTop && window.external) { //fix IE iframe BUG
         doScrollCheck()
     }
 }
 avalon.bind(window, "load", fireReady)
 
-avalon.ready = function(fn) {
+avalon.ready = function (fn) {
     if (!isReady) {
         readyList.push(fn)
     } else {
@@ -55,6 +55,6 @@ avalon.config({
     loader: true
 })
 
-avalon.ready(function() {
+avalon.ready(function () {
     avalon.scan(DOC.body)
 })
