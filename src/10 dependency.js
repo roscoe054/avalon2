@@ -37,6 +37,7 @@ avalon.injectBinding = function (binding) {
                 injectDependency(array, binding)
             }
         })
+        binding.handler = binding.handler || directives[binding.type].update || noop
         try {
             binding.update = function () {
                 var value = valueFn.apply(0, binding.args)

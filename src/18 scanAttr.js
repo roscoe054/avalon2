@@ -23,12 +23,13 @@ function scanAttr(elem, vmodels, match) {
                             value = "!(" + value + ")"
                         }
                         param = type
+                        console.log(param+"=============")
                         type = "attr"
                         name = "ms-" + type + "-" + param
                         fixAttrs.push([attr.name, name, value])
                     }
                     msData[name] = value
-                    if (typeof bindingHandlers[type] === "function") {
+                    if (directives[type]) {
                         var newValue = value.replace(roneTime, "")
                         var oneTime = value !== newValue
                         var binding = {
@@ -40,7 +41,7 @@ function scanAttr(elem, vmodels, match) {
                             oneTime: oneTime,
                             uuid: name + "-" + getUid(elem),
                             //chrome与firefox下Number(param)得到的值不一样 #855
-                            priority: (priorityMap[type] || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
+                            priority: (directives[type].priority || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
                             var token = getToken(value)

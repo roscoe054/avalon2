@@ -45,10 +45,10 @@ function executeBindings(bindings, vmodels) {
     for (var i = 0, binding; binding = bindings[i++]; ) {
         binding.vmodels = vmodels
         directives[binding.type].init(binding)
-        parseExpr(binding.expr)
+        parseExpr(binding.expr, binding.vmodels, binding)
         if(binding.evaluator){
           avalon.injectBinding(binding)
-          if (data.element.nodeType === 1) { //移除数据绑定，防止被二次解析
+          if (binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
               //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
               binding.element.removeAttribute(binding.name)
           }
@@ -77,19 +77,9 @@ var mergeTextNodes = IEVersion && window.MutationObserver ? function (elem) {
 } : 0
 var roneTime = /^\s*::/
 var rmsAttr = /ms-(\w+)-?(.*)/
-// var priorityMap = {
-//     "if": 10,
-//     "repeat": 90,
-//     "data": 100,
-//     "widget": 110,
-//     "each": 1400,
-//     "with": 1500,
-//     "duplex": 2000,
-//     "on": 3000
-// }
 
 var events = oneObject("animationend,blur,change,input,click,dblclick,focus,keydown,keypress,keyup,mousedown,mouseenter,mouseleave,mousemove,mouseout,mouseover,mouseup,scan,scroll,submit")
-var obsoleteAttrs = oneObject("value,title,alt,checked,selected,disabled,readonly,enabled")
+var obsoleteAttrs = oneObject("value,title,alt,checked,selected,disabled,readonly,enabled,href,src")
 function bindingSorter(a, b) {
     return a.priority - b.priority
 }

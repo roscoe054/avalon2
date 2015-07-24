@@ -68,9 +68,9 @@ function scanText(textNode, vmodels, index) {
             var node = DOC.createTextNode(token.expr) //将文本转换为文本节点，并替换原来的文本节点
             if (token.type) {
                 token.expr = token.expr.replace(roneTime, function () {
-                    token.oneTime = true
-                    return ""
-                })
+                        token.oneTime = true
+                        return ""
+                    }) // jshint ignore:line
                 token.element = node
                 token.filters = token.filters.replace(rhasHtml, function () {
                         token.type = "html"

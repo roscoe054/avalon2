@@ -204,8 +204,11 @@ function parseExpr(code, scopes, data) {
 
 function stringifyExpr(code){
   var hasExpr = rexpr.test(code) //比如ms-class="width{{w}}"的情况
-  if (!hasExpr) {
-     var array =   scanExpr(className)
+  if (hasExpr) {
+     var array =  scanExpr(code)
+     if(array.length === 1 ){
+        return array[0].expr
+     }
      return array.map(function (el) {
         return el.type ? "(" + el.expr + ")" : quote(el.expr)
      }).join(" + ")

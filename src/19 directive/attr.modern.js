@@ -28,8 +28,10 @@ anomaly.replace(rword, function (name) {
 
 var attrDir = avalon.directive("attr", {
     init: function (binding) {
-        var text = binding.value.trim(),
+        var text = binding.expr.trim(),
             simple = true
+
+
         if (text.indexOf(openTag) > -1 && text.indexOf(closeTag) > 2) {
             simple = false
             if (rexpr.test(text) && RegExp.rightContext === "" && RegExp.leftContext === "") {
@@ -61,10 +63,7 @@ var attrDir = avalon.directive("attr", {
     update: function (val, elem, binding) {
         var attrName = binding.param
         if (attrName === "href" || attrName === "src") {
-            if (!root.hasAttribute && typeof val === "string" && (method === "src" || method === "href")) {
-                val = val.replace(/&amp;/g, "&") //处理IE67自动转义的问题
-            }
-            elem[method] = val
+            elem[attrName] = val
             if (window.chrome && elem.tagName === "EMBED") {
                 var parent = elem.parentNode //#525  chrome1-37下embed标签动态设置src不能发生请求
                 var comment = document.createComment("ms-src")

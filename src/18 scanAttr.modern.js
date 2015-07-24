@@ -28,7 +28,7 @@ function scanAttr(elem, vmodels, match) {
                         fixAttrs.push([attr.name, name, value])
                     }
                     msData[name] = value
-                    if (typeof bindingHandlers[type] === "function") {
+                      if (directives[type]) {
                         var newValue = value.replace(roneTime, "")
                         var oneTime = value !== newValue
                         var binding = {
@@ -38,7 +38,7 @@ function scanAttr(elem, vmodels, match) {
                             name: name,
                             expr: newValue,
                             oneTime: oneTime,
-                            priority: (priorityMap[type] || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
+                            priority: (directives[type].priority || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
                             var token = getToken(value)

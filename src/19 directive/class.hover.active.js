@@ -5,16 +5,16 @@ avalon.directive("class", {
     init: function (binding) {
         var oldStyle = binding.param,
             text = binding.value,
+            className,
             rightExpr
         if (!oldStyle || isFinite(oldStyle)) {
             binding.param = "" //去掉数字
-            var noExpr = text.replace(rexprg, function (a) {
-                return a.replace(/./g, "0")
-            })
-            var colonIndex = noExpr.indexOf(":") //取得第一个冒号的位置
+            var colonIndex = text.replace(rexprg, function (a) {
+                    return a.replace(/./g, "0")
+                }).indexOf(":") //取得第一个冒号的位置
             if (colonIndex === -1) { // 比如 ms-class="aaa bbb ccc" 的情况
-                var className = text
-                var rightExpr = true
+                className = text
+                rightExpr = true
             } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
                 className = text.slice(0, colonIndex)
                 rightExpr = text.slice(colonIndex + 1)

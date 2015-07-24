@@ -16,7 +16,7 @@ function scanAttr(elem, vmodels, match) {
                     param = type
                     type = "on"
                 }
-                if (typeof bindingHandlers[type] === "function") {
+                if (directives[type]) {
                     var binding = {
                         type: type,
                         param: param,
@@ -24,7 +24,7 @@ function scanAttr(elem, vmodels, match) {
                         name: name,
                         expr: value,
                         //chrome与firefox下Number(param)得到的值不一样 #855
-                        priority: (priorityMap[type] || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
+                        priority: (directives[type].priority || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                     }
                     if (type === "html" || type === "text") {
                         var token = getToken(value)

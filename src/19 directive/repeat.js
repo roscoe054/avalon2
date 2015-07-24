@@ -31,7 +31,7 @@ avalon.directive("repeat", {
         }
     },
     update: function (value, elem, binding) {
-        var now = new Date - 0
+        var now = new Date() - 0
         var xtype
         var parent = elem.parentNode
         var renderKeys = []
@@ -43,7 +43,7 @@ avalon.directive("repeat", {
             xtype = "object"
                 //    renderKeys = value
             for (var key in value) {
-                if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) == -1) {
+                if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) === -1) {
                     renderKeys.push(key)
                 }
             }
@@ -82,7 +82,7 @@ avalon.directive("repeat", {
         var transation = init && avalonFragment.cloneNode(false)
         var length = renderKeys.length
         var itemName = binding.param || "el"
-        for (var i = 0; i < length; i++) {
+        for (i = 0; i < length; i++) {
             var index = xtype === "object" ? renderKeys[i] : i
             var proxy = retain[index]
             if (!proxy) {
@@ -95,14 +95,14 @@ avalon.directive("repeat", {
             //重写proxy
             proxy.$index = i
             proxy.$outer = binding.$outer
-            if (xtype == "array") {
+            if (xtype === "array") {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
                 proxy[itemName] = value[index]
 
                 proxy.$remove = function () {
                     return value.removeAt(proxy.$index)
-                }
+                }// jshint ignore:line
             } else {
                 proxy.$key = index
                 proxy.$val = value[index]
@@ -114,12 +114,12 @@ avalon.directive("repeat", {
             fragments.forEach(function (fragment) {
                 scanNodeArray(fragment.nodes, fragment.vmodels)
                 fragment.nodes = fragment.vmodels = null
-            })
+            })// jshint ignore:line
 
         } else {
             //移除节点
             var keys = []
-            for (var key in retain) {
+            for (key in retain) {
                 if (retain[key] && retain[key] !== true) {
                     removeItem(retain[key].$anchor)
                     delete binding.cache[key] //这里应该回收代理VM
@@ -150,7 +150,7 @@ avalon.directive("repeat", {
 
             }
         }
-        avalon.log("耗时 ", new Date - now)
+        avalon.log("耗时 ", new Date() - now)
     }
 })
 
