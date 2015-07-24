@@ -28,18 +28,9 @@ anomaly.replace(rword, function (name) {
 
 var attrDir = avalon.directive("attr", {
     init: function (binding) {
-        var text = binding.expr.trim(),
-            simple = true
-
-
-        if (text.indexOf(openTag) > -1 && text.indexOf(closeTag) > 2) {
-            simple = false
-            if (rexpr.test(text) && RegExp.rightContext === "" && RegExp.leftContext === "") {
-                simple = true
-                text = RegExp.$1
-                binding.expr = text
-            }
-        }
+        //{{aaa}} --> aaa
+        //{{aaa}}/bbb.html --> (aaa) + "/bbb.html"
+        binding.expr = stringifyExpr(binding.expr.trim())
         if (binding.type === "include") {
             var elem = binding.element
             binding.includeRendered = getBindingCallback(elem, "data-include-rendered", binding.vmodels)

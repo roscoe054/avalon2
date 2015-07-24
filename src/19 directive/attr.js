@@ -54,7 +54,7 @@ var attrDir = avalon.directive("attr", {
     update: function (val, elem, binding) {
         var attrName = binding.param
         if (attrName === "href" || attrName === "src") {
-            if (!root.hasAttribute && typeof val === "string" && (attrName === "src" || attrName === "href")) {
+            if (typeof val === "string" && !root.hasAttribute) {
                 val = val.replace(/&amp;/g, "&") //处理IE67自动转义的问题
             }
             elem[attrName] = val

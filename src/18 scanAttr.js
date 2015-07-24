@@ -23,7 +23,6 @@ function scanAttr(elem, vmodels, match) {
                             value = "!(" + value + ")"
                         }
                         param = type
-                        console.log(param+"=============")
                         type = "attr"
                         name = "ms-" + type + "-" + param
                         fixAttrs.push([attr.name, name, value])

@@ -4,7 +4,7 @@ avalon.directive("class", {
 
     init: function (binding) {
         var oldStyle = binding.param,
-            text = binding.value,
+            text = binding.expr,
             className,
             rightExpr
         if (!oldStyle || isFinite(oldStyle)) {
@@ -17,18 +17,24 @@ avalon.directive("class", {
                 rightExpr = true
             } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
                 className = text.slice(0, colonIndex)
+
                 rightExpr = text.slice(colonIndex + 1)
             }
-
-            binding.expr = "[" + stringifyExpr(className) + "," + rightExpr + "]"
-
+            if (!rexpr.test(text)) {
+                className = JSON.stringify(className)
+            } else {
+                className = stringifyExpr(className)
+                console.log(className+"=============")
+            }
+            binding.expr = "[" + className + "," + rightExpr + "]"
+console.log(binding.expr)
         } else {
             binding.expr = '[' + JSON.stringify(oldStyle) + "," + binding.expr + "]"
-            binding.oldStyle = true
+            binding.oldStyle = oldStyle
         }
 
-
-        if (binding.type === "hover" || binding.type === "active") { //确保只绑定一次
+        var method = binding.type
+        if (method === "hover" || method === "active") { //确保只绑定一次
             if (!binding.hasBindEvent) {
                 var elem = binding.element
                 var $elem = avalon(elem)
@@ -63,14 +69,14 @@ avalon.directive("class", {
         var $elem = avalon(elem)
         binding.newClass = arr[0]
         binding.toggleClass = !!arr[1]
+        if (binding.oldClass && binding.newClass !== binding.oldClass) {
+            $elem.removeClass(binding.oldClass)
+        }
+        binding.oldClass = binding.newClass
         if (binding.type === "class") {
             if (binding.oldStyle) {
-                $elem.toggleClass(binding.param, !!val)
+                $elem.toggleClass(binding.oldStyle, !!arr[1])
             } else {
-                if (binding.oldClass && binding.newClass !== binding.oldClass) {
-                    $elem.removeClass(binding.oldClass)
-                }
-                binding.oldClass = binding.newClass
                 $elem.toggleClass(binding.newClass, binding.toggleClass)
             }
         }
