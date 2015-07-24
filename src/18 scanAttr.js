@@ -94,6 +94,7 @@ function scanAttr(elem, vmodels, match) {
     if (scanNode && !stopScan[elem.tagName] && rbind.test(elem.innerHTML.replace(rlt, "<").replace(rgt, ">"))) {
         mergeTextNodes && mergeTextNodes(elem)
         scanNodeList(elem, vmodels) //扫描子孙元素
+
     }
 }
 var rnoscanAttrBinding = /^if|widget|repeat$/

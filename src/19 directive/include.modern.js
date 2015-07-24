@@ -48,8 +48,8 @@ avalon.directive("include", {
             }
             binding.includeLastID = val
             while (true) {
-                var node = binding.startInclude.nextSibling
-                if (node && node !== binding.endInclude) {
+                var node = binding.start.nextSibling
+                if (node && node !== binding.end) {
                     target.removeChild(node)
                     if (lastTemplate)
                         lastTemplate.appendChild(node)

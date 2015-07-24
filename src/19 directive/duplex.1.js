@@ -10,8 +10,8 @@ var duplexBinding = avalon.directive("duplex", {
     if (elem.type === "radio" && binding.param === "") {
         binding.param = "checked"
     }
-    if (elem.msbinding) {
-        elem.msbinding["ms-duplex"] = binding.value
+    if (elem.msData) {
+        elem.msData["ms-duplex"] = binding.value
     }
     var hasCast
     binding.param.replace(/\w+/g, function (name) {

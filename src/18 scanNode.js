@@ -20,4 +20,5 @@ function scanNodeArray(nodes, vmodels) {
             break
         }
     }
+    
 }
