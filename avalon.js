@@ -2832,6 +2832,7 @@ function scanAttr(elem, vmodels, match) {
     if (scanNode && !stopScan[elem.tagName] && rbind.test(elem.innerHTML.replace(rlt, "<").replace(rgt, ">"))) {
         mergeTextNodes && mergeTextNodes(elem)
         scanNodeList(elem, vmodels) //扫描子孙元素
+
     }
 }
 var rnoscanAttrBinding = /^if|widget|repeat$/
@@ -2907,6 +2908,7 @@ function scanNodeArray(nodes, vmodels) {
             break
         }
     }
+    
 }
 
 function scanTag(elem, vmodels, node) {
@@ -3238,6 +3240,8 @@ avalon.directive("data", {
 var duplexBinding = avalon.directive("duplex", {
   priority: 2000,
   update: function(value, elem, binding){
+    console.log(value)
+    console.log(binding.evaluator.apply(null, binding.args))
     if (binding.bound)
         return
     binding.changed = getBindingCallback(elem, "binding-duplex-changed", binding.vmodels) || noop
@@ -3246,8 +3250,8 @@ var duplexBinding = avalon.directive("duplex", {
     if (elem.type === "radio" && binding.param === "") {
         binding.param = "checked"
     }
-    if (elem.msbinding) {
-        elem.msbinding["ms-duplex"] = binding.value
+    if (elem.msData) {
+        elem.msData["ms-duplex"] = binding.expr
     }
     var hasCast
     binding.param.replace(/\w+/g, function (name) {

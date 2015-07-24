@@ -2,6 +2,8 @@
 var duplexBinding = avalon.directive("duplex", {
   priority: 2000,
   update: function(value, elem, binding){
+    console.log(value)
+    console.log(binding.evaluator.apply(null, binding.args))
     if (binding.bound)
         return
     binding.changed = getBindingCallback(elem, "binding-duplex-changed", binding.vmodels) || noop
@@ -11,7 +13,7 @@ var duplexBinding = avalon.directive("duplex", {
         binding.param = "checked"
     }
     if (elem.msData) {
-        elem.msData["ms-duplex"] = binding.value
+        elem.msData["ms-duplex"] = binding.expr
     }
     var hasCast
     binding.param.replace(/\w+/g, function (name) {
