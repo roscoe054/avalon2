@@ -2,7 +2,7 @@ var rnoscripts = /<noscript.*?>(?:[\s\S]+?)<\/noscript>/img
 var rnoscriptText = /<noscript.*?>([\s\S]+?)<\/noscript>/im
 
 var getXHR = function () {
-    return new(window.XMLHttpRequest || ActiveXObject)("Microsoft.XMLHTTP") // jshint ignore:line
+    return new window.XMLHttpRequest() // jshint ignore:line
 }
 
 var templatePool = avalon.templateCache = {}
@@ -72,17 +72,12 @@ avalon.directive("include", {
                 templatePool[val].push(scanTemplate)
             } else {
                 var xhr = getXHR()
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4) {
-                        var s = xhr.status
-                        if (s >= 200 && s < 300 || s === 304 || s === 1223) {
-                            var text = xhr.responseText
-                            for (var f = 0, fn; fn = templatePool[val][f++];) {
-                                fn(text)
-                            }
-                            templatePool[val] = text
-                        }
+                xhr.onload = function () {
+                    var text = xhr.responseText
+                    for (var f = 0, fn; fn = templatePool[val][f++];) {
+                        fn(text)
                     }
+                    templatePool[val] = text
                 }
                 templatePool[val] = [scanTemplate]
                 xhr.open("GET", val, true)
@@ -97,24 +92,8 @@ avalon.directive("include", {
             //http://tjvantoll.com/2012/07/19/dom-element-references-as-global-variables/
             var el = val && val.nodeType === 1 ? val : DOC.getElementById(val)
             if (el) {
-                if (el.tagName === "NOSCRIPT" && !(el.innerHTML || el.fixIE78)) { //IE7-8 innerText,innerHTML都无法取得其内容，IE6能取得其innerHTML
-                    xhr = getXHR() //IE9-11与chrome的innerHTML会得到转义的内容，它们的innerText可以
-                    xhr.open("GET", location, false) //谢谢Nodejs 乱炖群 深圳-纯属虚构
-                    xhr.send(null)
-                        //http://bbs.csdn.net/topics/390349046?page=1#post-393492653
-                    var noscripts = DOC.getElementsByTagName("noscript")
-                    var array = (xhr.responseText || "").match(rnoscripts) || []
-                    var n = array.length
-                    for (var i = 0; i < n; i++) {
-                        var tag = noscripts[i]
-                        if (tag) { //IE6-8中noscript标签的innerHTML,innerText是只读的
-                            tag.style.display = "none" //http://haslayout.net/css/noscript-Ghost-Bug
-                            tag.fixIE78 = (array[i].match(rnoscriptText) || ["", "&nbsp;"])[1]
-                        }
-                    }
-                }
                 avalon.nextTick(function () {
-                    scanTemplate(el.fixIE78 || el.value || el.innerText || el.innerHTML)
+                    scanTemplate(el.value || el.innerText || el.innerHTML)
                 })
             }
         }
