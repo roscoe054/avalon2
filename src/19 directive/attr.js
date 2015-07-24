@@ -35,8 +35,8 @@ var attrDir = avalon.directive("attr", {
             var elem = binding.element
             binding.includeRendered = getBindingCallback(elem, "data-include-rendered", binding.vmodels)
             binding.includeLoaded = getBindingCallback(elem, "data-include-loaded", binding.vmodels)
-            var outer = binding.includeReplace = !!avalon(elem).binding("includeReplace")
-            if (avalon(elem).binding("includeCache")) {
+            var outer = binding.includeReplace = !!avalon(elem).data("includeReplace")
+            if (avalon(elem).data("includeCache")) {
                 binding.templateCache = {}
             }
             binding.start = DOC.createComment("ms-include")

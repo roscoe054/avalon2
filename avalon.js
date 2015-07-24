@@ -2761,7 +2761,6 @@ function scanAttr(elem, vmodels, match) {
                             value = "!(" + value + ")"
                         }
                         param = type
-                        console.log(param+"=============")
                         type = "attr"
                         name = "ms-" + type + "-" + param
                         fixAttrs.push([attr.name, name, value])
@@ -3063,8 +3062,8 @@ var attrDir = avalon.directive("attr", {
             var elem = binding.element
             binding.includeRendered = getBindingCallback(elem, "data-include-rendered", binding.vmodels)
             binding.includeLoaded = getBindingCallback(elem, "data-include-loaded", binding.vmodels)
-            var outer = binding.includeReplace = !!avalon(elem).binding("includeReplace")
-            if (avalon(elem).binding("includeCache")) {
+            var outer = binding.includeReplace = !!avalon(elem).data("includeReplace")
+            if (avalon(elem).data("includeCache")) {
                 binding.templateCache = {}
             }
             binding.start = DOC.createComment("ms-include")
@@ -3082,7 +3081,7 @@ var attrDir = avalon.directive("attr", {
     update: function (val, elem, binding) {
         var attrName = binding.param
         if (attrName === "href" || attrName === "src") {
-            if (!root.hasAttribute && typeof val === "string" && (attrName === "src" || attrName === "href")) {
+            if (typeof val === "string" && !root.hasAttribute) {
                 val = val.replace(/&amp;/g, "&") //处理IE67自动转义的问题
             }
             elem[attrName] = val
@@ -3135,7 +3134,7 @@ avalon.directive("class", {
 
     init: function (binding) {
         var oldStyle = binding.param,
-            text = binding.value,
+            text = binding.expr,
             className,
             rightExpr
         if (!oldStyle || isFinite(oldStyle)) {
@@ -3150,16 +3149,19 @@ avalon.directive("class", {
                 className = text.slice(0, colonIndex)
                 rightExpr = text.slice(colonIndex + 1)
             }
-
-            binding.expr = "[" + stringifyExpr(className) + "," + rightExpr + "]"
-
+            if (!rexpr.test(text)) {
+                className = JSON.stringify(className)
+            } else {
+                className = stringifyExpr(className)
+            }
+            binding.expr = "[" + className + "," + rightExpr + "]"
         } else {
             binding.expr = '[' + JSON.stringify(oldStyle) + "," + binding.expr + "]"
-            binding.oldStyle = true
+            binding.oldStyle = oldStyle
         }
 
-
-        if (binding.type === "hover" || binding.type === "active") { //确保只绑定一次
+        var method = binding.type
+        if (method === "hover" || method === "active") { //确保只绑定一次
             if (!binding.hasBindEvent) {
                 var elem = binding.element
                 var $elem = avalon(elem)
@@ -3194,14 +3196,14 @@ avalon.directive("class", {
         var $elem = avalon(elem)
         binding.newClass = arr[0]
         binding.toggleClass = !!arr[1]
+        if (binding.oldClass && binding.newClass !== binding.oldClass) {
+            $elem.removeClass(binding.oldClass)
+        }
+        binding.oldClass = binding.newClass
         if (binding.type === "class") {
             if (binding.oldStyle) {
-                $elem.toggleClass(binding.param, !!val)
+                $elem.toggleClass(binding.oldStyle, !!arr[1])
             } else {
-                if (binding.oldClass && binding.newClass !== binding.oldClass) {
-                    $elem.removeClass(binding.oldClass)
-                }
-                binding.oldClass = binding.newClass
                 $elem.toggleClass(binding.newClass, binding.toggleClass)
             }
         }
@@ -3221,6 +3223,7 @@ avalon.directive("css", {
 })
 
 avalon.directive("data", {
+    priority: 100,
     update: function (val, elem, binding) {
         var key = "data-" + binding.param
         if (val && typeof val === "object") {
@@ -3230,7 +3233,6 @@ avalon.directive("data", {
         }
     }
 })
-
 
 //双工绑定
 var duplexBinding = avalon.directive("duplex", {
@@ -3751,8 +3753,8 @@ avalon.directive("include", {
             }
             binding.includeLastID = val
             while (true) {
-                var node = binding.startInclude.nextSibling
-                if (node && node !== binding.endInclude) {
+                var node = binding.start.nextSibling
+                if (node && node !== binding.end) {
                     target.removeChild(node)
                     if (lastTemplate)
                         lastTemplate.appendChild(node)
