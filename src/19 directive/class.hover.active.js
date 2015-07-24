@@ -17,17 +17,14 @@ avalon.directive("class", {
                 rightExpr = true
             } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
                 className = text.slice(0, colonIndex)
-
                 rightExpr = text.slice(colonIndex + 1)
             }
             if (!rexpr.test(text)) {
                 className = JSON.stringify(className)
             } else {
                 className = stringifyExpr(className)
-                console.log(className+"=============")
             }
             binding.expr = "[" + className + "," + rightExpr + "]"
-console.log(binding.expr)
         } else {
             binding.expr = '[' + JSON.stringify(oldStyle) + "," + binding.expr + "]"
             binding.oldStyle = oldStyle

@@ -1,4 +1,5 @@
 avalon.directive("data", {
+    priority: 100,
     update: function (val, elem, binding) {
         var key = "data-" + binding.param
         if (val && typeof val === "object") {
@@ -8,4 +9,3 @@ avalon.directive("data", {
         }
     }
 })
-
