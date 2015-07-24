@@ -44,14 +44,15 @@ var getBindingCallback = function(elem, name, vmodels) {
 function executeBindings(bindings, vmodels) {
     for (var i = 0, binding; binding = bindings[i++]; ) {
         binding.vmodels = vmodels
-        if(directives[binding.type]){
-          binding.directive = directive
-          binding.directive()
-        }
-        if (binding.evaluator && binding.element && data.element.nodeType === 1) { //移除数据绑定，防止被二次解析
-            //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
-            binding.element.removeAttribute(binding.name)
-        }
+        directives[binding.type].init(binding)
+        parseExpr(binding.expr)
+        if(binding.evaluator){
+          avalon.injectBinding(binding)
+          if (data.element.nodeType === 1) { //移除数据绑定，防止被二次解析
+              //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
+              binding.element.removeAttribute(binding.name)
+          }
+       }
     }
     bindings.length = 0
 }

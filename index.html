@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
         <script>
-       
+
             var vm = avalon.define({
                 $id: "test",
                 aaa: 222,
@@ -20,15 +20,10 @@
                 },
                 array: [1,2,3,4]
             })
-         setTimeout(function(){
-          //   console.log("******************")
-             vm.ddd = {
-                 a: 3
-             }
-         }, 3000)
+
         </script>
     </head>
     <body ms-controller="test">
-     {{ddd.a}}
+     {{aaa}}
     </body>
 </html>

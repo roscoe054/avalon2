@@ -312,17 +312,14 @@ avalon.mix({
 var bindingHandlers = avalon.bindingHandlers = {}
 var bindingExecutors = avalon.bindingExecutors = {}
 
-avalon.directives = {}
-avalon.directive = function (name, defination) {
-    var dir = avalon.mix(defination, {
-        name: name,
-        init: noop,
-        update: noop
-    })
-    return avalon.directives[name] = dir
-}
-
-/*判定是否类数组，如节点集合，纯数组，arguments与拥有非负整数的length属性的纯JS对象*/
+var directives = avalon.directives = {}
+avalon.directive = function (name, obj) {
+        bindingHandlers[name] = obj.init = (obj.init || noop)
+        bindingExecutors[name] = obj.update = (obj.update || noop)
+        
+        return directives[name] = obj
+    }
+    /*判定是否类数组，如节点集合，纯数组，arguments与拥有非负整数的length属性的纯JS对象*/
 function isArrayLike(obj) {
     if (!obj)
         return false
