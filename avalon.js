@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.44 built in 2015.7.25
+ avalon.js 1.44 built in 2015.7.26
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1222,7 +1222,7 @@ function observeObject(source, $special, old) {
     })
     accessors["$model"] = $modelDescriptor
     /* jshint ignore:end */
-    
+
     $vmodel = Object.defineProperties($vmodel, accessors)
     if (!W3C) {
         /* jshint ignore:start */
@@ -1243,6 +1243,15 @@ function observeObject(source, $special, old) {
     hideProperty($vmodel, "$id", new Date() - 0)
     hideProperty($vmodel, "$deps", [])
 
+    for (var i in EventBus) {
+        if (W3C) {
+            hideProperty($vmodel, i, EventBus[i])
+        } else {
+            $vmodel[i] = EventBus[i].bind($vmodel)
+        }
+    }
+
+
     return $vmodel
 }
 function toJson(val) {
@@ -1256,7 +1265,7 @@ function toJson(val) {
         }
     } else if (val && typeof val === "object" && val.$active) {
         var obj = {}
-        for (var i in val) {
+        for (i in val) {
             if (val.hasOwnProperty(i)) {
                 obj[i] = toJson(val[i])
             }
@@ -1297,8 +1306,8 @@ function makeGetSet(key, value) {
             if (childOb) {
                 avalon.Array.remove(childOb.$deps, subs)
             }
+            var oldValue = value
             value = newVal
-            // add dep to new value
             //  console.log(newVal, childOb)
             var newChildOb = observe(newVal, childOb)
             if (newChildOb) {
@@ -1306,6 +1315,7 @@ function makeGetSet(key, value) {
                 value = newChildOb
             }
             notifySubscribers(subs)
+            this.$fire(key, value, oldValue)
         },
         enumerable: true,
         configurable: true
