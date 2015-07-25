@@ -29,8 +29,8 @@ avalon.define = function (id, factory) {
 var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$proxy,$active,$deps,$ownkeys").match(rword)
 var defineProperty = Object.defineProperty
 var canHideOwn = true
-    //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
-    //标准浏览器使用__defineGetter__, __defineSetter__实现
+//如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
+//标准浏览器使用__defineGetter__, __defineSetter__实现
 try {
     defineProperty({}, "_", {
         value: "x"
@@ -64,7 +64,7 @@ function observe(obj, old) {
                 return old
             }
             old.$active = false
-            console.log(keys, keys)
+
         }
         return observeObject(obj, null, old)
     }
@@ -100,59 +100,88 @@ function observeObject(source, $special, old) {
         delete source[name]
     })
     var names = Object.keys(source)
-        /* jshint ignore:start */
+    /* jshint ignore:start */
     names.forEach(function (name) {
-            var val = source[name]
+        var val = source[name]
 
-            if (isObservable(name, val, $skipArray, $special)) {
-                var valueType = avalon.type(val)
-                if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
-                    accessors[name] = {
-                        get: function () {
-                            return val.get.call(this)
-                        },
-                        set: function (a) {
-                            if (!stopRepeatAssign && typeof val.set === "function") {
-                                val.set.call(this, a)
-                            }
-                        },
-                        enumerable: true,
-                        configurable: true
-                    }
+        if (isObservable(name, val, $skipArray, $special)) {
+            var valueType = avalon.type(val)
+            if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
+                accessors[name] = {
+                    get: function () {
+                        return val.get.call(this)
+                    },
+                    set: function (a) {
+                        if (!stopRepeatAssign && typeof val.set === "function") {
+                            val.set.call(this, a)
+                        }
+                    },
+                    enumerable: true,
+                    configurable: true
+                }
+            } else {
+                if (oldAccessors[name]) {
+                    accessors[name] = oldAccessors[name]
+
                 } else {
-                    if (oldAccessors[name]) {
-                        accessors[name] = oldAccessors[name]
-
-                    } else {
-                        accessors[name] = makeGetSet(name, val)
-                    }
+                    accessors[name] = makeGetSet(name, val)
                 }
             }
-        })
-        /* jshint ignore:end */
-
+        }
+    })
+    accessors["$model"] = $modelDescriptor
+    /* jshint ignore:end */
+    
     $vmodel = Object.defineProperties($vmodel, accessors)
     if (!W3C) {
         /* jshint ignore:start */
         $vmodel.hasOwnProperty = function (name) {
-                return names.indexOf(name) !== -1
-            }
-            /* jshint ignore:end */
+            return names.indexOf(name) !== -1
+        }
+        /* jshint ignore:end */
     }
     names.forEach(function (name) {
-            if (oldAccessors[name] || !accessors[name]) {
-                $vmodel[name] = source[name]
-            }
-        })
-        // hideProperty($vmodel, "$ownkeys", names)
+        if (oldAccessors[name] || !accessors[name]) {
+            $vmodel[name] = source[name]
+        }
+    })
+    // hideProperty($vmodel, "$ownkeys", names)
     hideProperty($vmodel, "$active", true)
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "$events", {})
     hideProperty($vmodel, "$id", new Date() - 0)
     hideProperty($vmodel, "$deps", [])
+
     return $vmodel
 }
-
+function toJson(val) {
+    if (Array.isArray(val)) {
+        if (val.$active && val.$deps) {
+            var array = []
+            for (var i = 0; i < val.length; i++) {
+                array[i] = toJson(val[i])
+            }
+            return array
+        }
+    } else if (val && typeof val === "object" && val.$active) {
+        var obj = {}
+        for (var i in val) {
+            if (val.hasOwnProperty(i)) {
+                obj[i] = toJson(val[i])
+            }
+        }
+        return obj
+    }
+    return val
+}
+var $modelDescriptor = {
+    get: function () {
+        return toJson(this)
+    },
+    set: noop,
+    enumerable: false,
+    configurable: true
+}
 function makeGetSet(key, value) {
     var childOb = observe(value)
     var subs = []
@@ -178,8 +207,8 @@ function makeGetSet(key, value) {
                 avalon.Array.remove(childOb.$deps, subs)
             }
             value = newVal
-                // add dep to new value
-                //  console.log(newVal, childOb)
+            // add dep to new value
+            //  console.log(newVal, childOb)
             var newChildOb = observe(newVal, childOb)
             if (newChildOb) {
                 newChildOb.$deps.push(subs)

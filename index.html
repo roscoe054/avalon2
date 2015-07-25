@@ -7,45 +7,45 @@
         <script src="avalon.js"></script>
         <script>
 
-            var vm = avalon.define({
-                $id: "test",
-                aaa: 222,
-                bbb: 111,
-                ccc: 444,
-                toggle: false,
-                tmpl: "aa.html",
-                color:"red",
-                ddd: {
-                    a: 1
-                },
-                array: [1,2,3,4],
-                alertFn: function(e){
-                   alert(e.target.innerHTML)
-                }
-            })
-setTimeout(function(){
-  vm.toggle = true
-  setTimeout(function(){
-    vm.toggle = false
-  }, 3000)
-}, 3000)
+                    var vm = avalon.define({
+                    $id: "test",
+                            aaa: 222,
+                            bbb: 111,
+                            ccc: 444,
+                            toggle: false,
+                            tmpl: "aa.html",
+                            color:"red",
+                            ddd: {
+                            a: 1
+                            },
+                            array: [1, 2, 3, 4],
+                            alertFn: function(e){
+                            alert(e.target.innerHTML)
+                            }
+                    })
+                    setTimeout(function(){
+                    vm.toggle = true
+                            setTimeout(function(){
+                            vm.toggle = false
+                            }, 3000)
+                            }, 3000)
         </script>
         <style>
-        .xxx222{
+            .xxx222{
 
-          color:red;
-        }
+                color:red;
+            }
         </style>
     </head>
     <body ms-controller="test">
-      <script type=avalon id=aaa>
-      <strong>{{color}}</strong>
-      </script>
-     <input ms-duplex=aaa>{{aaa}}
-      <input ms-duplex-checked=toggle type=radio>{{toggle}}
-    <a ms-title="aaa" ms-visible="ccc" ms-href="{{aaa}}/bbb.html" ms-hover="xxx{{aaa}}">{{aaa}}</a>
-    <div ms-title="{{aaa}}" ms-data-xxx="color" ms-css-background="color" ms-visible="ccc" ms-class-aaa="bbb" ms-class-1="xxx:true" ms-class-2="a{{ccc}}:ccc">{{aaa}}</div>
-    <div ms-include="'aaa'" ms-click=alertFn></div>
-    <div ms-if=toggle>{{toggle}}</div>
+        <script type=avalon id=aaa>
+                    < strong > {{color}} < /strong>
+        </script>
+        <input ms-duplex=aaa>{{aaa}}
+        <input ms-duplex-checked=toggle type=radio>{{toggle}}
+        <a ms-title="aaa" ms-visible="ccc" ms-href="{{aaa}}/bbb.html" ms-hover="xxx{{aaa}}">{{aaa}}</a>
+        <div ms-title="{{aaa}}" ms-data-xxx="color" ms-css-background="color" ms-visible="ccc" ms-class-aaa="bbb" ms-class-1="xxx:true" ms-class-2="a{{ccc}}:ccc">{{aaa}}</div>
+        <div ms-include="'aaa'" ms-click=alertFn></div>
+        <div ms-if=toggle>{{toggle}}</div>
     </body>
 </html>
