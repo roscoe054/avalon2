@@ -192,7 +192,7 @@ function shimController(data, transation, proxy, fragments, init) {
 function getProxyVM(data) {
     var factory = data.xtype === "object" ? withProxyAgent : eachProxyAgent
     var proxy = factory(data)
-    var node = proxy.$anchor = proxy.$anchor || data.element.cloneNode(false)
+    var node = proxy.$anchor || (proxy.$anchor = data.element.cloneNode(false))
     node.nodeValue = data.signature
     proxy.$outer = data.$outer
     return proxy
@@ -216,7 +216,7 @@ function eachProxyFactory(itemName) {
     var source = {
         $outer: {},
         $index: 0,
-        $anchor: {},
+        $anchor: null,
         //-----
         $first: false,
         $last: false,
@@ -246,7 +246,7 @@ function withProxyFactory() {
         $val: "",
         $index: 0,
         $outer: {},
-        $anchor: {}
+        $anchor: null
     }, {
         $key: 1,
         $val: 1,
