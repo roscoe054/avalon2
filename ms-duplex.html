@@ -9,7 +9,8 @@
             avalon.define({
                 $id:"test",
                 aaa: false,
-                 h: [1, 4]
+                 h: [1, 4],
+                 d:"ccc"
             })
         </script>
     </head>
@@ -21,5 +22,11 @@
                             <input ms-duplex-number="h" type="checkbox" value="3" />
                             <input ms-duplex-number="h" type="checkbox" value="4" />
                             {{h}}</p>
+              <select ms-duplex="d">
+                  <option>aaa</option>
+                  <option>bbb</option>
+                  <option>ccc</option>
+                  <option>ddd</option>
+              </select>
     </body>
 </html>

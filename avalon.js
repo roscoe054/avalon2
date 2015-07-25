@@ -2631,18 +2631,11 @@ function stringifyExpr(code){
   }
 }
 
-function parseExprProxy(code, scopes, data, tokens, noRegister) {
-    if (Array.isArray(tokens)) {
-        code = tokens.map(function (el) {
-            return el.expr ? "(" + el.value + ")" : quote(el.value)
-        }).join(" + ")
-    }
+function parseExprProxy(code, scopes, data) {
+    avalon.log("parseExprProxy方法即将被废弃")
     parseExpr(code, scopes, data)
-    if (data.evaluator && !noRegister) {
+    if (data.evaluator ) {
         data.handler = bindingExecutors[data.handlerName || data.type]
-            //方便调试
-            //这里非常重要,我们通过判定视图刷新函数的element是否在DOM树决定
-            //将它移出订阅者列表
         avalon.injectBinding(data)
     }
 }
@@ -3878,8 +3871,8 @@ avalon.directive("repeat", {
         var elem = binding.element
         if (elem.nodeType === 1) {
             elem.removeAttribute(binding.name)
-            binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
-            binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
+            binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", binding.vmodels)
+            binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
             var signature = generateID(type)
             var start = DOC.createComment(signature + ":start")
             var end = DOC.createComment(signature + ":end")
@@ -3912,7 +3905,6 @@ avalon.directive("repeat", {
 
         } else if (value && typeof value === "object") {
             xtype = "object"
-                //    renderKeys = value
             for (var key in value) {
                 if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) === -1) {
                     renderKeys.push(key)
