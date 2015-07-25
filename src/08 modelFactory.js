@@ -74,8 +74,14 @@ function observeArray(array) {
     for (var i in newProto) {
         array[i] = newProto[i]
     }
-    array.$active = true
-    array.$deps = []
+    
+    hideProperty(array, "$active", true)
+    hideProperty(array, "$events", {})
+    hideProperty(array, "$deps", [])
+
+    for (var i in EventBus) {
+        $vmodel[i] = EventBus[i]
+    }
     observeItem(array)
     return array
 }
@@ -129,8 +135,10 @@ function observeObject(source, $special, old) {
             }
         }
     })
-    accessors["$model"] = $modelDescriptor
     /* jshint ignore:end */
+
+    accessors["$model"] = $modelDescriptor
+
 
     $vmodel = Object.defineProperties($vmodel, accessors)
     if (!W3C) {
@@ -145,11 +153,11 @@ function observeObject(source, $special, old) {
             $vmodel[name] = source[name]
         }
     })
-    // hideProperty($vmodel, "$ownkeys", names)
-    hideProperty($vmodel, "$active", true)
-    hideProperty($vmodel, "$accessors", accessors)
-    hideProperty($vmodel, "$events", {})
     hideProperty($vmodel, "$id", new Date() - 0)
+    hideProperty($vmodel, "$accessors", accessors)
+
+    hideProperty($vmodel, "$active", true)
+    hideProperty($vmodel, "$events", {})
     hideProperty($vmodel, "$deps", [])
 
     for (var i in EventBus) {
