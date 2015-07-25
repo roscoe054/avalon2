@@ -3288,7 +3288,6 @@ var duplexBinding = avalon.directive("duplex", {
         cpipe(null, binding, "init")
     },
     update: function (evaluator, elem, binding) {
-        console.log(evaluator + " ====")
         var tagName = elem.tagName
         var impl = duplexBinding[tagName]
         if(impl){
@@ -3305,8 +3304,8 @@ function fixNull(val) {
 }
 avalon.duplexHooks = {
     checked: {
-        get: function (val, data) {
-            return !data.element.oldValue
+        get: function (val, binding) {
+            return !binding.element.oldValue
         }
     },
     string: {
@@ -3322,12 +3321,12 @@ avalon.duplexHooks = {
         set: fixNull
     },
     number: {
-        get: function (val, data) {
+        get: function (val, binding) {
             var number = parseFloat(val)
             if (-val === -number) {
                 return number
             }
-            var arr = /strong|medium|weak/.exec(data.element.getAttribute("data-duplex-number")) || ["medium"]
+            var arr = /strong|medium|weak/.exec(binding.element.getAttribute("data-duplex-number")) || ["medium"]
             switch (arr[0]) {
                 case "strong":
                     return 0
@@ -3341,11 +3340,11 @@ avalon.duplexHooks = {
     }
 }
 
-function pipe(val, data, action, e) {
-    data.param.replace(/\w+/g, function (name) {
+function pipe(val, binding, action, e) {
+    binding.param.replace(/\w+/g, function (name) {
         var hook = avalon.duplexHooks[name]
         if (hook && typeof hook[action] === "function") {
-            val = hook[action](val, data)
+            val = hook[action](val, binding)
         }
     })
     return val
@@ -3413,14 +3412,14 @@ if (IEVersion) {
 }
 
 //处理radio, checkbox, text, textarea, password
-duplexBinding.INPUT = function(element, evaluator, data) {
+duplexBinding.INPUT = function(element, evaluator, binding) {
     var $type = element.type,
-        bound = data.bound,
+        bound = binding.bound,
         $elem = avalon(element),
         composing = false
 
         function callback(value) {
-            data.changed.call(this, value, data)
+            binding.changed.call(this, value, binding)
         }
 
         function compositionStart() {
@@ -3435,31 +3434,31 @@ duplexBinding.INPUT = function(element, evaluator, data) {
         if (composing) //处理中文输入法在minlengh下引发的BUG
             return
         var val = element.oldValue = element.value //防止递归调用形成死循环
-        var lastValue = data.pipe(val, data, "get")
+        var lastValue = binding.pipe(val, binding, "get")
         if ($elem.data("duplexObserve") !== false) {
             evaluator(lastValue)
             callback.call(element, lastValue)
         }
     }
     //当model变化时,它就会改变value的值
-    data.handler = function() {
-        var val = data.pipe(evaluator(), data, "set") + "" //fix #673
+    binding.handler = function() {
+        var val = binding.pipe(evaluator(), binding, "set") + "" //fix #673
         if (val !== element.oldValue) {
             element.value = val
         }
     }
-    if (data.isChecked || $type === "radio") {
+    if (binding.isChecked || $type === "radio") {
         var IE6 = IEVersion === 6
         updateVModel = function() {
             if ($elem.data("duplexObserve") !== false) {
-                var lastValue = data.pipe(element.value, data, "get")
+                var lastValue = binding.pipe(element.value, binding, "get")
                 evaluator(lastValue)
                 callback.call(element, lastValue)
             }
         }
-        data.handler = function() {
+        binding.handler = function() {
             var val = evaluator()
-            var checked = data.isChecked ? !! val : val + "" === element.value
+            var checked = binding.isChecked ? !! val : val + "" === element.value
             element.oldValue = checked
             if (IE6) {
                 setTimeout(function() {
@@ -3483,15 +3482,15 @@ duplexBinding.INPUT = function(element, evaluator, data) {
                     log("ms-duplex应用于checkbox上要对应一个数组")
                     array = [array]
                 }
-                var val = data.pipe(element.value, data, "get")
+                var val = binding.pipe(element.value, binding, "get")
                 avalon.Array[method](array, val)
                 callback.call(element, array)
             }
         }
 
-        data.handler = function() {
+        binding.handler = function() {
             var array = [].concat(evaluator()) //强制转换为数组
-            var val = data.pipe(element.value, data, "get")
+            var val = binding.pipe(element.value, binding, "get")
             console.log(val)
             element.checked = array.indexOf(val) > -1
         }
@@ -3560,12 +3559,12 @@ duplexBinding.INPUT = function(element, evaluator, data) {
     }
 
     element.oldValue = element.value
-    data.handler()
+    binding.handler()
     callback.call(element, element.value)
   
 }
 duplexBinding.TEXTAREA = duplexBinding.INPUT
-duplexBinding.SELECT = function(element, evaluator, data) {
+duplexBinding.SELECT = function(element, evaluator, binding) {
     var $elem = avalon(element)
 
         function updateVModel() {
@@ -3573,18 +3572,18 @@ duplexBinding.SELECT = function(element, evaluator, data) {
                 var val = $elem.val() //字符串或字符串数组
                 if (Array.isArray(val)) {
                     val = val.map(function(v) {
-                        return data.pipe(v, data, "get")
+                        return binding.pipe(v, binding, "get")
                     })
                 } else {
-                    val = data.pipe(val, data, "get")
+                    val = binding.pipe(val, binding, "get")
                 }
                 if (val + "" !== element.oldValue) {
                     evaluator(val)
                 }
-                data.changed.call(element, val, data)
+                binding.changed.call(element, val, binding)
             }
         }
-    data.handler = function() {
+    binding.handler = function() {
         var val = evaluator()
         val = val && val.$model || val
         if (Array.isArray(val)) {
@@ -3600,13 +3599,13 @@ duplexBinding.SELECT = function(element, evaluator, data) {
         val = Array.isArray(val) ? val.map(String) : val + ""
         if (val + "" !== element.oldValue) {
             $elem.val(val)
-            element.oldValue = val + ""
+            element.oldValue = val + "" 
         }
     }
-    data.bound("change", updateVModel)
+    binding.bound("change", updateVModel)
     element.msCallback = function() {
-        data.handler()
-        data.changed.call(element, evaluator(), data)
+        binding.handler()
+        binding.changed.call(element, evaluator(), binding)
     }
 }
 avalon.directive("html", {

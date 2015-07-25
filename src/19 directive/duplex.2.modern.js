@@ -1,12 +1,12 @@
 //处理radio, checkbox, text, textarea, password
-duplexBinding.INPUT = function(element, evaluator, data) {
+duplexBinding.INPUT = function(element, evaluator, binding) {
     var $type = element.type,
-        bound = data.bound,
+        bound = binding.bound,
         $elem = avalon(element),
         composing = false
 
         function callback(value) {
-            data.changed.call(this, value, data)
+            binding.changed.call(this, value, binding)
         }
 
         function compositionStart() {
@@ -22,54 +22,49 @@ duplexBinding.INPUT = function(element, evaluator, data) {
         if (composing) //处理中文输入法在minlengh下引发的BUG
             return
         var val = element.oldValue = element.value //防止递归调用形成死循环
-        var lastValue = data.pipe(val, data, "get")
+        var lastValue = binding.pipe(val, binding, "get")
         if ($elem.data("duplexObserve") !== false) {
             evaluator(lastValue)
             callback.call(element, lastValue)
-            if ($elem.data("duplex-focus")) {
-                avalon.nextTick(function() {
-                    element.focus()
-                })
-            }
         }
     }
     //当model变化时,它就会改变value的值
-    data.handler = function() {
-        var val = data.pipe(evaluator(), data, "set") + ""
+    binding.handler = function() {
+        var val = binding.pipe(evaluator(), binding, "set") + ""
         if (val !== element.oldValue) {
             element.value = val
         }
     }
-    if (data.isChecked || $type === "radio") {
+    if (binding.isChecked || $type === "radio") {
         updateVModel = function() {
             if ($elem.data("duplexObserve") !== false) {
-                var lastValue = data.pipe(element.value, data, "get")
+                var lastValue = binding.pipe(element.value, binding, "get")
                 evaluator(lastValue)
                 callback.call(element, lastValue)
             }
         }
-        data.handler = function() {
+        binding.handler = function() {
             var val = evaluator()
-            var checked = data.isChecked ? !! val : val + "" === element.value
+            var checked = binding.isChecked ? !! val : val + "" === element.value
             element.checked = element.oldValue = checked
         }
         bound("click", updateVModel)
     } else if ($type === "checkbox") {
         updateVModel = function() {
-            if ($elem.data("duplexObserve") !== false) {
+            if ($elem.binding("duplexObserve") !== false) {
                 var method = element.checked ? "ensure" : "remove"
                 var array = evaluator()
                 if (!Array.isArray(array)) {
                     log("ms-duplex应用于checkbox上要对应一个数组")
                     array = [array]
                 }
-                avalon.Array[method](array, data.pipe(element.value, data, "get"))
+                avalon.Array[method](array, binding.pipe(element.value, binding, "get"))
                 callback.call(element, array)
             }
         }
-        data.handler = function() {
+        binding.handler = function() {
             var array = [].concat(evaluator()) //强制转换为数组
-            element.checked = array.indexOf(data.pipe(element.value, data, "get")) > -1
+            element.checked = array.indexOf(binding.pipe(element.value, binding, "get")) > -1
         }
         bound("change", updateVModel)
     } else {
@@ -114,7 +109,7 @@ duplexBinding.INPUT = function(element, evaluator, data) {
     }
 
     element.oldValue = element.value
-    avalon.injectBinding(data)
+    avalon.injectBinding(binding)
     callback.call(element, element.value)
 }
 duplexBinding.TEXTAREA = duplexBinding.INPUT

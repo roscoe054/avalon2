@@ -18,7 +18,7 @@ var duplexBinding = avalon.directive("duplex", {
         binding.param.replace(/\w+/g, function(name) {
             if (rduplexType.test(elem.type) && rduplexParam.test(name)) {
                 name = "checked"
-                data.isChecked = true
+                binding.isChecked = true
             }
             if (casting[name]) {
                 hasCast = true
@@ -62,8 +62,8 @@ function fixNull(val) {
 }
 avalon.duplexHooks = {
     checked: {
-        get: function (val, data) {
-            return !data.element.oldValue
+        get: function (val, binding) {
+            return !binding.element.oldValue
         }
     },
     string: {
@@ -79,12 +79,12 @@ avalon.duplexHooks = {
         set: fixNull
     },
     number: {
-        get: function (val, data) {
+        get: function (val, binding) {
             var number = parseFloat(val)
             if (-val === -number) {
                 return number
             }
-            var arr = /strong|medium|weak/.exec(data.element.getAttribute("data-duplex-number")) || ["medium"]
+            var arr = /strong|medium|weak/.exec(binding.element.getAttribute("data-duplex-number")) || ["medium"]
             switch (arr[0]) {
                 case "strong":
                     return 0
@@ -98,11 +98,11 @@ avalon.duplexHooks = {
     }
 }
 
-function pipe(val, data, action, e) {
-    data.param.replace(/\w+/g, function (name) {
+function pipe(val, binding, action, e) {
+    binding.param.replace(/\w+/g, function (name) {
         var hook = avalon.duplexHooks[name]
         if (hook && typeof hook[action] === "function") {
-            val = hook[action](val, data)
+            val = hook[action](val, binding)
         }
     })
     return val
@@ -141,7 +141,6 @@ new function () { // jshint ignore:line
                 this.avalonSetter()
             }
         }
-        var inputProto = HTMLInputElement.prototype
         setters["INPUT"] = Object.getOwnPropertyDescriptor(aproto, "value").set
 
         Object.defineProperty(aproto, "value", {

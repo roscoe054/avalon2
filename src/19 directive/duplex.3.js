@@ -1,4 +1,4 @@
-duplexBinding.SELECT = function(element, evaluator, data) {
+duplexBinding.SELECT = function(element, evaluator, binding) {
     var $elem = avalon(element)
 
         function updateVModel() {
@@ -6,18 +6,18 @@ duplexBinding.SELECT = function(element, evaluator, data) {
                 var val = $elem.val() //字符串或字符串数组
                 if (Array.isArray(val)) {
                     val = val.map(function(v) {
-                        return data.pipe(v, data, "get")
+                        return binding.pipe(v, binding, "get")
                     })
                 } else {
-                    val = data.pipe(val, data, "get")
+                    val = binding.pipe(val, binding, "get")
                 }
                 if (val + "" !== element.oldValue) {
                     evaluator(val)
                 }
-                data.changed.call(element, val, data)
+                binding.changed.call(element, val, binding)
             }
         }
-    data.handler = function() {
+    binding.handler = function() {
         var val = evaluator()
         val = val && val.$model || val
         if (Array.isArray(val)) {
@@ -33,12 +33,12 @@ duplexBinding.SELECT = function(element, evaluator, data) {
         val = Array.isArray(val) ? val.map(String) : val + ""
         if (val + "" !== element.oldValue) {
             $elem.val(val)
-            element.oldValue = val + ""
+            element.oldValue = val + "" 
         }
     }
-    data.bound("change", updateVModel)
+    binding.bound("change", updateVModel)
     element.msCallback = function() {
-        data.handler()
-        data.changed.call(element, evaluator(), data)
+        binding.handler()
+        binding.changed.call(element, evaluator(), binding)
     }
 }

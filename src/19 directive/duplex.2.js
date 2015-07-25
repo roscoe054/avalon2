@@ -8,14 +8,14 @@ if (IEVersion) {
 }
 
 //处理radio, checkbox, text, textarea, password
-duplexBinding.INPUT = function(element, evaluator, data) {
+duplexBinding.INPUT = function(element, evaluator, binding) {
     var $type = element.type,
-        bound = data.bound,
+        bound = binding.bound,
         $elem = avalon(element),
         composing = false
 
         function callback(value) {
-            data.changed.call(this, value, data)
+            binding.changed.call(this, value, binding)
         }
 
         function compositionStart() {
@@ -30,31 +30,31 @@ duplexBinding.INPUT = function(element, evaluator, data) {
         if (composing) //处理中文输入法在minlengh下引发的BUG
             return
         var val = element.oldValue = element.value //防止递归调用形成死循环
-        var lastValue = data.pipe(val, data, "get")
+        var lastValue = binding.pipe(val, binding, "get")
         if ($elem.data("duplexObserve") !== false) {
             evaluator(lastValue)
             callback.call(element, lastValue)
         }
     }
     //当model变化时,它就会改变value的值
-    data.handler = function() {
-        var val = data.pipe(evaluator(), data, "set") + "" //fix #673
+    binding.handler = function() {
+        var val = binding.pipe(evaluator(), binding, "set") + "" //fix #673
         if (val !== element.oldValue) {
             element.value = val
         }
     }
-    if (data.isChecked || $type === "radio") {
+    if (binding.isChecked || $type === "radio") {
         var IE6 = IEVersion === 6
         updateVModel = function() {
             if ($elem.data("duplexObserve") !== false) {
-                var lastValue = data.pipe(element.value, data, "get")
+                var lastValue = binding.pipe(element.value, binding, "get")
                 evaluator(lastValue)
                 callback.call(element, lastValue)
             }
         }
-        data.handler = function() {
+        binding.handler = function() {
             var val = evaluator()
-            var checked = data.isChecked ? !! val : val + "" === element.value
+            var checked = binding.isChecked ? !! val : val + "" === element.value
             element.oldValue = checked
             if (IE6) {
                 setTimeout(function() {
@@ -78,15 +78,15 @@ duplexBinding.INPUT = function(element, evaluator, data) {
                     log("ms-duplex应用于checkbox上要对应一个数组")
                     array = [array]
                 }
-                var val = data.pipe(element.value, data, "get")
+                var val = binding.pipe(element.value, binding, "get")
                 avalon.Array[method](array, val)
                 callback.call(element, array)
             }
         }
 
-        data.handler = function() {
+        binding.handler = function() {
             var array = [].concat(evaluator()) //强制转换为数组
-            var val = data.pipe(element.value, data, "get")
+            var val = binding.pipe(element.value, binding, "get")
             console.log(val)
             element.checked = array.indexOf(val) > -1
         }
@@ -155,7 +155,7 @@ duplexBinding.INPUT = function(element, evaluator, data) {
     }
 
     element.oldValue = element.value
-    data.handler()
+    binding.handler()
     callback.call(element, element.value)
   
 }
