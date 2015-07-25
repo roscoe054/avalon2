@@ -34,11 +34,6 @@ duplexBinding.INPUT = function(element, evaluator, data) {
         if ($elem.data("duplexObserve") !== false) {
             evaluator(lastValue)
             callback.call(element, lastValue)
-            if ($elem.data("duplex-focus")) {
-                avalon.nextTick(function() {
-                    element.focus()
-                })
-            }
         }
     }
     //当model变化时,它就会改变value的值
@@ -92,6 +87,7 @@ duplexBinding.INPUT = function(element, evaluator, data) {
         data.handler = function() {
             var array = [].concat(evaluator()) //强制转换为数组
             var val = data.pipe(element.value, data, "get")
+            console.log(val)
             element.checked = array.indexOf(val) > -1
         }
         bound(W3C ? "change" : "click", updateVModel)

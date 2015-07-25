@@ -1,68 +1,71 @@
 //双工绑定
+var rduplexType = /^(?:checkbox|radio)$/
+var rduplexParam = /^(?:radio|checked)$/
 var duplexBinding = avalon.directive("duplex", {
-  priority: 2000,
-  update: function(value, elem, binding){
-    console.log(value)
-    console.log(binding.evaluator.apply(null, binding.args))
-    if (binding.bound)
-        return
-    binding.changed = getBindingCallback(elem, "binding-duplex-changed", binding.vmodels) || noop
-    var params = []
-    var casting = oneObject("string,number,boolean,checked")
-    if (elem.type === "radio" && binding.param === "") {
-        binding.param = "checked"
-    }
-    if (elem.msData) {
-        elem.msData["ms-duplex"] = binding.expr
-    }
-    var hasCast
-    binding.param.replace(/\w+/g, function (name) {
-        if (/^(checkbox|radio)$/.test(elem.type) && /^(radio|checked)$/.test(name)) {
-            if (name === "radio")
-                log("ms-duplex-radio已经更名为ms-duplex-checked")
-            name = "checked"
-            binding.isChecked = true
+    priority: 2000,
+    init: function (binding, hasCast) {
+        var elem = binding.element
+        var vmodels = binding.vmodels
+        binding.changed = getBindingCallback(elem, "binding-duplex-changed", vmodels) || noop
+        var params = []
+        var casting = oneObject("string,number,boolean,checked")
+        if (elem.type === "radio" && binding.param === "") {
+            binding.param = "checked"
         }
-        if (name === "bool") {
-            name = "boolean"
-            log("ms-duplex-bool已经更名为ms-duplex-boolean")
-        } else if (name === "text") {
-            name = "string"
-            log("ms-duplex-text已经更名为ms-duplex-string")
+        if (elem.msData) {
+            elem.msData["ms-duplex"] = binding.expr
         }
-        if (casting[name]) {
-            hasCast = true
+        binding.param.replace(/\w+/g, function (name) {
+            if (rduplexType.test(elem.type) && rduplexParam.test(name)) {
+                if (name === "radio")
+                    log("ms-duplex-radio已经更名为ms-duplex-checked")
+                name = "checked"
+                binding.isChecked = true
+            }
+            if (name === "bool") {
+                name = "boolean"
+                log("ms-duplex-bool已经更名为ms-duplex-boolean")
+            } else if (name === "text") {
+                name = "string"
+                log("ms-duplex-text已经更名为ms-duplex-string")
+            }
+            if (casting[name]) {
+                hasCast = true
+            }
+            avalon.Array.ensure(params, name)
+        })
+        if (!hasCast) {
+            params.push("string")
         }
-        avalon.Array.ensure(params, name)
-    })
-    if (!hasCast) {
-        params.push("string")
+        binding.param = params.join("-")
+        binding.bound = function (type, callback) {
+            if (elem.addEventListener) {
+                elem.addEventListener(type, callback, false)
+            } else {
+                elem.attachEvent("on" + type, callback)
+            }
+            var old = binding.rollback
+            binding.rollback = function () {
+                elem.avalonSetter = null
+                avalon.unbind(elem, type, callback)
+                old && old()
+            }
+        }
+        for (var i in avalon.vmodels) {
+            var v = avalon.vmodels[i]
+            //  v.$fire("avalon-ms-duplex-init", binding)
+        }
+        var cpipe = binding.pipe || (binding.pipe = pipe)
+        cpipe(null, binding, "init")
+    },
+    update: function (evaluator, elem, binding) {
+        console.log(evaluator + " ====")
+        var tagName = elem.tagName
+        var impl = duplexBinding[tagName]
+        if(impl){
+            impl(elem, evaluator, binding)
+        }
     }
-    binding.param = params.join("-")
-    binding.bound = function (type, callback) {
-        if (elem.addEventListener) {
-            elem.addEventListener(type, callback, false)
-        } else {
-            elem.attachEvent("on" + type, callback)
-        }
-        var old = binding.rollback
-        binding.rollback = function () {
-            elem.avalonSetter = null
-            avalon.unbind(elem, type, callback)
-            old && old()
-        }
-    }
-    for (var i in avalon.vmodels) {
-        var v = avalon.vmodels[i]
-      //  v.$fire("avalon-ms-duplex-init", binding)
-    }
-    var cpipe = binding.pipe || (binding.pipe = pipe)
-    cpipe(null, binding, "init")
-    var tagName = elem.tagName
-    duplexBinding[tagName] && duplexBinding[tagName](elem, binding.evaluator.apply(null, binding.args), binding)
-
-
-  }
 })
 
 

@@ -43,5 +43,6 @@
   },
   "commitplease": {
     "components": []
-  }
+  },
+  "license":"MIT"
 }
