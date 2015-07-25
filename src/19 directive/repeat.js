@@ -7,8 +7,8 @@ avalon.directive("repeat", {
         var elem = binding.element
         if (elem.nodeType === 1) {
             elem.removeAttribute(binding.name)
-            binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", vmodels)
-            binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", vmodels)
+            binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", binding.vmodels)
+            binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
             var signature = generateID(type)
             var start = DOC.createComment(signature + ":start")
             var end = DOC.createComment(signature + ":end")
@@ -41,7 +41,6 @@ avalon.directive("repeat", {
 
         } else if (value && typeof value === "object") {
             xtype = "object"
-                //    renderKeys = value
             for (var key in value) {
                 if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) === -1) {
                     renderKeys.push(key)
