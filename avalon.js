@@ -1165,8 +1165,20 @@ function observeArray(array) {
     for (var i in newProto) {
         array[i] = newProto[i]
     }
-    array.$active = true
-    array.$deps = []
+
+    hideProperty(array, "$active", true)
+    hideProperty(array, "$events", {})
+    hideProperty(array, "$deps", [])
+    array._ = observeObject({
+        length: array.length
+    })
+    array._.$watch("length", function (a, b) {
+        array.$fire("length", a, b)
+    })
+    array.$model = []
+    for (i in EventBus) {
+        array[i] = EventBus[i]
+    }
     observeItem(array)
     return array
 }
@@ -1220,8 +1232,10 @@ function observeObject(source, $special, old) {
             }
         }
     })
-    accessors["$model"] = $modelDescriptor
     /* jshint ignore:end */
+
+    accessors["$model"] = $modelDescriptor
+
 
     $vmodel = Object.defineProperties($vmodel, accessors)
     if (!W3C) {
@@ -1236,11 +1250,10 @@ function observeObject(source, $special, old) {
             $vmodel[name] = source[name]
         }
     })
-    // hideProperty($vmodel, "$ownkeys", names)
-    hideProperty($vmodel, "$active", true)
     hideProperty($vmodel, "$accessors", accessors)
+
+    hideProperty($vmodel, "$active", true)
     hideProperty($vmodel, "$events", {})
-    hideProperty($vmodel, "$id", new Date() - 0)
     hideProperty($vmodel, "$deps", [])
 
     for (var i in EventBus) {
@@ -1308,7 +1321,7 @@ function makeGetSet(key, value) {
             }
             var oldValue = value
             value = newVal
-            //  console.log(newVal, childOb)
+            
             var newChildOb = observe(newVal, childOb)
             if (newChildOb) {
                 newChildOb.$deps.push(subs)
@@ -1534,6 +1547,7 @@ var newProto = {
             _splice.apply(this, 0, this.length)
         }
         this.notify()
+        this._.length = this.length
     },
     clear: function () {
         return this.removeAll()
@@ -1563,9 +1577,11 @@ arrayMethods.forEach(function (method) {
                 inserted = args.slice(2)
                 break
         }
+
         if (inserted)
             observeItem(inserted)
         this.notify()
+        this._.length = this.length
         return result
     }
 })
@@ -3336,8 +3352,6 @@ var duplexBinding = avalon.directive("duplex", {
 })
 
 
-//不存在 bindingExecutors.duplex
-
 function fixNull(val) {
     return val == null ? "" : val
 }
@@ -3969,7 +3983,7 @@ avalon.directive("repeat", {
                 check0 = "$first"
                 check1 = "$last"
             }
-            for (var i = 0, v; v = binding.vmodels[i++];) {
+            for (var i = 0, v; v = binding.vmodels[i++]; ) {
                 if (v.hasOwnProperty(check0) && v.hasOwnProperty(check1)) {
                     binding.$outer = v
                     break
@@ -4000,10 +4014,11 @@ avalon.directive("repeat", {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
                 proxy[itemName] = value[index]
-
+                /* jshint ignore:start */
                 proxy.$remove = function () {
                     return value.removeAt(proxy.$index)
-                }// jshint ignore:line
+                }
+                /* jshint ignore:end */
             } else {
                 proxy.$key = index
                 proxy.$val = value[index]

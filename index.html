@@ -23,6 +23,9 @@
                             alert(e.target.innerHTML)
                             }
                     })
+                    vm.$watch("toggle", function(a, b){
+                        console.log(a, b)
+                    })
                     setTimeout(function(){
                     vm.toggle = true
                             setTimeout(function(){

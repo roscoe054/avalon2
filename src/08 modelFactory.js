@@ -74,13 +74,19 @@ function observeArray(array) {
     for (var i in newProto) {
         array[i] = newProto[i]
     }
-    
+
     hideProperty(array, "$active", true)
     hideProperty(array, "$events", {})
     hideProperty(array, "$deps", [])
-
-    for (var i in EventBus) {
-        $vmodel[i] = EventBus[i]
+    array._ = observeObject({
+        length: array.length
+    })
+    array._.$watch("length", function (a, b) {
+        array.$fire("length", a, b)
+    })
+    array.$model = []
+    for (i in EventBus) {
+        array[i] = EventBus[i]
     }
     observeItem(array)
     return array
@@ -153,7 +159,6 @@ function observeObject(source, $special, old) {
             $vmodel[name] = source[name]
         }
     })
-    hideProperty($vmodel, "$id", new Date() - 0)
     hideProperty($vmodel, "$accessors", accessors)
 
     hideProperty($vmodel, "$active", true)
@@ -225,7 +230,7 @@ function makeGetSet(key, value) {
             }
             var oldValue = value
             value = newVal
-            //  console.log(newVal, childOb)
+            
             var newChildOb = observe(newVal, childOb)
             if (newChildOb) {
                 newChildOb.$deps.push(subs)

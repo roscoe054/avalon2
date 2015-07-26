@@ -67,7 +67,7 @@ avalon.directive("repeat", {
                 check0 = "$first"
                 check1 = "$last"
             }
-            for (var i = 0, v; v = binding.vmodels[i++];) {
+            for (var i = 0, v; v = binding.vmodels[i++]; ) {
                 if (v.hasOwnProperty(check0) && v.hasOwnProperty(check1)) {
                     binding.$outer = v
                     break
@@ -98,10 +98,11 @@ avalon.directive("repeat", {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
                 proxy[itemName] = value[index]
-
+                /* jshint ignore:start */
                 proxy.$remove = function () {
                     return value.removeAt(proxy.$index)
-                }// jshint ignore:line
+                }
+                /* jshint ignore:end */
             } else {
                 proxy.$key = index
                 proxy.$val = value[index]

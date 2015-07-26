@@ -17,6 +17,9 @@
                     vm.array.reverse()
                 }
             })
+            vm.array.$watch("length", function(a,b){
+                console.log(a,b)
+            })
             setTimeout(function () {
                 console.log("================")
                 vm.array.push(1, 2)

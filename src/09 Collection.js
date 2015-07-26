@@ -39,7 +39,6 @@ var newProto = {
         return  []
     },
     removeAll: function (all) { //移除N个元素
-        var oldLength = this.length
         if (Array.isArray(all)) {
             for (var i = this.length - 1; i >= 0; i--) {
                 if (all.indexOf(this[i]) !== -1) {
@@ -57,9 +56,7 @@ var newProto = {
             _splice.apply(this, 0, this.length)
         }
         this.notify()
-        if (oldLength !== this.length) {
-            this.$fire("length", this.length, oldLength)
-        }
+        this._.length = this.length
     },
     clear: function () {
         return this.removeAll()
@@ -71,7 +68,6 @@ arrayMethods.forEach(function (method) {
     newProto[method] = function () {
         // avoid leaking arguments:
         // http://jsperf.com/closure-with-arguments
-        var oldLength = this.length
         var i = arguments.length
         var args = new Array(i)
         while (i--) {
@@ -94,9 +90,7 @@ arrayMethods.forEach(function (method) {
         if (inserted)
             observeItem(inserted)
         this.notify()
-        if (oldLength !== this.length) {
-            this.$fire("length", this.length, oldLength)
-        }
+        this._.length = this.length
         return result
     }
 })

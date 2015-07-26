@@ -68,8 +68,6 @@ var duplexBinding = avalon.directive("duplex", {
 })
 
 
-//不存在 bindingExecutors.duplex
-
 function fixNull(val) {
     return val == null ? "" : val
 }
