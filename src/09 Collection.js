@@ -38,7 +38,7 @@ var newProto = {
         }
         return  []
     },
-     size: function () { //取得数组长度，这个函数可以同步视图，length不能
+    size: function () { //取得数组长度，这个函数可以同步视图，length不能
         return this._.length
     },
     removeAll: function (all) { //移除N个元素
@@ -57,6 +57,9 @@ var newProto = {
             }
         } else {
             _splice.apply(this, 0, this.length)
+        }
+        if (!W3C) {
+            this.$model = toJson(this)
         }
         this.notify()
         this._.length = this.length
@@ -92,6 +95,9 @@ arrayMethods.forEach(function (method) {
 
         if (inserted)
             observeItem(inserted)
+        if (!W3C) {
+            this.$model = toJson(this)
+        }
         this.notify()
         this._.length = this.length
         return result

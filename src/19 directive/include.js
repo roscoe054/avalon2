@@ -2,7 +2,7 @@ var rnoscripts = /<noscript.*?>(?:[\s\S]+?)<\/noscript>/img
 var rnoscriptText = /<noscript.*?>([\s\S]+?)<\/noscript>/im
 
 var getXHR = function () {
-    return new(window.XMLHttpRequest || ActiveXObject)("Microsoft.XMLHTTP") // jshint ignore:line
+    return new (window.XMLHttpRequest || ActiveXObject)("Microsoft.XMLHTTP") // jshint ignore:line
 }
 
 var templatePool = avalon.templateCache = {}
@@ -11,7 +11,7 @@ function getTemplateNodes(binding, id, text) {
     var div = binding.templateCache && binding.templateCache[id]
     if (div) {
         var dom = avalonFragment.cloneNode(false),
-            firstChild
+                firstChild
         while (firstChild = div.firstChild) {
             dom.appendChild(firstChild)
         }
@@ -21,7 +21,9 @@ function getTemplateNodes(binding, id, text) {
 }
 avalon.directive("include", {
     init: directives.attr.init,
-    update: function (val, elem, binding) {
+    update: function (val) {
+        var binding = this
+        var elem = this.element
         var vmodels = binding.vmodels
         var rendered = binding.includeRendered
         var loaded = binding.includeLoaded
@@ -77,7 +79,7 @@ avalon.directive("include", {
                         var s = xhr.status
                         if (s >= 200 && s < 300 || s === 304 || s === 1223) {
                             var text = xhr.responseText
-                            for (var f = 0, fn; fn = templatePool[val][f++];) {
+                            for (var f = 0, fn; fn = templatePool[val][f++]; ) {
                                 fn(text)
                             }
                             templatePool[val] = text
@@ -101,7 +103,7 @@ avalon.directive("include", {
                     xhr = getXHR() //IE9-11与chrome的innerHTML会得到转义的内容，它们的innerText可以
                     xhr.open("GET", location, false) //谢谢Nodejs 乱炖群 深圳-纯属虚构
                     xhr.send(null)
-                        //http://bbs.csdn.net/topics/390349046?page=1#post-393492653
+                    //http://bbs.csdn.net/topics/390349046?page=1#post-393492653
                     var noscripts = DOC.getElementsByTagName("noscript")
                     var array = (xhr.responseText || "").match(rnoscripts) || []
                     var n = array.length

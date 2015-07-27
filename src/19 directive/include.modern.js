@@ -21,7 +21,9 @@ function getTemplateNodes(binding, id, text) {
 }
 avalon.directive("include", {
     init: directives.attr.init,
-    update: function (val, elem, binding) {
+    update: function (val) {
+        var binding = this
+        var elem = this.element
         var vmodels = binding.vmodels
         var rendered = binding.includeRendered
         var loaded = binding.includeLoaded

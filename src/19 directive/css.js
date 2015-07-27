@@ -1,6 +1,6 @@
 avalon.directive("css", {
     init: directives.attr.init,
-    update: function (val, elem, binding) {
-        avalon(elem).css(binding.param, val)
+    update: function (val) {
+        avalon(this.element).css(this.param, val)
     }
 })

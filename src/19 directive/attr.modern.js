@@ -51,8 +51,9 @@ var attrDir = avalon.directive("attr", {
             }
         }
     },
-    update: function (val, elem, binding) {
-        var attrName = binding.param
+    update: function (val) {
+        var elem = this.element
+        var attrName = this.param
         if (attrName === "href" || attrName === "src") {
             elem[attrName] = val
             if (window.chrome && elem.tagName === "EMBED") {

@@ -18,7 +18,8 @@ function parseDisplay(nodeName, val) {
 avalon.parseDisplay = parseDisplay
 
 avalon.directive("visible", {
-    update: function (val, elem) {
+    update: function (val) {
+        var elem = this.element
         if (val) {
             elem.style.display = ""
             if (avalon(elem).css("display") === "none") {

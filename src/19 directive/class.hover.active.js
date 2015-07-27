@@ -62,8 +62,9 @@ avalon.directive("class", {
         }
 
     },
-    update: function (arr, elem, binding) {
-        var $elem = avalon(elem)
+    update: function (arr) {
+        var binding = this
+        var $elem = avalon(this.element)
         binding.newClass = arr[0]
         binding.toggleClass = !!arr[1]
         if (binding.oldClass && binding.newClass !== binding.oldClass) {

@@ -1,6 +1,8 @@
 avalon.directive("if", {
     priority: 10,
-    update: function (val, elem, binding) {
+    update: function (val) {
+        var binding = this
+        var elem = this.element
         try {
             if (!elem.parentNode) return
         } catch (e) {

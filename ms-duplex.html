@@ -6,27 +6,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
         <script>
-            avalon.define({
-                $id:"test",
+            var vm = avalon.define({
+                $id: "test",
                 aaa: false,
-                 h: [1, 4],
-                 d:"ccc"
+                h: [1, 4],
+                htext: "1,4",
+                d: "ccc"
+            })
+            vm.h.$watch("length", function () {
+                vm.htext = vm.h.join(",")
             })
         </script>
     </head>
     <body ms-controller="test">
-        <div><input ms-duplex-checked="aaa" type="radio"/></div>
-              <p>ms-duplex-number
-                            <input ms-duplex-number="h" type="checkbox" value="1" />
-                            <input ms-duplex-number="h" type="checkbox" value="2" />
-                            <input ms-duplex-number="h" type="checkbox" value="3" />
-                            <input ms-duplex-number="h" type="checkbox" value="4" />
-                            {{h}}</p>
-              <select ms-duplex="d">
-                  <option>aaa</option>
-                  <option>bbb</option>
-                  <option>ccc</option>
-                  <option>ddd</option>
-              </select>
+        <div><input ms-duplex-checked="aaa" type="radio"/>{{aaa}}</div>
+        <p>ms-duplex-number
+            <input ms-duplex-number="h" type="checkbox" value="1" />
+            <input ms-duplex-number="h" type="checkbox" value="2" />
+            <input ms-duplex-number="h" type="checkbox" value="3" />
+            <input ms-duplex-number="h" type="checkbox" value="4" />
+            {{htext}}</p>
+        <select ms-duplex="d">
+            <option>aaa</option>
+            <option>bbb</option>
+            <option>ccc</option>
+            <option>ddd</option>
+        </select>
+        {{d}}
     </body>
 </html>

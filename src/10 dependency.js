@@ -3,26 +3,26 @@
  **********************************************************************/
 //检测两个对象间的依赖关系
 var dependencyDetection = (function () {
-        var outerFrames = []
-        var currentFrame
-        return {
-            begin: function (binding) {
-                //accessorObject为一个拥有callback的对象
-                outerFrames.push(currentFrame)
-                currentFrame = binding
-            },
-            end: function () {
-                currentFrame = outerFrames.pop()
-            },
-            collectDependency: function (array) {
-                if (currentFrame) {
-                    //被dependencyDetection.begin调用
-                    currentFrame.callback(array)
-                }
+    var outerFrames = []
+    var currentFrame
+    return {
+        begin: function (binding) {
+            //accessorObject为一个拥有callback的对象
+            outerFrames.push(currentFrame)
+            currentFrame = binding
+        },
+        end: function () {
+            currentFrame = outerFrames.pop()
+        },
+        collectDependency: function (array) {
+            if (currentFrame) {
+                //被dependencyDetection.begin调用
+                currentFrame.callback(array)
             }
-        };
-    })()
-    //将绑定对象注入到其依赖项的订阅数组中
+        }
+    };
+})()
+//将绑定对象注入到其依赖项的订阅数组中
 var ronduplex = /^on$/
 
 function returnRandom() {
@@ -43,17 +43,17 @@ avalon.injectBinding = function (binding) {
                 if (binding.xtype && value === void 0) {
                     delete binding.evaluator
                 }
-                if ( binding.oldValue !== value) {
-                    binding.handler(value, binding.element, binding)
+                if (binding.oldValue !== value) {
+                    binding.handler.call(binding, value, binding.oldValue)
                     binding.oldValue = binding.xtype === "array" ? value.concat() :
-                        binding.xtype === "object" ? avalon.mix({}, value) :
-                        value
+                            binding.xtype === "object" ? avalon.mix({}, value) :
+                            value
                 }
             }
             binding.update()
         } catch (e) {
             log(e)
-                //  log("warning:exception throwed in [avalon.injectBinding] " + e)
+            //  log("warning:exception throwed in [avalon.injectBinding] " + e)
             delete binding.evaluator
             delete binding.update
             var node = binding.element
@@ -70,7 +70,7 @@ avalon.injectBinding = function (binding) {
 function injectDependency(list, binding) {
     if (binding.oneTime)
         return
-    if (list) {
-        avalon.Array.ensure(list, binding)
+    if (list && avalon.Array.ensure(list, binding) && binding.element) {
+        injectDisposeQueue(binding, list)
     }
 }

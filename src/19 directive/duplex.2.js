@@ -87,7 +87,6 @@ duplexBinding.INPUT = function(element, evaluator, binding) {
         binding.handler = function() {
             var array = [].concat(evaluator()) //强制转换为数组
             var val = binding.pipe(element.value, binding, "get")
-            console.log(val)
             element.checked = array.indexOf(val) > -1
         }
         bound(W3C ? "change" : "click", updateVModel)

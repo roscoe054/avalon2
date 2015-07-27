@@ -9,7 +9,7 @@ var uuid2Node = {}
 function getUid(obj, makeID) { //IE9+,标准浏览器
     if (!obj.uuid && !makeID) {
         obj.uuid = ++disposeCount
-        uuid2Node[obj.uuid] = obj
+        //  uuid2Node[obj.uuid] = obj
     }
     return obj.uuid
 }
@@ -18,15 +18,15 @@ function getNode(uuid) {
 }
 //添加到回收列队中
 function injectDisposeQueue(data, list) {
-    var elem = data.element
+    var lists = data.lists || (data.lists = [])
     if (!data.uuid) {
+        var elem = data.element
         if (elem.nodeType !== 1) {
             data.uuid = data.type + (data.pos || 0) + "-" + getUid(elem.parentNode)
         } else {
             data.uuid = data.name + "-" + getUid(elem)
         }
     }
-    var lists = data.lists || (data.lists = [])
     avalon.Array.ensure(lists, list)
     list.$uuid = list.$uuid || generateID()
     if (!disposeQueue[data.uuid]) {
@@ -36,8 +36,6 @@ function injectDisposeQueue(data, list) {
 }
 
 function rejectDisposeQueue(data) {
-    if (avalon.optimize)
-        return
     var i = disposeQueue.length
     var n = i
     var allTypes = []
@@ -68,7 +66,7 @@ function rejectDisposeQueue(data) {
             if (iffishTypes[data.type] && shouldDispose(data.element)) { //如果它没有在DOM树
                 disposeQueue.splice(i, 1)
                 delete disposeQueue[data.uuid]
-                delete uuid2Node[data.element.uuid]
+                // delete uuid2Node[data.element.uuid]
                 var lists = data.lists
                 for (var k = 0, list; list = lists[k++]; ) {
                     avalon.Array.remove(lists, list)

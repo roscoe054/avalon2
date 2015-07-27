@@ -8,7 +8,7 @@ bools.replace(rword, function (name) {
     boolMap[name.toLowerCase()] = name
 })
 
-var propMap = { //属性名映射
+var propMap = {//属性名映射
     "accept-charset": "acceptCharset",
     "char": "ch",
     "charoff": "chOff",
@@ -51,8 +51,9 @@ var attrDir = avalon.directive("attr", {
             }
         }
     },
-    update: function (val, elem, binding) {
-        var attrName = binding.param
+    update: function (val) {
+        var elem = this.element
+        var attrName = this.param
         if (attrName === "href" || attrName === "src") {
             if (typeof val === "string" && !root.hasAttribute) {
                 val = val.replace(/&amp;/g, "&") //处理IE67自动转义的问题

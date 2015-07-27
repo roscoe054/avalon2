@@ -30,7 +30,9 @@ avalon.directive("repeat", {
             binding.element = end
         }
     },
-    update: function (value, elem, binding) {
+    update: function (value) {
+        var binding = this
+        var elem = this.element
         var now = new Date() - 0
         var xtype
         var parent = elem.parentNode
@@ -109,20 +111,20 @@ avalon.directive("repeat", {
             }
         }
         if (init) {
+            parent.insertBefore(transation, elem)
 
-           
             fragments.forEach(function (fragment) {
                 scanNodeArray(fragment.nodes, fragment.vmodels)
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
- parent.insertBefore(transation, elem)
         } else {
             //移除节点
             var keys = []
             for (key in retain) {
                 if (retain[key] && retain[key] !== true) {
                     removeItem(retain[key].$anchor)
-                    delete binding.cache[key] //这里应该回收代理VM
+                    proxyRecycler(binding.cache, key)
+                    // delete binding.cache[key] //这里应该回收代理VM
                     retain[key] = null
                 } else {
                     keys.push(key)
@@ -151,7 +153,6 @@ avalon.directive("repeat", {
             }
         }
         if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-            console.log(parent.oldValue)
             avalon(parent).val(parent.oldValue.split(","))
         }
         var callback = binding.renderedCallback || noop
@@ -262,4 +263,17 @@ function withProxyFactory() {
     })
     proxy.$id = generateID("$proxy$with")
     return proxy
+}
+
+
+function proxyRecycler(cache, key) {
+    var proxy = cache[key]
+    if (proxy) {
+        var proxyPool = proxy.$id.indexOf("$proxy$each") === 0 ? withEachPool : withProxyPool
+        proxy.$outer = {}
+        if (proxyPool.unshift(proxy) > kernel.maxRepeatSize) {
+            proxyPool.pop()
+        }
+        delete cache[key]
+    }
 }

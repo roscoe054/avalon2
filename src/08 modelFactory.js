@@ -21,6 +21,9 @@ avalon.define = function (id, factory) {
         factory(model)
         stopRepeatAssign = false
     }
+    if (kernel.newWatch) {
+        model.$watch = $watch
+    }
     model.$id = $id
     return VMODELS[$id] = model
 }
@@ -52,7 +55,6 @@ function observe(obj, old) {
         return observeArray(obj)
     } else if (avalon.isPlainObject(obj)) {
         if (old) {
-
             var keys = Object.keys(obj)
             var keys2 = Object.keys(old)
             if (keys.join(";") === keys2.join(";")) {
@@ -79,15 +81,24 @@ function observeArray(array) {
     hideProperty(array, "$events", {})
     hideProperty(array, "$deps", [])
     array._ = observeObject({
-        length: array.length
+        length: NaN
     })
+    array._.length = array.length
     array._.$watch("length", function (a, b) {
         array.$fire("length", a, b)
     })
-    array.$model = []
-    for (i in EventBus) {
-        array[i] = EventBus[i]
+    console.log(array._)
+    if (W3C) {
+        Object.defineProperty(array, "$model", $modelDescriptor)
+    } else {
+        array.$model = []
     }
+    if (!kernel.newWatch) {
+        for (i in EventBus) {
+            array[i] = EventBus[i]
+        }
+    }
+
     observeItem(array)
     return array
 }
@@ -134,7 +145,6 @@ function observeObject(source, $special, old) {
             } else {
                 if (oldAccessors[name]) {
                     accessors[name] = oldAccessors[name]
-
                 } else {
                     accessors[name] = makeGetSet(name, val)
                 }
@@ -154,25 +164,29 @@ function observeObject(source, $special, old) {
         }
         /* jshint ignore:end */
     }
-    names.forEach(function (name) {
+    names.forEach(function (name, val) {
         if (oldAccessors[name] || !accessors[name]) {
             $vmodel[name] = source[name]
         }
     })
+
+    if (old) {
+        old.$events = {}
+    }
     hideProperty($vmodel, "$accessors", accessors)
 
     hideProperty($vmodel, "$active", true)
     hideProperty($vmodel, "$events", {})
     hideProperty($vmodel, "$deps", [])
-
-    for (var i in EventBus) {
-        if (W3C) {
-            hideProperty($vmodel, i, EventBus[i])
-        } else {
-            $vmodel[i] = EventBus[i].bind($vmodel)
+    if (!kernel.newWatch) {
+        for (var i in EventBus) {
+            if (W3C) {
+                hideProperty($vmodel, i, EventBus[i])
+            } else {
+                $vmodel[i] = EventBus[i].bind($vmodel)
+            }
         }
     }
-
 
     return $vmodel
 }
@@ -215,29 +229,34 @@ function makeGetSet(key, value) {
         key: key,
         get: function () {
             if (this.$active) {
-                //                if (!this.$events[key]) {
-                //                    this.$events[key] = subs
-                //                }
                 collectDependency(subs)
             }
+            this.$events && (this.$events[key] = subs)
             return value
         },
         set: function (newVal) {
-            if (newVal === value)
+            this.$events[key] = subs
+            if (newVal === value || stopRepeatAssign)
                 return
             if (childOb) {
                 avalon.Array.remove(childOb.$deps, subs)
             }
+
             var oldValue = value
             value = newVal
-            
+
             var newChildOb = observe(newVal, childOb)
             if (newChildOb) {
                 newChildOb.$deps.push(subs)
                 value = newChildOb
             }
+
             notifySubscribers(subs)
-            this.$fire(key, value, oldValue)
+            if (this.$fire) {
+                this.$events[key] = subs
+                this.$fire(key, value, oldValue)
+            }
+
         },
         enumerable: true,
         configurable: true
@@ -277,8 +296,11 @@ function collectDependency(subs) {
 }
 
 function notifySubscribers(subs) {
-    for (var i = 0, l = subs.length; i < l; i++) {
-        subs[i].update()
+    if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
+        rejectDisposeQueue()
+    }
+    for (var i = 0, sub; sub = subs[i++];) {
+        sub.update && sub.update()
     }
 }
 
@@ -294,4 +316,13 @@ function hideProperty(host, name, value) {
     } else {
         host[name] = value
     }
+}
+
+
+var $watch = function (expr, callback, option) {
+    var watcher = {
+        handler: callback
+    }
+    parseExpr(expr, [this], watcher)
+   avalon.injectBinding(watcher)
 }

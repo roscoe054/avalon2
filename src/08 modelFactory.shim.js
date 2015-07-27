@@ -32,9 +32,9 @@ if (!canHideOwn) {
         function VBMediator(instance, accessors, name, value) {// jshint ignore:line
             var accessor = accessors[name]
             if (arguments.length === 4) {
-                accessor.call(instance, value)
+                accessor.set.call(instance, value)
             } else {
-                return accessor.call(instance)
+                return accessor.get.call(instance)
             }
         }
         defineProperties = function (name, accessors, properties) {

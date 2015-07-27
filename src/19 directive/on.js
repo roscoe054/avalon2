@@ -16,7 +16,9 @@ var onDir = avalon.directive("on", {
         }
         binding.expr = value
     },
-    update: function (callback, elem, binding) {
+    update: function (callback) {
+        var binding = this
+        var elem = this.element
         callback = function (e) {
             var fn = binding.evaluator || noop
             return fn.apply(this, binding.args.concat(e))

@@ -1,16 +1,13 @@
 avalon.directive("html", {
-    update: function (val, elem, binding) {
+    update: function (val) {
+        var binding = this
+        var elem = this.element
         var isHtmlFilter = elem.nodeType !== 1
         var parent = isHtmlFilter ? elem.parentNode : elem
         if (!parent)
             return
         val = val == null ? "" : val
-         
-        if (binding.oldText !== val) {
-            binding.oldText = val
-        } else {
-            return
-        }
+
         if (elem.nodeType === 3) {
             var signature = generateID("html")
             parent.insertBefore(DOC.createComment(signature), elem)

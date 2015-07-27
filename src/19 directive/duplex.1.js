@@ -58,11 +58,12 @@ var duplexBinding = avalon.directive("duplex", {
         var cpipe = binding.pipe || (binding.pipe = pipe)
         cpipe(null, binding, "init")
     },
-    update: function (evaluator, elem, binding) {
+    update: function (evaluator) {
+        var elem = this.element
         var tagName = elem.tagName
         var impl = duplexBinding[tagName]
         if(impl){
-            impl(elem, evaluator, binding)
+            impl(elem, evaluator, this)
         }
     }
 })
