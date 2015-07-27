@@ -15,7 +15,7 @@ var duplexBinding = avalon.directive("duplex", {
         if (elem.msData) {
             elem.msData["ms-duplex"] = binding.expr
         }
-        binding.param.replace(/\w+/g, function(name) {
+        binding.param.replace(rw20g, function(name) {
             if (rduplexType.test(elem.type) && rduplexParam.test(name)) {
                 name = "checked"
                 binding.isChecked = true
@@ -99,7 +99,7 @@ avalon.duplexHooks = {
 }
 
 function pipe(val, binding, action, e) {
-    binding.param.replace(/\w+/g, function (name) {
+    binding.param.replace(rw20g, function (name) {
         var hook = avalon.duplexHooks[name]
         if (hook && typeof hook[action] === "function") {
             val = hook[action](val, binding)

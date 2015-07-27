@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.44 built in 2015.7.26
+ avalon.js 1.44 built in 2015.7.27
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -57,6 +57,7 @@ var innerRequire
 var stopRepeatAssign = false
 var nullObject = {} //作用类似于noop，只用于代码防御，千万不要在它上面添加属性
 var rword = /[^, ]+/g //切割字符串为一个个小块，以空格或豆号分开它们，结合replace实现字符串的forEach
+var rw20g = /\w+/g
 var rcomplexType = /^(?:object|array)$/
 var rsvg = /^\[object SVG\w*Element\]$/
 var rwindow = /^\[object (?:Window|DOMWindow|global)\]$/
@@ -1529,6 +1530,9 @@ var newProto = {
         }
         return  []
     },
+     size: function () { //取得数组长度，这个函数可以同步视图，length不能
+        return this._.length
+    },
     removeAll: function (all) { //移除N个元素
         if (Array.isArray(all)) {
             for (var i = this.length - 1; i >= 0; i--) {
@@ -2742,8 +2746,12 @@ var getBindingCallback = function(elem, name, vmodels) {
 function executeBindings(bindings, vmodels) {
     for (var i = 0, binding; binding = bindings[i++]; ) {
         binding.vmodels = vmodels
+       try{
         directives[binding.type].init(binding)
         parseExpr(binding.expr, binding.vmodels, binding)
+    }catch(e){
+        console.log(e)
+    }
         if(binding.evaluator){
           avalon.injectBinding(binding)
           if (binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
@@ -3299,7 +3307,7 @@ var duplexBinding = avalon.directive("duplex", {
         if (elem.msData) {
             elem.msData["ms-duplex"] = binding.expr
         }
-        binding.param.replace(/\w+/g, function (name) {
+        binding.param.replace(rw20g, function (name) {
             if (rduplexType.test(elem.type) && rduplexParam.test(name)) {
                 if (name === "radio")
                     log("ms-duplex-radio已经更名为ms-duplex-checked")
@@ -3394,7 +3402,7 @@ avalon.duplexHooks = {
 }
 
 function pipe(val, binding, action, e) {
-    binding.param.replace(/\w+/g, function (name) {
+    binding.param.replace(rw20g, function (name) {
         var hook = avalon.duplexHooks[name]
         if (hook && typeof hook[action] === "function") {
             val = hook[action](val, binding)
@@ -3665,9 +3673,11 @@ avalon.directive("html", {
     upate: function (val, elem, binding) {
         var isHtmlFilter = elem.nodeType !== 1
         var parent = isHtmlFilter ? elem.parentNode : elem
+        console.log(val)
         if (!parent)
             return
         val = val == null ? "" : val
+         
         if (binding.oldText !== val) {
             binding.oldText = val
         } else {

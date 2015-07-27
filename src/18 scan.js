@@ -44,8 +44,12 @@ var getBindingCallback = function(elem, name, vmodels) {
 function executeBindings(bindings, vmodels) {
     for (var i = 0, binding; binding = bindings[i++]; ) {
         binding.vmodels = vmodels
+       try{
         directives[binding.type].init(binding)
         parseExpr(binding.expr, binding.vmodels, binding)
+    }catch(e){
+        console.log(e)
+    }
         if(binding.evaluator){
           avalon.injectBinding(binding)
           if (binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析

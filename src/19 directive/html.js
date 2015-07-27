@@ -2,9 +2,11 @@ avalon.directive("html", {
     upate: function (val, elem, binding) {
         var isHtmlFilter = elem.nodeType !== 1
         var parent = isHtmlFilter ? elem.parentNode : elem
+        console.log(val)
         if (!parent)
             return
         val = val == null ? "" : val
+         
         if (binding.oldText !== val) {
             binding.oldText = val
         } else {

@@ -38,6 +38,9 @@ var newProto = {
         }
         return  []
     },
+     size: function () { //取得数组长度，这个函数可以同步视图，length不能
+        return this._.length
+    },
     removeAll: function (all) { //移除N个元素
         if (Array.isArray(all)) {
             for (var i = this.length - 1; i >= 0; i--) {
