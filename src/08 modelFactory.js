@@ -87,7 +87,6 @@ function observeArray(array) {
     array._.$watch("length", function (a, b) {
         array.$fire("length", a, b)
     })
-    console.log(array._)
     if (W3C) {
         Object.defineProperty(array, "$model", $modelDescriptor)
     } else {
@@ -219,11 +218,11 @@ var $modelDescriptor = {
     configurable: true
 }
 function makeGetSet(key, value) {
-    var childOb = observe(value)
+    var childVm = observe(value)
     var subs = []
-    if (childOb) {
-        childOb.$deps.push(subs)
-        value = childOb
+    if (childVm) {
+        childVm.$deps.push(subs)
+        value = childVm
     }
     return {
         key: key,
@@ -235,20 +234,19 @@ function makeGetSet(key, value) {
             return value
         },
         set: function (newVal) {
-            this.$events[key] = subs
             if (newVal === value || stopRepeatAssign)
                 return
-            if (childOb) {
-                avalon.Array.remove(childOb.$deps, subs)
+            if (childVm) {
+                avalon.Array.remove(childVm.$deps, subs)
             }
 
             var oldValue = value
             value = newVal
 
-            var newChildOb = observe(newVal, childOb)
-            if (newChildOb) {
-                newChildOb.$deps.push(subs)
-                value = newChildOb
+            var newVm = observe(newVal, childVm)
+            if (newVm) {
+                newVm.$deps.push(subs)
+                value = newVm
             }
 
             notifySubscribers(subs)
@@ -299,7 +297,7 @@ function notifySubscribers(subs) {
     if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
         rejectDisposeQueue()
     }
-    for (var i = 0, sub; sub = subs[i++];) {
+    for (var i = 0, sub; sub = subs[i++]; ) {
         sub.update && sub.update()
     }
 }
@@ -324,5 +322,5 @@ var $watch = function (expr, callback, option) {
         handler: callback
     }
     parseExpr(expr, [this], watcher)
-   avalon.injectBinding(watcher)
+    avalon.injectBinding(watcher)
 }

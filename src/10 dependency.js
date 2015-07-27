@@ -57,7 +57,7 @@ avalon.injectBinding = function (binding) {
             delete binding.evaluator
             delete binding.update
             var node = binding.element
-            if (node.nodeType === 3) {
+            if (node && node.nodeType === 3) {
                 node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
             }
         } finally {
