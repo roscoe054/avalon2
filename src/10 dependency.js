@@ -29,7 +29,6 @@ function returnRandom() {
     return new Date() - 0
 }
 avalon.injectBinding = function (binding) {
-
     if (binding.evaluator) { //如果是求值函数
         dependencyDetection.begin({
             callback: function (array) {

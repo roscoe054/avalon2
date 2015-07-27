@@ -110,12 +110,12 @@ avalon.directive("repeat", {
         }
         if (init) {
 
-            parent.insertBefore(transation, elem)
+           
             fragments.forEach(function (fragment) {
                 scanNodeArray(fragment.nodes, fragment.vmodels)
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
-
+ parent.insertBefore(transation, elem)
         } else {
             //移除节点
             var keys = []
@@ -150,6 +150,13 @@ avalon.directive("repeat", {
 
             }
         }
+        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
+            console.log(parent.oldValue)
+            avalon(parent).val(parent.oldValue.split(","))
+        }
+        var callback = binding.renderedCallback || noop
+
+        callback.apply(parent, arguments)
         avalon.log("耗时 ", new Date() - now)
     }
 })

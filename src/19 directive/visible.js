@@ -18,15 +18,14 @@ function parseDisplay(nodeName, val) {
 avalon.parseDisplay = parseDisplay
 
 avalon.directive("visible", {
-    init: function (binding) {
-        var elem = binding.element
-        var display = elem.style.display
-        if (display === "none") {
-            display = parseDisplay(elem.nodeName)
+    update: function (val, elem) {
+        if (val) {
+            elem.style.display = ""
+            if (avalon(elem).css("display") === "none") {
+                elem.style.display = parseDisplay(elem.nodeName)
+            }
+        } else {
+            elem.style.display = "none"
         }
-        binding.display = display
-    },
-    update: function (val, elem, binding) {
-        elem.style.display = val ? binding.display : "none"
     }
 })

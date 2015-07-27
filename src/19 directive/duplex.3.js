@@ -19,7 +19,6 @@ duplexBinding.SELECT = function(element, evaluator, binding) {
         }
     binding.handler = function() {
         var val = evaluator()
-        val = val && val.$model || val
         if (Array.isArray(val)) {
             if (!element.multiple) {
                 log("ms-duplex在<select multiple=true>上要求对应一个数组")

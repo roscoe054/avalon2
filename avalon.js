@@ -1622,7 +1622,6 @@ function returnRandom() {
     return new Date() - 0
 }
 avalon.injectBinding = function (binding) {
-
     if (binding.evaluator) { //如果是求值函数
         dependencyDetection.begin({
             callback: function (array) {
@@ -1638,9 +1637,7 @@ avalon.injectBinding = function (binding) {
                     delete binding.evaluator
                 }
                 if ( binding.oldValue !== value) {
-                    console.log(binding.type)
                     binding.handler(value, binding.element, binding)
-                    console.log(binding.handler)
                     binding.oldValue = binding.xtype === "array" ? value.concat() :
                         binding.xtype === "object" ? avalon.mix({}, value) :
                         value
@@ -3645,7 +3642,6 @@ duplexBinding.SELECT = function(element, evaluator, binding) {
         }
     binding.handler = function() {
         var val = evaluator()
-        val = val && val.$model || val
         if (Array.isArray(val)) {
             if (!element.multiple) {
                 log("ms-duplex在<select multiple=true>上要求对应一个数组")
@@ -3672,7 +3668,6 @@ avalon.directive("html", {
     update: function (val, elem, binding) {
         var isHtmlFilter = elem.nodeType !== 1
         var parent = isHtmlFilter ? elem.parentNode : elem
-        console.log(val)
         if (!parent)
             return
         val = val == null ? "" : val
@@ -4035,12 +4030,12 @@ avalon.directive("repeat", {
         }
         if (init) {
 
-            parent.insertBefore(transation, elem)
+           
             fragments.forEach(function (fragment) {
                 scanNodeArray(fragment.nodes, fragment.vmodels)
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
-
+ parent.insertBefore(transation, elem)
         } else {
             //移除节点
             var keys = []
@@ -4075,6 +4070,13 @@ avalon.directive("repeat", {
 
             }
         }
+        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
+            console.log(parent.oldValue)
+            avalon(parent).val(parent.oldValue.split(","))
+        }
+        var callback = binding.renderedCallback || noop
+
+        callback.apply(parent, arguments)
         avalon.log("耗时 ", new Date() - now)
     }
 })
@@ -4223,16 +4225,15 @@ function parseDisplay(nodeName, val) {
 avalon.parseDisplay = parseDisplay
 
 avalon.directive("visible", {
-    init: function (binding) {
-        var elem = binding.element
-        var display = elem.style.display
-        if (display === "none") {
-            display = parseDisplay(elem.nodeName)
+    update: function (val, elem) {
+        if (val) {
+            elem.style.display = ""
+            if (avalon(elem).css("display") === "none") {
+                elem.style.display = parseDisplay(elem.nodeName)
+            }
+        } else {
+            elem.style.display = "none"
         }
-        binding.display = display
-    },
-    update: function (val, elem, binding) {
-        elem.style.display = val ? binding.display : "none"
     }
 })
 
