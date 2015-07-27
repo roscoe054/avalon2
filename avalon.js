@@ -1638,7 +1638,9 @@ avalon.injectBinding = function (binding) {
                     delete binding.evaluator
                 }
                 if ( binding.oldValue !== value) {
+                    console.log(binding.type)
                     binding.handler(value, binding.element, binding)
+                    console.log(binding.handler)
                     binding.oldValue = binding.xtype === "array" ? value.concat() :
                         binding.xtype === "object" ? avalon.mix({}, value) :
                         value
@@ -2746,12 +2748,9 @@ var getBindingCallback = function(elem, name, vmodels) {
 function executeBindings(bindings, vmodels) {
     for (var i = 0, binding; binding = bindings[i++]; ) {
         binding.vmodels = vmodels
-       try{
         directives[binding.type].init(binding)
+        
         parseExpr(binding.expr, binding.vmodels, binding)
-    }catch(e){
-        console.log(e)
-    }
         if(binding.evaluator){
           avalon.injectBinding(binding)
           if (binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
@@ -3670,7 +3669,7 @@ duplexBinding.SELECT = function(element, evaluator, binding) {
     }
 }
 avalon.directive("html", {
-    upate: function (val, elem, binding) {
+    update: function (val, elem, binding) {
         var isHtmlFilter = elem.nodeType !== 1
         var parent = isHtmlFilter ? elem.parentNode : elem
         console.log(val)
