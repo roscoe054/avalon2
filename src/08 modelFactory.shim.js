@@ -42,8 +42,8 @@ if (!canHideOwn) {
             var buffer = []
             buffer.push(
                     "\r\n\tPrivate [__data__], [__proxy__]",
-                    "\tPublic Default Function [__const__](d, p)",
-                    "\t\tSet [__data__] = d: set [__proxy__] = p",
+                    "\tPublic Default Function [__const__](d" + expose + ", p" + expose + ")",
+                    "\t\tSet [__data__] = d" + expose + ": set [__proxy__] = p" + expose,
                     "\t\tSet [__const__] = Me", //链式调用
                     "\tEnd Function")
             //添加普通属性,因为VBScript对象不能像JS那样随意增删属性，必须在这里预先定义好
@@ -81,7 +81,7 @@ if (!canHideOwn) {
 
             buffer.push("End Class")
             var body = buffer.join("\r\n")
-            var className =VBClassPool[body]   
+            var className = VBClassPool[body]
             if (!className) {
                 className = generateID("VBClass")
                 window.parseVB("Class " + className + body)

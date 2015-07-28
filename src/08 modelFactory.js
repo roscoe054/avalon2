@@ -29,7 +29,7 @@ avalon.define = function (id, factory) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$proxy,$active,$deps,$ownkeys").match(rword)
+var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$deps,$accessors").match(rword)
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -52,7 +52,7 @@ function observe(obj, old) {
         return obj
     }
     if (Array.isArray(obj)) {
-        return observeArray(obj)
+        return observeArray(obj, old)
     } else if (avalon.isPlainObject(obj)) {
         if (old) {
             var keys = Object.keys(obj)
@@ -72,34 +72,39 @@ function observe(obj, old) {
     }
 }
 
-function observeArray(array) {
-    for (var i in newProto) {
-        array[i] = newProto[i]
-    }
-
-    hideProperty(array, "$active", true)
-    hideProperty(array, "$events", {})
-    hideProperty(array, "$deps", [])
-    array._ = observeObject({
-        length: NaN
-    })
-    array._.length = array.length
-    array._.$watch("length", function (a, b) {
-        array.$fire("length", a, b)
-    })
-    if (W3C) {
-        Object.defineProperty(array, "$model", $modelDescriptor)
+function observeArray(array, old) {
+    if (old) {
+        var args = [0, old.length].concat(array)
+        old.splice.apply(old, args)
+        return old
     } else {
-        array.$model = []
-    }
-    if (!kernel.newWatch) {
-        for (i in EventBus) {
-            array[i] = EventBus[i]
+        for (var i in newProto) {
+            array[i] = newProto[i]
         }
-    }
 
-    observeItem(array)
-    return array
+        hideProperty(array, "$active", true)
+        hideProperty(array, "$events", {})
+        hideProperty(array, "$deps", [])
+        array._ = observeObject({
+            length: NaN
+        })
+        array._.length = array.length
+        array._.$watch("length", function (a, b) {
+            array.$fire("length", a, b)
+        })
+        if (W3C) {
+            Object.defineProperty(array, "$model", $modelDescriptor)
+        } else {
+            array.$model = []
+        }
+        if (!kernel.newWatch) {
+            for (i in EventBus) {
+                array[i] = EventBus[i]
+            }
+        }
+        observeItem(array)
+        return array
+    }
 }
 
 function observeItem(items) {
@@ -319,8 +324,13 @@ function hideProperty(host, name, value) {
 
 var $watch = function (expr, callback, option) {
     var watcher = {
-        handler: callback
+        handler: callback,
+        type: "text",
+        element: root
     }
     parseExpr(expr, [this], watcher)
     avalon.injectBinding(watcher)
+    return function () {
+        watcher.element = null
+    }
 }

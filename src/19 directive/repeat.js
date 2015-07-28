@@ -269,7 +269,7 @@ function withProxyFactory() {
 function proxyRecycler(cache, key) {
     var proxy = cache[key]
     if (proxy) {
-        var proxyPool = proxy.$id.indexOf("$proxy$each") === 0 ? withEachPool : withProxyPool
+        var proxyPool = proxy.$id.indexOf("$proxy$each") === 0 ? eachProxyPool : withProxyPool
         proxy.$outer = {}
         if (proxyPool.unshift(proxy) > kernel.maxRepeatSize) {
             proxyPool.pop()

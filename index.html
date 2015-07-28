@@ -8,15 +8,22 @@
         <script src="jquery.js"></script>
         <script>
             var vm = avalon.define({
-                $id:"test",
+                $id: "test",
                 aaa: "<span>{{bbb}}</span>",
                 bbb: 111,
                 ccc: 222,
-                change: function(){
+                change: function () {
                     vm.aaa = "<strong>{{ccc}}</strong>"
-                }
+                },
+                a: []
             })
-           
+            vm.a.$watch('length', function (v) {
+                console.log(v + "!!!")
+            });
+            vm.a = [1]// 触发回调
+            vm.a = []; // 不触发
+            vm.a = [1, 2, 3]; // 触发
+            vm.a = [];// 不触发
         </script>
     </head>
     <body>
