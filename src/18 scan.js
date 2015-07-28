@@ -2,7 +2,7 @@
  *                           扫描系统                                 *
  **********************************************************************/
 
-avalon.scan = function(elem, vmodel) {
+avalon.scan = function (elem, vmodel) {
     elem = elem || root
     var vmodels = vmodel ? [].concat(vmodel) : []
     scanTag(elem, vmodels)
@@ -12,7 +12,7 @@ avalon.scan = function(elem, vmodel) {
 var stopScan = oneObject("area,base,basefont,br,col,command,embed,hr,img,input,link,meta,param,source,track,wbr,noscript,script,style,textarea".toUpperCase())
 
 function checkScan(elem, callback, innerHTML) {
-    var id = setTimeout(function() {
+    var id = setTimeout(function () {
         var currHTML = elem.innerHTML
         clearTimeout(id)
         if (currHTML === innerHTML) {
@@ -27,10 +27,12 @@ function checkScan(elem, callback, innerHTML) {
 function createSignalTower(elem, vmodel) {
     var id = elem.getAttribute("avalonctrl") || vmodel.$id
     elem.setAttribute("avalonctrl", id)
-  //  vmodel.$events.expr = elem.tagName + '[avalonctrl="' + id + '"]'
+    if (vmodel.$events) {
+        vmodel.$events.expr = elem.tagName + '[avalonctrl="' + id + '"]'
+    }
 }
 
-var getBindingCallback = function(elem, name, vmodels) {
+var getBindingCallback = function (elem, name, vmodels) {
     var callback = elem.getAttribute(name)
     if (callback) {
         for (var i = 0, vm; vm = vmodels[i++]; ) {
@@ -45,15 +47,14 @@ function executeBindings(bindings, vmodels) {
     for (var i = 0, binding; binding = bindings[i++]; ) {
         binding.vmodels = vmodels
         directives[binding.type].init(binding)
-        
         parseExpr(binding.expr, binding.vmodels, binding)
-        if(binding.evaluator){
-          avalon.injectBinding(binding)
-          if (binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
-              //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
-              binding.element.removeAttribute(binding.name)
-          }
-       }
+        if (binding.evaluator) {
+            avalon.injectBinding(binding)
+            if (binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
+                //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
+                binding.element.removeAttribute(binding.name)
+            }
+        }
     }
     bindings.length = 0
 }

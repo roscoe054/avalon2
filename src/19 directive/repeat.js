@@ -163,11 +163,10 @@ avalon.directive("repeat", {
 })
 
 "with,each".replace(rword, function (name) {
-    avalon.directives[name] = avalon.mix({}, avalon.directive.repeat, {
+    directives[name] = avalon.mix({}, directives.repeat, {
         priority: 1400
     })
 })
-
 
 function removeItem(node) {
     var fragment = avalonFragment.cloneNode(false)
