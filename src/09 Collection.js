@@ -15,7 +15,8 @@ var newProto = {
         if (index >= this.length) {
             this.length = index + 1
         }
-        return this.splice(index, 1, val)[0]
+        if (this[index] !== val)
+            return this.splice(index, 1, val)[0]
     },
     contains: function (el) { //判定是否包含
         return this.indexOf(el) !== -1
@@ -74,27 +75,12 @@ arrayMethods.forEach(function (method) {
     newProto[method] = function () {
         // avoid leaking arguments:
         // http://jsperf.com/closure-with-arguments
-        var i = arguments.length
-        var args = new Array(i)
-        while (i--) {
-            args[i] = arguments[i]
-        }
-        var result = original.apply(this, args)
-        var inserted
-        switch (method) {
-            case 'push':
-                inserted = args
-                break
-            case 'unshift':
-                inserted = args
-                break
-            case 'splice':
-                inserted = args.slice(2)
-                break
+        var args = []
+        for (var i = 0, n = arguments.length; i < n; i++) {
+            args[i] = observe(arguments[i])
         }
 
-        if (inserted)
-            observeItem(inserted)
+        var result = original.apply(this, args)
         if (!W3C) {
             this.$model = toJson(this)
         }

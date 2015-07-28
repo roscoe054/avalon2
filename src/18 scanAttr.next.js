@@ -27,9 +27,8 @@ function scanAttr(elem, vmodels, match) {
                         priority: (directives[type].priority || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                     }
                     if (type === "html" || type === "text") {
-                        var token = getToken(value)
-                        avalon.mix(binding, token)
-                        binding.filters = binding.filters.replace(rhasHtml, function () {
+                        var filters = getToken(value).filters
+                        binding.filters = filters.replace(rhasHtml, function () {
                             binding.type = "html"
                             binding.group = 1
                             return ""

@@ -1194,17 +1194,14 @@ function observeArray(array, old) {
                 array[i] = EventBus[i]
             }
         }
-        observeItem(array)
+        for (var i = 0, n = array.length; i < n; i++) {
+            array[i] = observe(array[i])
+        }
+
         return array
     }
 }
 
-function observeItem(items) {
-    var i = items.length
-    while (i--) {
-        observe(items[i])
-    }
-}
 
 function observeObject(source, $special, old) {
     if (!source || source.nodeType > 0 || (source.$id && source.$deps)) {
@@ -1545,7 +1542,8 @@ var newProto = {
         if (index >= this.length) {
             this.length = index + 1
         }
-        return this.splice(index, 1, val)[0]
+        if (this[index] !== val)
+            return this.splice(index, 1, val)[0]
     },
     contains: function (el) { //判定是否包含
         return this.indexOf(el) !== -1
@@ -1604,27 +1602,12 @@ arrayMethods.forEach(function (method) {
     newProto[method] = function () {
         // avoid leaking arguments:
         // http://jsperf.com/closure-with-arguments
-        var i = arguments.length
-        var args = new Array(i)
-        while (i--) {
-            args[i] = arguments[i]
-        }
-        var result = original.apply(this, args)
-        var inserted
-        switch (method) {
-            case 'push':
-                inserted = args
-                break
-            case 'unshift':
-                inserted = args
-                break
-            case 'splice':
-                inserted = args.slice(2)
-                break
+        var args = []
+        for (var i = 0, n = arguments.length; i < n; i++) {
+            args[i] = observe(arguments[i])
         }
 
-        if (inserted)
-            observeItem(inserted)
+        var result = original.apply(this, args)
         if (!W3C) {
             this.$model = toJson(this)
         }
@@ -2791,12 +2774,10 @@ function executeBindings(bindings, vmodels) {
         binding.vmodels = vmodels
         directives[binding.type].init(binding)
         parseExpr(binding.expr, binding.vmodels, binding)
-        if (binding.evaluator) {
-            avalon.injectBinding(binding)
-            if (binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
-                //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
-                binding.element.removeAttribute(binding.name)
-            }
+        avalon.injectBinding(binding)
+        if (binding.update && binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
+            //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
+            binding.element.removeAttribute(binding.name)
         }
     }
     bindings.length = 0
@@ -2874,9 +2855,9 @@ function scanAttr(elem, vmodels, match) {
                             priority: (directives[type].priority || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
-                            var token = getToken(value)
-                            avalon.mix(binding, token)
-                            binding.filters = binding.filters.replace(rhasHtml, function () {
+                            var filters = getToken(value).filters
+                           
+                            binding.filters = filters.replace(rhasHtml, function () {
                                     binding.type = "html"
                                     binding.group = 1
                                     return ""
@@ -3521,7 +3502,6 @@ duplexBinding.INPUT = function(element, evaluator, binding) {
         bound = binding.bound,
         $elem = avalon(element),
         composing = false
-
         function callback(value) {
             binding.changed.call(this, value, binding)
         }
@@ -3740,6 +3720,7 @@ avalon.directive("html", {
         }
 
         nodes = avalon.slice(fragment.childNodes)
+        console.log(nodes)
         //插入占位符, 如果是过滤器,需要有节制地移除指定的数量,如果是html指令,直接清空
         if (isHtmlFilter) {
             var endValue = elem.nodeValue.slice(0, -4)
@@ -4171,6 +4152,7 @@ function getProxyVM(data) {
     var proxy = factory(data)
     var node = proxy.$anchor || (proxy.$anchor = data.element.cloneNode(false))
     node.nodeValue = data.signature
+    proxy.$host = data.$repeat
     proxy.$outer = data.$outer
     return proxy
 }
@@ -4192,6 +4174,7 @@ function eachProxyAgent(data) {
 function eachProxyFactory(itemName) {
     var source = {
         $outer: {},
+        $host: [],
         $index: 0,
         $anchor: null,
         //-----
@@ -4199,7 +4182,28 @@ function eachProxyFactory(itemName) {
         $last: false,
         $remove: avalon.noop
     }
-    source[itemName] = NaN
+    source[itemName] =   {   
+        get: function () {
+            var e = this.$events
+            var array = e.$index
+            e.$index = e[itemName] //#817 通过$index为el收集依赖
+            try {
+                return this.$host[this.$index]
+            } finally {
+                e.$index = array
+            }
+        },
+        set: function (val) {
+            try {
+                var e = this.$events
+                var array = e.$index
+                e.$index = []
+                this.$host.set(this.$index, val)
+            } finally {
+                e.$index = array
+            }
+        }
+    }
     var second = {
         $last: 1,
         $first: 1,

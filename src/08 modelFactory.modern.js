@@ -1,6 +1,3 @@
-/*********************************************************************
- *                           modelFactory                             *
- **********************************************************************/
 //avalon最核心的方法的两个方法之一（另一个是avalon.scan），返回一个ViewModel(VM)
 var VMODELS = avalon.vmodels = {} //所有vmodel都储存在这里
 avalon.define = function (id, factory) {
@@ -18,261 +15,236 @@ avalon.define = function (id, factory) {
             $watch: noop
         }
         factory(scope) //得到所有定义
+
         model = modelFactory(scope) //偷天换日，将scope换为model
         stopRepeatAssign = true
         factory(model)
         stopRepeatAssign = false
+    }
+    if (kernel.newWatch) {
+        model.$watch = $watch
     }
     model.$id = $id
     return VMODELS[$id] = model
 }
 
 //一些不需要被监听的属性
-var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$proxy").match(rword)
+var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$deps,$accessors").match(rword)
+var defineProperty = Object.defineProperty
+//如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
+//标准浏览器使用__defineGetter__, __defineSetter__实现
 
-function modelFactory(source, $special, $model) {
-    if (Array.isArray(source)) {
-        var arr = source.concat()
-        source.length = 0
-        var collection = arrayFactory(source)// jshint ignore:line
-        collection.pushArray(arr)
-        return collection
+var defineProperties = Object.defineProperties
+
+
+function modelFactory(source, $special) {
+    return observeObject(source, $special)
+}
+
+function observe(obj, old) {
+    if (!obj || (obj.$id && obj.$deps)) {
+        return obj
     }
-    //0 null undefined || Node || VModel(fix IE6-8 createWithProxy $val: val引发的BUG)
-    if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
+    if (Array.isArray(obj)) {
+        return observeArray(obj, old)
+    } else if (avalon.isPlainObject(obj)) {
+        if (old) {
+            var keys = Object.keys(obj)
+            var keys2 = Object.keys(old)
+            if (keys.join(";") === keys2.join(";")) {
+                for (var i in obj) {
+                    if (obj.hasOwnProperty(i)) {
+                        old[i] = obj[i]
+                    }
+                }
+                return old
+            }
+            old.$active = false
+
+        }
+        return observeObject(obj, null, old)
+    }
+}
+
+function observeArray(array, old) {
+    if (old) {
+        var args = [0, old.length].concat(array)
+        old.splice.apply(old, args)
+        return old
+    } else {
+        for (var i in newProto) {
+            array[i] = newProto[i]
+        }
+
+        hideProperty(array, "$active", true)
+        hideProperty(array, "$events", {})
+        hideProperty(array, "$deps", [])
+        array._ = observeObject({
+            length: NaN
+        })
+        array._.length = array.length
+        array._.$watch("length", function (a, b) {
+            array.$fire("length", a, b)
+        })
+
+        Object.defineProperty(array, "$model", $modelDescriptor)
+
+        if (!kernel.newWatch) {
+            for (i in EventBus) {
+                array[i] = EventBus[i]
+            }
+        }
+        for (var i = 0, n = array.length; i < n; i++) {
+            array[i] = observe(array[i])
+        }
+
+        return array
+    }
+}
+
+
+function observeObject(source, $special, old) {
+    if (!source || source.nodeType > 0 || (source.$id && source.$deps)) {
         return source
     }
     var $skipArray = Array.isArray(source.$skipArray) ? source.$skipArray : []
-    $skipArray.$special = $special || createMap() //强制要监听的属性
+    $special = $special || nullObject
+    var oldAccessors = old ? old.$accessors : nullObject
     var $vmodel = {} //要返回的对象, 它在IE6-8下可能被偷龙转凤
-    $model = $model || {} //vmodels.$model属性
-    var $events = createMap() //vmodel.$events属性
-    var accessors = createMap() //监控属性
-    var computed = []
+    var accessors = {} //监控属性
     $$skipArray.forEach(function (name) {
         delete source[name]
     })
-
     var names = Object.keys(source)
     /* jshint ignore:start */
-    names.forEach(function (name, accessor) {
+    names.forEach(function (name) {
         var val = source[name]
-        $model[name] = val
-        if (isObservable(name, val, $skipArray)) {
-            //总共产生三种accessor
-            $events[name] = []
+
+        if (isObservable(name, val, $skipArray, $special)) {
             var valueType = avalon.type(val)
-            //总共产生三种accessor
             if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
-                accessor = makeComputedAccessor(name, val)
-                computed.push(accessor)
-            } else if (rcomplexType.test(valueType)) {
-                accessor = makeComplexAccessor(name, val, valueType, $events[name])
+                accessors[name] = {
+                    get: function () {
+                        return val.get.call(this)
+                    },
+                    set: function (a) {
+                        if (!stopRepeatAssign && typeof val.set === "function") {
+                            val.set.call(this, a)
+                        }
+                    },
+                    enumerable: true,
+                    configurable: true
+                }
             } else {
-                accessor = makeSimpleAccessor(name, val)
+                if (oldAccessors[name]) {
+                    accessors[name] = oldAccessors[name]
+                } else {
+                    accessors[name] = makeGetSet(name, val)
+                }
             }
-            accessors[name] = accessor
         }
     })
     /* jshint ignore:end */
-    $vmodel = Object.defineProperties($vmodel, descriptorFactory(accessors)) //生成一个空的ViewModel
-    for (var i = 0; i < names.length; i++) {
-        var name = names[i]
-        if (!accessors[name]) {
+
+    accessors["$model"] = $modelDescriptor
+
+
+    $vmodel = Object.defineProperties($vmodel, accessors)
+
+    names.forEach(function (name, val) {
+        if (oldAccessors[name] || !accessors[name]) {
             $vmodel[name] = source[name]
         }
+    })
+
+    if (old) {
+        old.$events = {}
     }
-    //添加$id, $model, $events, $watch, $unwatch, $fire
-    $vmodel.$id = generateID()
-    $vmodel.$model = $model
-    $vmodel.$events = $events
-    $vmodel.$propertyNames = names.sort().join("&shy;")
-    for (i in EventBus) {
-        $vmodel[i] = EventBus[i]
+    hideProperty($vmodel, "$accessors", accessors)
+
+    hideProperty($vmodel, "$active", true)
+    hideProperty($vmodel, "$events", {})
+    hideProperty($vmodel, "$deps", [])
+    if (!kernel.newWatch) {
+        for (var i in EventBus) {
+            hideProperty($vmodel, i, EventBus[i])
+        }
     }
 
-    Object.defineProperty($vmodel, "hasOwnProperty", hasOwnDescriptor)
-    $vmodel.$reinitialize = function () {
-        computed.forEach(function (accessor) {
-            delete accessor._value
-            delete accessor.oldArgs
-            accessor.digest = function () {
-                accessor.call($vmodel)
-            }
-            dependencyDetection.begin({
-                callback: function (vm, dependency) {//dependency为一个accessor
-                    var name = dependency._name
-                    if (dependency !== accessor) {
-                        var list = vm.$events[name]
-                        accessor.vm = $vmodel
-                        injectDependency(list, accessor.digest)
-                    }
-                }
-            })
-            try {
-                accessor.get.call($vmodel)
-            } finally {
-                dependencyDetection.end()
-            }
-        })
-    }
-    $vmodel.$reinitialize()
     return $vmodel
 }
-
-var hasOwnDescriptor = {
-    value: function (name) {
-        return name in this.$model
+function toJson(val) {
+    if (Array.isArray(val)) {
+        if (val.$active && val.$deps) {
+            var array = []
+            for (var i = 0; i < val.length; i++) {
+                array[i] = toJson(val[i])
+            }
+            return array
+        }
+    } else if (val && typeof val === "object" && val.$active) {
+        var obj = {}
+        for (i in val) {
+            if (val.hasOwnProperty(i)) {
+                obj[i] = toJson(val[i])
+            }
+        }
+        return obj
+    }
+    return val
+}
+var $modelDescriptor = {
+    get: function () {
+        return toJson(this)
     },
-    writable: false,
+    set: noop,
     enumerable: false,
     configurable: true
 }
-
-//创建一个简单访问器
-function makeSimpleAccessor(name, value) {
-    function accessor(value) {
-        var oldValue = accessor._value
-        if (arguments.length > 0) {
-            if (!stopRepeatAssign && !isEqual(value, oldValue)) {
-                accessor.updateValue(this, value)
-                accessor.notify(this, value, oldValue)
-            }
-            return this
-        } else {
-            dependencyDetection.collectDependency(this, accessor)
-            return oldValue
-        }
+function makeGetSet(key, value) {
+    var childVm = observe(value)
+    var subs = []
+    if (childVm) {
+        childVm.$deps.push(subs)
+        value = childVm
     }
-    accessorFactory(accessor, name)
-    accessor._value = value
-    return accessor;
-}
-
-///创建一个计算访问器
-function makeComputedAccessor(name, options) {
-    function accessor(value) {//计算属性
-        var oldValue = accessor._value
-        var init = ("_value" in accessor)
-        if (arguments.length > 0) {
-            if (stopRepeatAssign) {
-                return this
+    return {
+        key: key,
+        get: function () {
+            if (this.$active) {
+                collectDependency(subs)
             }
-            if (typeof accessor.set === "function") {
-                if (accessor.oldArgs !== value) {
-                    accessor.oldArgs = value
-                    var $events = this.$events
-                    var lock = $events[name]
-                    $events[name] = [] //清空回调，防止内部冒泡而触发多次$fire
-                    accessor.set.call(this, value)
-                    $events[name] = lock
-                    value = accessor.get.call(this)
-                    if (value !== oldValue) {
-                        accessor.updateValue(this, value)
-                        accessor.notify(this, value, oldValue) //触发$watch回调
-                    }
-                }
-            }
-            return this
-        } else {
-            //将依赖于自己的高层访问器或视图刷新函数（以绑定对象形式）放到自己的订阅数组中
-            //将自己注入到低层访问器的订阅数组中
-            value = accessor.get.call(this)
-            accessor.updateValue(this, value)
-            if (init && oldValue !== value) {
-                accessor.notify(this, value, oldValue) //触发$watch回调
-            }
+            this.$events && (this.$events[key] = subs)
             return value
-        }
-    }
-    accessor.set = options.set
-    accessor.get = options.get
-    accessorFactory(accessor, name)
-    return accessor
-}
-
-
-//创建一个复杂访问器
-function makeComplexAccessor(name, initValue, valueType, list) {
-    function accessor(value) {
-        var oldValue = accessor._value
-        var son = accessor._vmodel
-        if (arguments.length > 0) {
-            if (stopRepeatAssign) {
-                return this
+        },
+        set: function (newVal) {
+            if (newVal === value || stopRepeatAssign)
+                return
+            if (childVm) {
+                avalon.Array.remove(childVm.$deps, subs)
             }
-            if (valueType === "array") {
-                var a = son, b = value,
-                        an = a.length,
-                        bn = b.length
-                a.$lock = true
-                if (an > bn) {
-                    a.splice(bn, an - bn)
-                } else if (bn > an) {
-                    a.push.apply(a, b.slice(an))
-                }
-                var n = Math.min(an, bn)
-                for (var i = 0; i < n; i++) {
-                    a.set(i, b[i])
-                }
-                delete a.$lock
-                a._fire("set")
-            } else if (valueType === "object") {
-                var newPropertyNames = Object.keys(value).sort().join("&shy;")
-                if (son.$propertyNames === newPropertyNames) {
-                    for (i in value) {
-                        son[i] = value[i]
-                    }
-                } else {
-                    var sson = accessor._vmodel = modelFactory(value)
-                    var sevent = sson.$events
-                    var oevent = son.$events
-                    for (var i in sevent) {
-                        var arr = sevent[i]
-                        if (Array.isArray(arr)) {
-                            arr = arr.concat(oevent[i])
-                        }
-                    }
-                    sevent[subscribers] = oevent[subscribers]
-                    sson.$proxy = son.$proxy
-                    son = sson
-                }
+
+            var oldValue = value
+            value = newVal
+
+            var newVm = observe(newVal, childVm)
+            if (newVm) {
+                newVm.$deps.push(subs)
+                value = newVm
             }
-            accessor.updateValue(this, son.$model)
-            accessor.notify(this, this._value, oldValue)
-            return this
-        } else {
-            dependencyDetection.collectDependency(this, accessor)
-            return son
-        }
-    }
-    accessorFactory(accessor, name)
-    var son = accessor._vmodel = modelFactory(initValue)
-    son.$events[subscribers] = list
-    return accessor
-}
 
-function globalUpdateValue(vmodel, value) {
-    vmodel.$model[this._name] = this._value = value
-}
-function globalUpdateModelValue(vmodel, value) {
-    vmodel.$model[this._name] = value
-}
-function globalNotify(vmodel, value, oldValue) {
-    var name = this._name
-    var array = vmodel.$events[name] //刷新值
-    if (array) {
-        fireDependencies(array) //同步视图
-        EventBus.$fire.call(vmodel, name, value, oldValue) //触发$watch回调
+            notifySubscribers(subs)
+            if (this.$fire) {
+                this.$events[key] = subs
+                this.$fire(key, value, oldValue)
+            }
+
+        },
+        enumerable: true,
+        configurable: true
     }
 }
 
-function accessorFactory(accessor, name) {
-    accessor._name = name
-    //同时更新_value与model
-    accessor.updateValue = globalUpdateValue
-    accessor.notify = globalNotify
-}
 //比较两个值是否相等
 var isEqual = Object.is || function (v1, v2) {
     if (v1 === 0 && v2 === 0) {
@@ -284,30 +256,60 @@ var isEqual = Object.is || function (v1, v2) {
     }
 }
 
-function isObservable(name, value, $skipArray) {
+function isObservable(name, value, $skipArray, $special) {
+
     if (isFunction(value) || value && value.nodeType) {
         return false
     }
     if ($skipArray.indexOf(name) !== -1) {
         return false
     }
-    var $special = $skipArray.$special
     if (name && name.charAt(0) === "$" && !$special[name]) {
         return false
     }
     return true
 }
 
-var descriptorFactory = function (obj) {
-    var descriptors = {}
-    for (var i in obj) {
-        descriptors[i] = {
-            get: obj[i],
-            set: obj[i],
-            enumerable: true,
-            configurable: true
-        }
-    }
-    return descriptors
+
+
+
+function collectDependency(subs) {
+    dependencyDetection.collectDependency(subs)
 }
 
+function notifySubscribers(subs) {
+    if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
+        rejectDisposeQueue()
+    }
+    for (var i = 0, sub; sub = subs[i++]; ) {
+        sub.update && sub.update()
+    }
+}
+
+
+function hideProperty(host, name, value) {
+    if (Object.defineProperty) {
+        Object.defineProperty(host, name, {
+            value: value,
+            writable: true,
+            enumerable: false,
+            configurable: true
+        })
+    } else {
+        host[name] = value
+    }
+}
+
+
+var $watch = function (expr, callback, option) {
+    var watcher = {
+        handler: callback,
+        type: "text",
+        element: root
+    }
+    parseExpr(expr, [this], watcher)
+    avalon.injectBinding(watcher)
+    return function () {
+        watcher.element = null
+    }
+}

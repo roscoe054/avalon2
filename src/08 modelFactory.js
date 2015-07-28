@@ -102,17 +102,14 @@ function observeArray(array, old) {
                 array[i] = EventBus[i]
             }
         }
-        observeItem(array)
+        for (var i = 0, n = array.length; i < n; i++) {
+            array[i] = observe(array[i])
+        }
+
         return array
     }
 }
 
-function observeItem(items) {
-    var i = items.length
-    while (i--) {
-        observe(items[i])
-    }
-}
 
 function observeObject(source, $special, old) {
     if (!source || source.nodeType > 0 || (source.$id && source.$deps)) {

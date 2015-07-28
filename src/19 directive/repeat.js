@@ -202,6 +202,7 @@ function getProxyVM(data) {
     var proxy = factory(data)
     var node = proxy.$anchor || (proxy.$anchor = data.element.cloneNode(false))
     node.nodeValue = data.signature
+    proxy.$host = data.$repeat
     proxy.$outer = data.$outer
     return proxy
 }
@@ -223,6 +224,7 @@ function eachProxyAgent(data) {
 function eachProxyFactory(itemName) {
     var source = {
         $outer: {},
+        $host: [],
         $index: 0,
         $anchor: null,
         //-----
@@ -230,7 +232,28 @@ function eachProxyFactory(itemName) {
         $last: false,
         $remove: avalon.noop
     }
-    source[itemName] = NaN
+    source[itemName] =   {   
+        get: function () {
+            var e = this.$events
+            var array = e.$index
+            e.$index = e[itemName] //#817 通过$index为el收集依赖
+            try {
+                return this.$host[this.$index]
+            } finally {
+                e.$index = array
+            }
+        },
+        set: function (val) {
+            try {
+                var e = this.$events
+                var array = e.$index
+                e.$index = []
+                this.$host.set(this.$index, val)
+            } finally {
+                e.$index = array
+            }
+        }
+    }
     var second = {
         $last: 1,
         $first: 1,
