@@ -46,32 +46,35 @@ try {
 function modelFactory(source, $special) {
     return observeObject(source, $special)
 }
+function observe(obj, old, hasReturn) {
+    if (Object(obj) === obj) {
+        if (obj.$deps) {
+            return obj
+        } else if (Array.isArray(obj)) {
+            return observeArray(obj, old)
+        } else if (avalon.isPlainObject) {
+            if (old) {
+                var keys = Object.keys(obj)
+                var keys2 = Object.keys(old)
+                if (keys.join(";") === keys2.join(";")) {
+                    for (var i in obj) {
+                        if (obj.hasOwnProperty(i)) {
+                            old[i] = obj[i]
+                        }
+                    }
+                    return old
+                }
+                old.$active = false
 
-function observe(obj, old) {
-    if (obj && obj.$deps) {
+            }
+            return observeObject(obj, null, old)
+        }
+    }
+    if (hasReturn) {
         return obj
     }
-    if (Array.isArray(obj)) {
-        return observeArray(obj, old)
-    } else if (avalon.isPlainObject(obj)) {
-        if (old) {
-            var keys = Object.keys(obj)
-            var keys2 = Object.keys(old)
-            if (keys.join(";") === keys2.join(";")) {
-                for (var i in obj) {
-                    if (obj.hasOwnProperty(i)) {
-                        old[i] = obj[i]
-                    }
-                }
-                return old
-            }
-            old.$active = false
-
-        }
-        return observeObject(obj, null, old)
-    }
-    return obj
 }
+
 
 function observeArray(array, old) {
     if (old) {
@@ -103,8 +106,8 @@ function observeArray(array, old) {
                 array[i] = EventBus[i]
             }
         }
-        for (var i = 0, n = array.length; i < n; i++) {
-            array[i] = observe(array[i])
+        for (var j = 0, n = array.length; j < n; j++) {
+            array[j] = observe(array[j], 0, 1)
         }
 
         return array
@@ -223,7 +226,7 @@ var $modelDescriptor = {
 function makeGetSet(key, value) {
     var childVm = observe(value)
     var subs = []
-    if (Object(childVm) === childVm) {
+    if (childVm) {
         childVm.$deps.push(subs)
         value = childVm
     }
@@ -247,7 +250,7 @@ function makeGetSet(key, value) {
             value = newVal
 
             var newVm = observe(newVal, childVm)
-            if (Object(newVm) === newVm) {
+            if (newVm) {
                 newVm.$deps.push(subs)
                 value = newVm
             }

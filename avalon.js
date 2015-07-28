@@ -1138,31 +1138,35 @@ try {
 function modelFactory(source, $special) {
     return observeObject(source, $special)
 }
+function observe(obj, old, hasReturn) {
+    if (Object(obj) === obj) {
+        if (obj.$deps) {
+            return obj
+        } else if (Array.isArray(obj)) {
+            return observeArray(obj, old)
+        } else if (avalon.isPlainObject) {
+            if (old) {
+                var keys = Object.keys(obj)
+                var keys2 = Object.keys(old)
+                if (keys.join(";") === keys2.join(";")) {
+                    for (var i in obj) {
+                        if (obj.hasOwnProperty(i)) {
+                            old[i] = obj[i]
+                        }
+                    }
+                    return old
+                }
+                old.$active = false
 
-function observe(obj, old) {
-    if (!obj || (obj.$id && obj.$deps)) {
+            }
+            return observeObject(obj, null, old)
+        }
+    }
+    if (hasReturn) {
         return obj
     }
-    if (Array.isArray(obj)) {
-        return observeArray(obj, old)
-    } else if (avalon.isPlainObject(obj)) {
-        if (old) {
-            var keys = Object.keys(obj)
-            var keys2 = Object.keys(old)
-            if (keys.join(";") === keys2.join(";")) {
-                for (var i in obj) {
-                    if (obj.hasOwnProperty(i)) {
-                        old[i] = obj[i]
-                    }
-                }
-                return old
-            }
-            old.$active = false
-
-        }
-        return observeObject(obj, null, old)
-    }
 }
+
 
 function observeArray(array, old) {
     if (old) {
@@ -1194,8 +1198,8 @@ function observeArray(array, old) {
                 array[i] = EventBus[i]
             }
         }
-        for (var i = 0, n = array.length; i < n; i++) {
-            array[i] = observe(array[i])
+        for (var j = 0, n = array.length; j < n; j++) {
+            array[j] = observe(array[j], 0, 1)
         }
 
         return array
@@ -1539,11 +1543,9 @@ var newProto = {
         }
     },
     set: function (index, val) {
-        if (index >= this.length) {
-            this.length = index + 1
+        if ((index >>> 0 === index) && this[index] !== val) {
+            this.splice(index, 1, val)[0]
         }
-        if (this[index] !== val)
-            return this.splice(index, 1, val)[0]
     },
     contains: function (el) { //判定是否包含
         return this.indexOf(el) !== -1
@@ -1562,6 +1564,7 @@ var newProto = {
     },
     removeAt: function (index) { //移除指定索引上的元素
         if (index >= 0) {
+            console.log("removeAt "+index)
             this.splice(index, 1)
         }
         return  []
@@ -1604,9 +1607,8 @@ arrayMethods.forEach(function (method) {
         // http://jsperf.com/closure-with-arguments
         var args = []
         for (var i = 0, n = arguments.length; i < n; i++) {
-            args[i] = observe(arguments[i])
+            args[i] = observe(arguments[i], 0, 1)
         }
-
         var result = original.apply(this, args)
         if (!W3C) {
             this.$model = toJson(this)
@@ -4050,16 +4052,12 @@ avalon.directive("repeat", {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
                 proxy[itemName] = value[index]
-                /* jshint ignore:start */
-                proxy.$remove = function () {
-                    return value.removeAt(proxy.$index)
-                }
-                /* jshint ignore:end */
             } else {
                 proxy.$key = index
                 proxy.$val = value[index]
             }
         }
+
         if (init) {
             parent.insertBefore(transation, elem)
 
@@ -4159,16 +4157,22 @@ function getProxyVM(data) {
 
 var eachProxyPool = []
 
-function eachProxyAgent(data) {
+function eachProxyAgent(data, proxy) {
     var itemName = data.param || "el"
     for (var i = 0, n = eachProxyPool.length; i < n; i++) {
         var candidate = eachProxyPool[i]
         if (candidate && candidate.hasOwnProperty(itemName)) {
             eachProxyPool.splice(i, 1)
-            return candidate
+            proxy = candidate
         }
     }
-    return eachProxyFactory(itemName)
+    if (!proxy) {
+        proxy = eachProxyFactory(itemName)
+    }
+    proxy.$remove = function () {
+        data.$repeat.removeAt(proxy.$index)
+    }
+    return proxy
 }
 
 function eachProxyFactory(itemName) {
@@ -4182,7 +4186,7 @@ function eachProxyFactory(itemName) {
         $last: false,
         $remove: avalon.noop
     }
-    source[itemName] =   {   
+    source[itemName] = {
         get: function () {
             var e = this.$events
             var array = e.$index
@@ -4212,6 +4216,7 @@ function eachProxyFactory(itemName) {
     second[itemName] = 1
     var proxy = modelFactory(source, second)
     proxy.$id = generateID("$proxy$each")
+
     return proxy
 }
 

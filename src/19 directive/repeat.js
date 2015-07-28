@@ -100,16 +100,12 @@ avalon.directive("repeat", {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
                 proxy[itemName] = value[index]
-                /* jshint ignore:start */
-                proxy.$remove = function () {
-                    return value.removeAt(proxy.$index)
-                }
-                /* jshint ignore:end */
             } else {
                 proxy.$key = index
                 proxy.$val = value[index]
             }
         }
+
         if (init) {
             parent.insertBefore(transation, elem)
 
@@ -209,16 +205,22 @@ function getProxyVM(data) {
 
 var eachProxyPool = []
 
-function eachProxyAgent(data) {
+function eachProxyAgent(data, proxy) {
     var itemName = data.param || "el"
     for (var i = 0, n = eachProxyPool.length; i < n; i++) {
         var candidate = eachProxyPool[i]
         if (candidate && candidate.hasOwnProperty(itemName)) {
             eachProxyPool.splice(i, 1)
-            return candidate
+            proxy = candidate
         }
     }
-    return eachProxyFactory(itemName)
+    if (!proxy) {
+        proxy = eachProxyFactory(itemName)
+    }
+    proxy.$remove = function () {
+        data.$repeat.removeAt(proxy.$index)
+    }
+    return proxy
 }
 
 function eachProxyFactory(itemName) {
@@ -232,7 +234,7 @@ function eachProxyFactory(itemName) {
         $last: false,
         $remove: avalon.noop
     }
-    source[itemName] =   {   
+    source[itemName] = {
         get: function () {
             var e = this.$events
             var array = e.$index
@@ -262,6 +264,7 @@ function eachProxyFactory(itemName) {
     second[itemName] = 1
     var proxy = modelFactory(source, second)
     proxy.$id = generateID("$proxy$each")
+
     return proxy
 }
 

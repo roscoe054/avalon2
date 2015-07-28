@@ -12,11 +12,9 @@ var newProto = {
         }
     },
     set: function (index, val) {
-        if (index >= this.length) {
-            this.length = index + 1
+        if ((index >>> 0 === index) && this[index] !== val) {
+            this.splice(index, 1, val)[0]
         }
-        if (this[index] !== val)
-            return this.splice(index, 1, val)[0]
     },
     contains: function (el) { //判定是否包含
         return this.indexOf(el) !== -1
@@ -35,6 +33,7 @@ var newProto = {
     },
     removeAt: function (index) { //移除指定索引上的元素
         if (index >= 0) {
+            console.log("removeAt "+index)
             this.splice(index, 1)
         }
         return  []
@@ -77,9 +76,8 @@ arrayMethods.forEach(function (method) {
         // http://jsperf.com/closure-with-arguments
         var args = []
         for (var i = 0, n = arguments.length; i < n; i++) {
-            args[i] = observe(arguments[i])
+            args[i] = observe(arguments[i], 0, 1)
         }
-
         var result = original.apply(this, args)
         if (!W3C) {
             this.$model = toJson(this)
