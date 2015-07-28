@@ -28,6 +28,7 @@ avalon.directive("html", {
         }
 
         nodes = avalon.slice(fragment.childNodes)
+        console.log(nodes)
         //插入占位符, 如果是过滤器,需要有节制地移除指定的数量,如果是html指令,直接清空
         if (isHtmlFilter) {
             var endValue = elem.nodeValue.slice(0, -4)

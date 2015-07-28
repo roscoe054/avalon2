@@ -13,7 +13,6 @@ duplexBinding.INPUT = function(element, evaluator, binding) {
         bound = binding.bound,
         $elem = avalon(element),
         composing = false
-
         function callback(value) {
             binding.changed.call(this, value, binding)
         }
