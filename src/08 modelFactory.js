@@ -48,7 +48,7 @@ function modelFactory(source, $special) {
 }
 
 function observe(obj, old) {
-    if (!obj || (obj.$id && obj.$deps)) {
+    if (obj && obj.$deps) {
         return obj
     }
     if (Array.isArray(obj)) {
@@ -70,6 +70,7 @@ function observe(obj, old) {
         }
         return observeObject(obj, null, old)
     }
+    return obj
 }
 
 function observeArray(array, old) {
@@ -222,7 +223,7 @@ var $modelDescriptor = {
 function makeGetSet(key, value) {
     var childVm = observe(value)
     var subs = []
-    if (childVm) {
+    if (Object(childVm) === childVm) {
         childVm.$deps.push(subs)
         value = childVm
     }
@@ -246,7 +247,7 @@ function makeGetSet(key, value) {
             value = newVal
 
             var newVm = observe(newVal, childVm)
-            if (newVm) {
+            if (Object(newVm) === newVm) {
                 newVm.$deps.push(subs)
                 value = newVm
             }
