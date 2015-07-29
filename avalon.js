@@ -1140,17 +1140,19 @@ function modelFactory(source, $special) {
 }
 function observe(obj, old, hasReturn) {
     if (Object(obj) === obj) {
-        if (obj.$deps) {
-            return obj
-        } else if (Array.isArray(obj)) {
+//        if (obj.$deps) {
+//            return obj
+//        } else 
+            if (Array.isArray(obj)) {
             return observeArray(obj, old)
-        } else if (avalon.isPlainObject) {
+        } else if (avalon.isPlainObject(obj)) {
             if (old) {
                 var keys = Object.keys(obj)
                 var keys2 = Object.keys(old)
                 if (keys.join(";") === keys2.join(";")) {
                     for (var i in obj) {
                         if (obj.hasOwnProperty(i)) {
+                            console.log(i, obj[i])
                             old[i] = obj[i]
                         }
                     }
@@ -1241,7 +1243,6 @@ function observeObject(source, $special, old) {
                 }
             } else {
                 if (oldAccessors[name]) {
-                   // console.log()
                     accessors[name] = oldAccessors[name]
                 } else {
                     accessors[name] = makeGetSet(name, val)
@@ -1255,16 +1256,16 @@ function observeObject(source, $special, old) {
 
 
     $vmodel = Object.defineProperties($vmodel, accessors)
-    if (!W3C) {
-        /* jshint ignore:start */
-        $vmodel.hasOwnProperty = function (name) {
-            return names.indexOf(name) !== -1
-        }
-        /* jshint ignore:end */
+    // if (!W3C) {
+    /* jshint ignore:start */
+    $vmodel.hasOwnProperty = function (name) {
+        return names.indexOf(name) !== -1
     }
+    /* jshint ignore:end */
+    //  }
     names.forEach(function (name, val) {
-        //if (oldAccessors[name] || !accessors[name]) {
-        if(!accessors[name]){
+        if (oldAccessors[name] || !accessors[name]) {
+
             $vmodel[name] = source[name]
         }
     })
@@ -1273,7 +1274,7 @@ function observeObject(source, $special, old) {
         old.$events = {}
     }
     hideProperty($vmodel, "$accessors", accessors)
-
+    hideProperty($vmodel, "$id", "_" + (new Date - 0))
     hideProperty($vmodel, "$active", true)
     hideProperty($vmodel, "$events", {})
     hideProperty($vmodel, "$deps", [])
@@ -1328,13 +1329,14 @@ function makeGetSet(key, value) {
         key: key,
         get: function () {
             if (this.$active) {
+              
                 collectDependency(subs)
             }
             this.$events && (this.$events[key] = subs)
             return value
         },
         set: function (newVal) {
-            if (newVal === value || stopRepeatAssign)
+            if (value === newVal || stopRepeatAssign)
                 return
             if (childVm) {
                 avalon.Array.remove(childVm.$deps, subs)
@@ -1342,8 +1344,7 @@ function makeGetSet(key, value) {
 
             var oldValue = value
             value = newVal
-
-            var newVm = observe(newVal, childVm)
+            var newVm = observe(newVal, oldValue)
             if (newVm) {
                 newVm.$deps.push(subs)
                 value = newVm
@@ -1546,20 +1547,25 @@ var newProto = {
     },
     set: function (index, val) {
         if ((index >>> 0 === index) && this[index] !== val) {
-            if(Object(val) === val){
-               // val = val.$deps ? val.$model : val
-                var target = this[index]
-                for (var i in val) {
-                    if (target.hasOwnProperty(i)) {
-                        target[i] = val[i]
-                    }
-                }
-                 
-            }else{
-                 this.splice(index, 1, val)[0]
+            var uniq = {
+                undefined: 1
             }
-            
-           
+            var old = this[index]
+            var flag = true
+            this.$deps.forEach(function (arr) {
+                arr.forEach(function (el) {
+                    if (!uniq[el.signature]) {
+                        uniq[el.signature] = 1
+                        flag = false
+                        el.proxies[index][el.param || "el"] = val
+                    }
+                })
+            })
+            if (old === this[index] ) {
+                console.log("xxx")
+                this[index] = observe(val, this[index], true)
+            }
+
         }
     },
     contains: function (el) { //判定是否包含
@@ -4050,14 +4056,16 @@ avalon.directive("repeat", {
         var transation = init && avalonFragment.cloneNode(false)
         var length = renderKeys.length
         var itemName = binding.param || "el"
-        var proxies =[]
+        var proxies = []
+        var now2 = (new Date - 0) + " "
         for (i = 0; i < length; i++) {
             var index = xtype === "object" ? renderKeys[i] : i
             var proxy = retain[index]
-           
+
             if (!proxy) {
                 proxy = binding.cache[index] = getProxyVM(binding) //创建
                 shimController(binding, transation, proxy, fragments, init)
+                proxy._new = true
             } else {
                 fragments.push({})
                 retain[index] = true
@@ -4069,30 +4077,32 @@ avalon.directive("repeat", {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
                 proxy[itemName] = value[index]
-                
-         
             } else {
                 proxy.$key = index
                 proxy.$val = value[index]
             }
+            proxy[now2 + i] = i
             proxies.push(proxy)
         }
         this.proxies = proxies
+        proxies.forEach(function (el) {
+            delete el._new
+        })
         if (init) {
             parent.insertBefore(transation, elem)
 
             fragments.forEach(function (fragment) {
-                scanNodeArray(fragment.nodes, fragment.vmodels)
+                scanNodeArray(fragment.nodes || [], fragment.vmodels)
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
         } else {
 
-//            //移除节点
+            //移除节点
             var keys = []
             for (key in retain) {
-                
+
                 if (retain[key] && retain[key] !== true) {
-                  
+
                     removeItem(retain[key].$anchor)
                     proxyRecycler(binding.cache, key)
                     // delete binding.cache[key] //这里应该回收代理VM
@@ -4102,10 +4112,11 @@ avalon.directive("repeat", {
                 }
             }
 
-            
-            
+
+
             //移动或新增节点
             for (i = 0; i < length; i++) {
+
                 var cur = xtype === "object" ? renderKeys[i] : i
                 var pre = xtype === "object" ? renderKeys[i - 1] : i - 1
                 var old = keys[i]
@@ -4113,21 +4124,24 @@ avalon.directive("repeat", {
                 var fragment = fragments[i]
                 if (!retain[cur]) { //如果还有插入节点，那么将它插入到preEl的后面
                     parent.insertBefore(fragment.content, preEl.nextSibling)
-                    scanNodeArray(fragment.nodes, fragment.vmodels)
+                    fragment.nodes && scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
+                    console.log("插入")
                 } else {
                     if (old !== cur) {
+
                         var curNode = removeItem(binding.cache[cur].$anchor)
                         parent.insertBefore(curNode, preEl.nextSibling)
+                        console.log("移动")
                     } else {
                         //什么也不用做
                     }
                 }
 
             }
-           
+
         }
-        
+
         if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
             avalon(parent).val(parent.oldValue.split(","))
         }

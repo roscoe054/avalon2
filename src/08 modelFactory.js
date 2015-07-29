@@ -48,17 +48,19 @@ function modelFactory(source, $special) {
 }
 function observe(obj, old, hasReturn) {
     if (Object(obj) === obj) {
-        if (obj.$deps) {
-            return obj
-        } else if (Array.isArray(obj)) {
+//        if (obj.$deps) {
+//            return obj
+//        } else 
+            if (Array.isArray(obj)) {
             return observeArray(obj, old)
-        } else if (avalon.isPlainObject) {
+        } else if (avalon.isPlainObject(obj)) {
             if (old) {
                 var keys = Object.keys(obj)
                 var keys2 = Object.keys(old)
                 if (keys.join(";") === keys2.join(";")) {
                     for (var i in obj) {
                         if (obj.hasOwnProperty(i)) {
+                            console.log(i, obj[i])
                             old[i] = obj[i]
                         }
                     }
@@ -149,7 +151,6 @@ function observeObject(source, $special, old) {
                 }
             } else {
                 if (oldAccessors[name]) {
-                   // console.log()
                     accessors[name] = oldAccessors[name]
                 } else {
                     accessors[name] = makeGetSet(name, val)
@@ -163,16 +164,16 @@ function observeObject(source, $special, old) {
 
 
     $vmodel = Object.defineProperties($vmodel, accessors)
-    if (!W3C) {
-        /* jshint ignore:start */
-        $vmodel.hasOwnProperty = function (name) {
-            return names.indexOf(name) !== -1
-        }
-        /* jshint ignore:end */
+    // if (!W3C) {
+    /* jshint ignore:start */
+    $vmodel.hasOwnProperty = function (name) {
+        return names.indexOf(name) !== -1
     }
+    /* jshint ignore:end */
+    //  }
     names.forEach(function (name, val) {
-        //if (oldAccessors[name] || !accessors[name]) {
-        if(!accessors[name]){
+        if (oldAccessors[name] || !accessors[name]) {
+
             $vmodel[name] = source[name]
         }
     })
@@ -181,7 +182,7 @@ function observeObject(source, $special, old) {
         old.$events = {}
     }
     hideProperty($vmodel, "$accessors", accessors)
-
+    hideProperty($vmodel, "$id", "_" + (new Date - 0))
     hideProperty($vmodel, "$active", true)
     hideProperty($vmodel, "$events", {})
     hideProperty($vmodel, "$deps", [])
@@ -236,13 +237,14 @@ function makeGetSet(key, value) {
         key: key,
         get: function () {
             if (this.$active) {
+              
                 collectDependency(subs)
             }
             this.$events && (this.$events[key] = subs)
             return value
         },
         set: function (newVal) {
-            if (newVal === value || stopRepeatAssign)
+            if (value === newVal || stopRepeatAssign)
                 return
             if (childVm) {
                 avalon.Array.remove(childVm.$deps, subs)
@@ -250,8 +252,7 @@ function makeGetSet(key, value) {
 
             var oldValue = value
             value = newVal
-
-            var newVm = observe(newVal, childVm)
+            var newVm = observe(newVal, oldValue)
             if (newVm) {
                 newVm.$deps.push(subs)
                 value = newVm

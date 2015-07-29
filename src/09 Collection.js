@@ -27,7 +27,8 @@ var newProto = {
                     }
                 })
             })
-            if (old === this[index] && flag) {
+            if (old === this[index] ) {
+                console.log("xxx")
                 this[index] = observe(val, this[index], true)
             }
 

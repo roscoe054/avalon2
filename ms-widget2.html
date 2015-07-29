@@ -48,29 +48,55 @@
                     fn()
                 }
             }
-            var vmodel = avalon.define("test", function (vm) {
-                vm.array = [{
+            var vm = avalon.define({
+                $id: "test",
+                array: [{
                         a: 1
                     }, {
                         a: 2
                     }, {
                         a: 3
-                    }]
-                vm.add = function () {
-                    vmodel.array.push({
-                        a: 4
+                    }],
+                add: function () {
+                    vm.array.push({
+                        a: "4"
                     })
+                },
+                setObject: function () {
+                    vm.array.set(0, {a: 9})
+                },
+                arr: [1, 2, 3, 4],
+                show: function () {
+                    console.log(vm.$events.array[0])
                 }
             })//
+            vm.array.forEach(function (el) {
+                el.$watch("a", function (v) {
+                    console.log(v)
+                })
+            })
             var body = document.body
             var div = document.createElement("div")
-            div.innerHTML = '<ul><li ms-repeat="array" ><input type=radio ms-click=$remove><input ms-duplex="el.a">{{el.a}}</li></ul><button ms-click="add" type="button">add</button>'
+            div.innerHTML = heredoc(function () {
+                /*
+                 
+                 <ul><li ms-repeat="array" >
+                 <input type=radio ms-click=$remove><input ms-duplex="el.a">{{el.a}}</li>
+                 </ul>
+                 <button ms-click="add" type="button">add</button>
+                 <button type=button ms-click=show>show</button>
+                 <button type=button ms-click=setObject>setObject</button>
+                 */
+            })
             body.appendChild(div)
-            avalon.scan(div, vmodel)
+            avalon.scan(div, vm)
 
 
 
         </script>
         <h1>删除第一个元素后,然后再修改对文本域进行操作,发现不同步了</h1>
+        <ul ms-controller="test">
+            <li ms-repeat="arr">{{el}}</li>
+        </ul>
     </body>
 </html>
