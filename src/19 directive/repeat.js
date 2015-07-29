@@ -83,9 +83,11 @@ avalon.directive("repeat", {
         var transation = init && avalonFragment.cloneNode(false)
         var length = renderKeys.length
         var itemName = binding.param || "el"
+        var proxies =[]
         for (i = 0; i < length; i++) {
             var index = xtype === "object" ? renderKeys[i] : i
             var proxy = retain[index]
+           
             if (!proxy) {
                 proxy = binding.cache[index] = getProxyVM(binding) //创建
                 shimController(binding, transation, proxy, fragments, init)
@@ -100,12 +102,15 @@ avalon.directive("repeat", {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
                 proxy[itemName] = value[index]
+                
+         
             } else {
                 proxy.$key = index
                 proxy.$val = value[index]
             }
+            proxies.push(proxy)
         }
-
+        this.proxies = proxies
         if (init) {
             parent.insertBefore(transation, elem)
 
@@ -114,10 +119,13 @@ avalon.directive("repeat", {
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
         } else {
-            //移除节点
+
+//            //移除节点
             var keys = []
             for (key in retain) {
+                
                 if (retain[key] && retain[key] !== true) {
+                  
                     removeItem(retain[key].$anchor)
                     proxyRecycler(binding.cache, key)
                     // delete binding.cache[key] //这里应该回收代理VM
@@ -126,6 +134,9 @@ avalon.directive("repeat", {
                     keys.push(key)
                 }
             }
+
+            
+            
             //移动或新增节点
             for (i = 0; i < length; i++) {
                 var cur = xtype === "object" ? renderKeys[i] : i
@@ -147,7 +158,9 @@ avalon.directive("repeat", {
                 }
 
             }
+           
         }
+        
         if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
             avalon(parent).val(parent.oldValue.split(","))
         }
@@ -234,28 +247,7 @@ function eachProxyFactory(itemName) {
         $last: false,
         $remove: avalon.noop
     }
-    source[itemName] = {
-        get: function () {
-            var e = this.$events
-            var array = e.$index
-            e.$index = e[itemName] //#817 通过$index为el收集依赖
-            try {
-                return this.$host[this.$index]
-            } finally {
-                e.$index = array
-            }
-        },
-        set: function (val) {
-            try {
-                var e = this.$events
-                var array = e.$index
-                e.$index = []
-                this.$host.set(this.$index, val)
-            } finally {
-                e.$index = array
-            }
-        }
-    }
+    source[itemName] = NaN
     var second = {
         $last: 1,
         $first: 1,

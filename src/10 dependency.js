@@ -42,8 +42,9 @@ avalon.injectBinding = function (binding) {
                 var value = valueFn.apply(0, binding.args)
                 if (binding.xtype && value === void 0) {
                     delete binding.evaluator
-                }
+                }                 
                 if (binding.oldValue !== value) {
+                   
                     binding.handler.call(binding, value, binding.oldValue)
                     binding.oldValue = binding.xtype === "array" ? value.concat() :
                             binding.xtype === "object" ? avalon.mix({}, value) :

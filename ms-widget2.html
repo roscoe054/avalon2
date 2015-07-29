@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+
+
+    </head>
+    <body>
+        <div>TODO write content</div>
+        <script>
+            function expect(a) {
+                return {
+                    to: {
+                        be: function (b) {
+                            console.log(a, b, a === b)
+                        }
+                    }
+                }
+            }
+            function fireClick(el) {
+                if (el.click) {
+                    el.click()
+                } else {
+//https://developer.mozilla.org/samples/domref/dispatchEvent.html
+                    var evt = document.createEvent("MouseEvents")
+                    evt.initMouseEvent("click", true, true, window,
+                            0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                    !el.dispatchEvent(evt);
+                }
+            }
+            function heredoc(fn) {
+                return fn.toString().replace(/^[^\/]+\/\*!?\s?/, '').replace(/\*\/[^\/]+$/, '')
+            }
+            function clearTest(vmName, div, fn) {
+                if (typeof vmName === "string") {
+                    delete avalon.vmodels[vmName]
+                } else if (vmName) {
+                    delete avalon.vmodels[vmName.$id]
+                }
+                if (div) {
+                    div.innerHTML = ""
+                    document.body.removeChild(div)
+                }
+                if (fn) {
+                    fn()
+                }
+            }
+            var vmodel = avalon.define("test", function (vm) {
+                vm.array = [{
+                        a: 1
+                    }, {
+                        a: 2
+                    }, {
+                        a: 3
+                    }]
+                vm.add = function () {
+                    vmodel.array.push({
+                        a: 4
+                    })
+                }
+            })//
+            var body = document.body
+            var div = document.createElement("div")
+            div.innerHTML = '<ul><li ms-repeat="array" ><input type=radio ms-click=$remove><input ms-duplex="el.a">{{el.a}}</li></ul><button ms-click="add" type="button">add</button>'
+            body.appendChild(div)
+            avalon.scan(div, vmodel)
+
+
+
+        </script>
+    </body>
+</html>

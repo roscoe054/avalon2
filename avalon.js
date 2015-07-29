@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.44 built in 2015.7.28
+ avalon.js 1.44 built in 2015.7.29
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1241,6 +1241,7 @@ function observeObject(source, $special, old) {
                 }
             } else {
                 if (oldAccessors[name]) {
+                   // console.log()
                     accessors[name] = oldAccessors[name]
                 } else {
                     accessors[name] = makeGetSet(name, val)
@@ -1262,7 +1263,8 @@ function observeObject(source, $special, old) {
         /* jshint ignore:end */
     }
     names.forEach(function (name, val) {
-        if (oldAccessors[name] || !accessors[name]) {
+        //if (oldAccessors[name] || !accessors[name]) {
+        if(!accessors[name]){
             $vmodel[name] = source[name]
         }
     })
@@ -1544,7 +1546,20 @@ var newProto = {
     },
     set: function (index, val) {
         if ((index >>> 0 === index) && this[index] !== val) {
-            this.splice(index, 1, val)[0]
+            if(Object(val) === val){
+               // val = val.$deps ? val.$model : val
+                var target = this[index]
+                for (var i in val) {
+                    if (target.hasOwnProperty(i)) {
+                        target[i] = val[i]
+                    }
+                }
+                 
+            }else{
+                 this.splice(index, 1, val)[0]
+            }
+            
+           
         }
     },
     contains: function (el) { //判定是否包含
@@ -1564,7 +1579,6 @@ var newProto = {
     },
     removeAt: function (index) { //移除指定索引上的元素
         if (index >= 0) {
-            console.log("removeAt "+index)
             this.splice(index, 1)
         }
         return  []
@@ -1664,8 +1678,9 @@ avalon.injectBinding = function (binding) {
                 var value = valueFn.apply(0, binding.args)
                 if (binding.xtype && value === void 0) {
                     delete binding.evaluator
-                }
+                }                 
                 if (binding.oldValue !== value) {
+                   
                     binding.handler.call(binding, value, binding.oldValue)
                     binding.oldValue = binding.xtype === "array" ? value.concat() :
                             binding.xtype === "object" ? avalon.mix({}, value) :
@@ -4035,9 +4050,11 @@ avalon.directive("repeat", {
         var transation = init && avalonFragment.cloneNode(false)
         var length = renderKeys.length
         var itemName = binding.param || "el"
+        var proxies =[]
         for (i = 0; i < length; i++) {
             var index = xtype === "object" ? renderKeys[i] : i
             var proxy = retain[index]
+           
             if (!proxy) {
                 proxy = binding.cache[index] = getProxyVM(binding) //创建
                 shimController(binding, transation, proxy, fragments, init)
@@ -4052,12 +4069,15 @@ avalon.directive("repeat", {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
                 proxy[itemName] = value[index]
+                
+         
             } else {
                 proxy.$key = index
                 proxy.$val = value[index]
             }
+            proxies.push(proxy)
         }
-
+        this.proxies = proxies
         if (init) {
             parent.insertBefore(transation, elem)
 
@@ -4066,10 +4086,13 @@ avalon.directive("repeat", {
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
         } else {
-            //移除节点
+
+//            //移除节点
             var keys = []
             for (key in retain) {
+                
                 if (retain[key] && retain[key] !== true) {
+                  
                     removeItem(retain[key].$anchor)
                     proxyRecycler(binding.cache, key)
                     // delete binding.cache[key] //这里应该回收代理VM
@@ -4078,6 +4101,9 @@ avalon.directive("repeat", {
                     keys.push(key)
                 }
             }
+
+            
+            
             //移动或新增节点
             for (i = 0; i < length; i++) {
                 var cur = xtype === "object" ? renderKeys[i] : i
@@ -4099,7 +4125,9 @@ avalon.directive("repeat", {
                 }
 
             }
+           
         }
+        
         if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
             avalon(parent).val(parent.oldValue.split(","))
         }
@@ -4186,28 +4214,7 @@ function eachProxyFactory(itemName) {
         $last: false,
         $remove: avalon.noop
     }
-    source[itemName] = {
-        get: function () {
-            var e = this.$events
-            var array = e.$index
-            e.$index = e[itemName] //#817 通过$index为el收集依赖
-            try {
-                return this.$host[this.$index]
-            } finally {
-                e.$index = array
-            }
-        },
-        set: function (val) {
-            try {
-                var e = this.$events
-                var array = e.$index
-                e.$index = []
-                this.$host.set(this.$index, val)
-            } finally {
-                e.$index = array
-            }
-        }
-    }
+    source[itemName] = NaN
     var second = {
         $last: 1,
         $first: 1,

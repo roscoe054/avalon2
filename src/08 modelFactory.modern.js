@@ -41,28 +41,32 @@ function modelFactory(source, $special) {
     return observeObject(source, $special)
 }
 
-function observe(obj, old) {
-    if (!obj || (obj.$id && obj.$deps)) {
-        return obj
-    }
-    if (Array.isArray(obj)) {
-        return observeArray(obj, old)
-    } else if (avalon.isPlainObject(obj)) {
-        if (old) {
-            var keys = Object.keys(obj)
-            var keys2 = Object.keys(old)
-            if (keys.join(";") === keys2.join(";")) {
-                for (var i in obj) {
-                    if (obj.hasOwnProperty(i)) {
-                        old[i] = obj[i]
+function observe(obj, old, hasReturn) {
+    if (Object(obj) === obj) {
+        if (obj.$deps) {
+            return obj
+        } else if (Array.isArray(obj)) {
+            return observeArray(obj, old)
+        } else if (avalon.isPlainObject) {
+            if (old) {
+                var keys = Object.keys(obj)
+                var keys2 = Object.keys(old)
+                if (keys.join(";") === keys2.join(";")) {
+                    for (var i in obj) {
+                        if (obj.hasOwnProperty(i)) {
+                            old[i] = obj[i]
+                        }
                     }
+                    return old
                 }
-                return old
-            }
-            old.$active = false
+                old.$active = false
 
+            }
+            return observeObject(obj, null, old)
         }
-        return observeObject(obj, null, old)
+    }
+    if (hasReturn) {
+        return obj
     }
 }
 
@@ -94,8 +98,9 @@ function observeArray(array, old) {
                 array[i] = EventBus[i]
             }
         }
-        for (var i = 0, n = array.length; i < n; i++) {
-            array[i] = observe(array[i])
+
+        for (var j = 0, n = array.length; j < n; j++) {
+            array[j] = observe(array[j], 0, 1)
         }
 
         return array

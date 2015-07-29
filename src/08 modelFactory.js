@@ -149,6 +149,7 @@ function observeObject(source, $special, old) {
                 }
             } else {
                 if (oldAccessors[name]) {
+                   // console.log()
                     accessors[name] = oldAccessors[name]
                 } else {
                     accessors[name] = makeGetSet(name, val)
@@ -170,7 +171,8 @@ function observeObject(source, $special, old) {
         /* jshint ignore:end */
     }
     names.forEach(function (name, val) {
-        if (oldAccessors[name] || !accessors[name]) {
+        //if (oldAccessors[name] || !accessors[name]) {
+        if(!accessors[name]){
             $vmodel[name] = source[name]
         }
     })

@@ -13,7 +13,20 @@ var newProto = {
     },
     set: function (index, val) {
         if ((index >>> 0 === index) && this[index] !== val) {
-            this.splice(index, 1, val)[0]
+            if(Object(val) === val){
+               // val = val.$deps ? val.$model : val
+                var target = this[index]
+                for (var i in val) {
+                    if (target.hasOwnProperty(i)) {
+                        target[i] = val[i]
+                    }
+                }
+                 
+            }else{
+                 this.splice(index, 1, val)[0]
+            }
+            
+           
         }
     },
     contains: function (el) { //判定是否包含
@@ -33,7 +46,6 @@ var newProto = {
     },
     removeAt: function (index) { //移除指定索引上的元素
         if (index >= 0) {
-            console.log("removeAt "+index)
             this.splice(index, 1)
         }
         return  []
