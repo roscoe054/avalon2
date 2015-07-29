@@ -13,20 +13,24 @@ var newProto = {
     },
     set: function (index, val) {
         if ((index >>> 0 === index) && this[index] !== val) {
-            if(Object(val) === val){
-               // val = val.$deps ? val.$model : val
-                var target = this[index]
-                for (var i in val) {
-                    if (target.hasOwnProperty(i)) {
-                        target[i] = val[i]
-                    }
-                }
-                 
-            }else{
-                 this.splice(index, 1, val)[0]
+            var uniq = {
+                undefined: 1
             }
-            
-           
+            var old = this[index]
+            var flag = true
+            this.$deps.forEach(function (arr) {
+                arr.forEach(function (el) {
+                    if (!uniq[el.signature]) {
+                        uniq[el.signature] = 1
+                        flag = false
+                        el.proxies[index][el.param || "el"] = val
+                    }
+                })
+            })
+            if (old === this[index] && flag) {
+                this[index] = observe(val, this[index], true)
+            }
+
         }
     },
     contains: function (el) { //判定是否包含
