@@ -12,23 +12,19 @@ var newProto = {
         }
     },
     set: function (index, val) {
-        if ((index >>> 0 === index) && this[index] !== val) {
-            var uniq = {
-                undefined: 1
-            }
+        if (((index >>> 0) === index) && this[index] !== val) {
+            var uniq = {}
             var old = this[index]
-            var flag = true
             this.$deps.forEach(function (arr) {
                 arr.forEach(function (el) {
-                    if (!uniq[el.signature]) {
-                        uniq[el.signature] = 1
-                        flag = false
+                    var key = el.signature
+                    if (key && !uniq[key]) {
+                        uniq[key] = 1
                         el.proxies[index][el.param || "el"] = val
                     }
                 })
             })
             if (old === this[index] ) {
-                console.log("xxx")
                 this[index] = observe(val, this[index], true)
             }
 
@@ -50,10 +46,9 @@ var newProto = {
         return this.removeAt(this.indexOf(el))
     },
     removeAt: function (index) { //移除指定索引上的元素
-        if (index >= 0) {
+        if ((index >>> 0) === index) {
             this.splice(index, 1)
         }
-        return  []
     },
     size: function () { //取得数组长度，这个函数可以同步视图，length不能
         return this._.length
