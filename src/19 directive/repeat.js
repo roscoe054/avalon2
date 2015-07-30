@@ -32,22 +32,23 @@ avalon.directive("repeat", {
     },
     update: function (value, oldValue) {
         //console.log(value, oldValue)
-        var source = toJson(value) //必须保存不会被同步的原始数据
+        var source = toJson(value) //保存不会被同步的原始数据,防止在内部赋值过程中因ms-duplex被串改
         console.log(source, oldValue)
         var init = !oldValue
         var binding = this
         var elem = this.element
         var now = new Date() - 0
-        var xtype
         var parent = elem.parentNode
         var renderKeys = []
-        if (Array.isArray(value)) {
-            xtype = "array"
+        var xtype = avalon.type(value)
+        if (xtype !== "array" && xtype !== "object") {
+            avalon.log("warning:" + binding.expr + "只能是对象或数组")
+            return
+        }
+        if (xtype === "array") {
             renderKeys = source
-
-        } else if (value && typeof value === "object") {
-            xtype = "object"
-            for (var key in value) {
+        } else {
+            for (var key in source) {
                 if (value.hasOwnProperty(key) && $$skipArray.indexOf(key) === -1) {
                     renderKeys.push(key)
                 }
@@ -59,9 +60,6 @@ avalon.directive("repeat", {
                     renderKeys = keys2
                 }
             }
-        } else {
-            avalon.log("warning:" + binding.value + "只能是对象或数组")
-            return
         }
 
         if (init) {
@@ -116,9 +114,8 @@ avalon.directive("repeat", {
                 proxy[itemName] = source[index]
             } else {
                 proxy.$key = index
-                if (oldValue) {
-                    proxy.$val = value[index]
-                }
+                proxy.$val = source[index]
+
             }
             proxies.push(proxy)
         })
@@ -139,12 +136,11 @@ avalon.directive("repeat", {
             //移除节点
             var keys = []
             for (key in retain) {
-
                 if (retain[key] && retain[key] !== true) {
-
+                    avalon.log("delete " + key)
                     removeItem(retain[key].$anchor)
+                    // 相当于delete binding.cache[key]
                     proxyRecycler(binding.cache, key)
-                    // delete binding.cache[key] //这里应该回收代理VM
                     retain[key] = null
                 } else {
                     keys.push(key)

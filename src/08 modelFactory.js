@@ -47,7 +47,7 @@ function modelFactory(source, $special) {
     return observeObject(source, $special)
 }
 function observe(obj, old, hasReturn) {
-    if (Object(obj) === obj) {
+    if (Object(obj) === obj) {//判定是否复杂数据类型
         if (Array.isArray(obj)) {
             return observeArray(obj, old)
         } else if (avalon.isPlainObject(obj)) {
@@ -210,7 +210,8 @@ function observeObject(source, $special, old) {
     return $vmodel
 }
 function toJson(val) {
-    if (Array.isArray(val)) {
+    var xtype = avalon.type(val)
+    if (xtype === "array") {
         if (val.$active && val.$deps) {
             var array = []
             for (var i = 0; i < val.length; i++) {
@@ -218,7 +219,7 @@ function toJson(val) {
             }
             return array
         }
-    } else if (val && typeof val === "object" && val.$active) {
+    } else if (xtype === "object" && val.$active) {
         var obj = {}
         for (i in val) {
             if (val.hasOwnProperty(i)) {
