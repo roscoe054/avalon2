@@ -30,7 +30,11 @@ avalon.directive("repeat", {
             binding.element = end
         }
     },
-    update: function (value) {
+    update: function (value, oldValue) {
+        //console.log(value, oldValue)
+        var source = toJson(value) //必须保存不会被同步的原始数据
+        console.log(source, oldValue)
+        var init = !oldValue
         var binding = this
         var elem = this.element
         var now = new Date() - 0
@@ -39,7 +43,7 @@ avalon.directive("repeat", {
         var renderKeys = []
         if (Array.isArray(value)) {
             xtype = "array"
-            renderKeys = value
+            renderKeys = source
 
         } else if (value && typeof value === "object") {
             xtype = "object"
@@ -59,7 +63,7 @@ avalon.directive("repeat", {
             avalon.log("warning:" + binding.value + "只能是对象或数组")
             return
         }
-        var init = !binding.oldValue
+
         if (init) {
             binding.xtype = xtype
             binding.$outer = {}
@@ -84,15 +88,21 @@ avalon.directive("repeat", {
         var length = renderKeys.length
         var itemName = binding.param || "el"
         var proxies = []
-        var now2 = (new Date - 0) + " "
-        for (i = 0; i < length; i++) {
+        renderKeys.forEach(function (el, i) {
             var index = xtype === "object" ? renderKeys[i] : i
             var proxy = retain[index]
 
             if (!proxy) {
                 proxy = binding.cache[index] = getProxyVM(binding) //创建
                 shimController(binding, transation, proxy, fragments, init)
-                proxy._new = true
+
+                proxy.$active = false
+                var hack = proxy[itemName]
+                proxy.$active = true
+                proxy.$watch(itemName, function (a, b) {
+
+                    binding.$repeat[proxy.$index] = a
+                })
             } else {
                 fragments.push({})
                 retain[index] = true
@@ -103,25 +113,27 @@ avalon.directive("repeat", {
             if (xtype === "array") {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
-                proxy[itemName] = value[index]
+                proxy[itemName] = source[index]
             } else {
                 proxy.$key = index
-                proxy.$val = value[index]
+                if (oldValue) {
+                    proxy.$val = value[index]
+                }
             }
-            proxy[now2 + i] = i
             proxies.push(proxy)
-        }
-        this.proxies = proxies
-        proxies.forEach(function (el) {
-            delete el._new
         })
-        if (init) {
-            parent.insertBefore(transation, elem)
 
+        this.proxies = proxies
+
+        if (init) {
+
+            parent.insertBefore(transation, elem)
             fragments.forEach(function (fragment) {
                 scanNodeArray(fragment.nodes || [], fragment.vmodels)
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
+
+
         } else {
 
             //移除节点
@@ -218,6 +230,7 @@ function getProxyVM(data) {
     var factory = data.xtype === "object" ? withProxyAgent : eachProxyAgent
     var proxy = factory(data)
     var node = proxy.$anchor || (proxy.$anchor = data.element.cloneNode(false))
+    proxy.$watch = proxy.$watch
     node.nodeValue = data.signature
     proxy.$host = data.$repeat
     proxy.$outer = data.$outer
@@ -256,6 +269,30 @@ function eachProxyFactory(itemName) {
         $remove: avalon.noop
     }
     source[itemName] = NaN
+//    source[itemName] = {
+//        get: function () {
+//            var e = this.$events || {}
+//            var array = e.$index
+//            e.$index = e[itemName] //#817 通过$index为el收集依赖
+//            try {
+//                return this.$host[this.$index]
+//            } finally {
+//                e.$index = array
+//            }
+//        },
+//        set: function (val) {
+//            try {
+//                var e = this.$events || {}
+//                console.log(val)
+//                var array = e.$index
+//
+//                e.$index = []
+//                this.$host.set(this.$index, val)
+//            } finally {
+//                e.$index = array
+//            }
+//        }
+//    }
     var second = {
         $last: 1,
         $first: 1,

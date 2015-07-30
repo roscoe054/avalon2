@@ -48,9 +48,6 @@ function modelFactory(source, $special) {
 }
 function observe(obj, old, hasReturn) {
     if (Object(obj) === obj) {
-//        if (obj.$deps) {
-//            return obj
-//        } else 
         if (Array.isArray(obj)) {
             return observeArray(obj, old)
         } else if (avalon.isPlainObject(obj)) {

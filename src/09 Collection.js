@@ -14,19 +14,24 @@ var newProto = {
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {
             var uniq = {}
-            var old = this[index]
+
+            this[index] = observe(val, this[index], true)
+            console.log("cccc")
             this.$deps.forEach(function (arr) {
                 arr.forEach(function (el) {
                     var key = el.signature
-                    if (key && !uniq[key]) {
+                    if (key && !uniq[key] && el.proxies) {
                         uniq[key] = 1
-                        el.proxies[index][el.param || "el"] = val
+                        el.proxies[index].$events[el.param || "el"].forEach(function (elem) {
+                            if (!elem.proxies) {
+                                elem.update()
+                            }
+                        })
                     }
                 })
             })
-            if (old === this[index] ) {
-                this[index] = observe(val, this[index], true)
-            }
+
+            //
 
         }
     },
