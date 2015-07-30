@@ -86,7 +86,7 @@ avalon.directive("repeat", {
         var length = renderKeys.length
         var itemName = binding.param || "el"
         var proxies = []
-        renderKeys.forEach(function (el, i) {
+        for(var i = 0; i < length; i++) {
             var index = xtype === "object" ? renderKeys[i] : i
             var proxy = retain[index]
 
@@ -98,7 +98,6 @@ avalon.directive("repeat", {
                 var hack = proxy[itemName]
                 proxy.$active = true
                 proxy.$watch(itemName, function (a, b) {
-
                     binding.$repeat[proxy.$index] = a
                 })
             } else {
@@ -118,7 +117,7 @@ avalon.directive("repeat", {
 
             }
             proxies.push(proxy)
-        })
+        }
 
         this.proxies = proxies
 
@@ -148,11 +147,10 @@ avalon.directive("repeat", {
             }
 
 
-
             //移动或新增节点
             for (i = 0; i < length; i++) {
-
-                var cur = xtype === "object" ? renderKeys[i] : i
+                //如果是数组,必须将i转换为字符串,因为上方keys里面从retain取出来的都是字符串
+                var cur = xtype === "object" ? renderKeys[i] : i +"" 
                 var pre = xtype === "object" ? renderKeys[i - 1] : i - 1
                 var old = keys[i]
                 var preEl = binding.cache[pre] ? binding.cache[pre].$anchor : binding.start
