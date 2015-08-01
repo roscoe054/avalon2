@@ -28,6 +28,7 @@ var ronduplex = /^on$/
 function returnRandom() {
     return new Date() - 0
 }
+
 avalon.injectBinding = function (binding) {
     if (binding.evaluator) { //如果是求值函数
         dependencyDetection.begin({
@@ -42,14 +43,26 @@ avalon.injectBinding = function (binding) {
                 var value = valueFn.apply(0, binding.args)
                 if (binding.xtype && value === void 0) {
                     delete binding.evaluator
-                }                 
-                if (binding.oldValue !== value) {
-                   
-                    binding.handler.call(binding, value, binding.oldValue)
-                    binding.oldValue = binding.xtype === "array" ? value.concat() :
-                            binding.xtype === "object" ? avalon.mix({}, value) :
-                            value
                 }
+                if (binding.signature) {
+                    var a = getProxyIds(binding.$proxy)
+                    var b = getProxyIds(value && value.$proxy)
+                    console.log(a, b)
+                    
+                    if ( a !== b) {
+                        binding.handler.call(binding, value, binding.oldValue)
+                        binding.oldValue = binding.xtype === "array" ? value.concat() : binding.xtype === "object" ?
+                                avalon.mix({}, value) : value
+                        // binding.proxies 
+                    }
+                } else {
+                    if (binding.oldValue !== value) {
+                        binding.handler.call(binding, value, binding.oldValue)
+                        binding.oldValue = value
+                    }
+                }
+                ///  console.log(binding.oldValue, value, isSameValue(binding.oldValue, value))
+
             }
             binding.update()
         } catch (e) {
@@ -74,4 +87,23 @@ function injectDependency(list, binding) {
     if (list && avalon.Array.ensure(list, binding) && binding.element) {
         injectDisposeQueue(binding, list)
     }
+}
+
+
+
+function getProxyIds(a) {
+    var ret = []
+    if (Array.isArray(a)) {
+        for (var i = 0, n = a.length; i < n; i++) {
+            ret.push(a[i].$id)
+        }
+    } else {
+        for (var i in a) {
+            if (a.hasOwnProperty(i)) {
+                ret.push(a[i].$id)
+            }
+        }
+    }
+
+    return ret.join(";")
 }

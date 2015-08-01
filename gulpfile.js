@@ -43,7 +43,8 @@ gulp.task('combo', function () {
                 .pipe(gulp.dest('./'))
                 .pipe(jshint())
                 .pipe(jshint.reporter('default'))
-             
+                .pipe(gulp.dest('../avalon.test/src/'))
+
 
      
     })

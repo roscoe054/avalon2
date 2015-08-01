@@ -6,15 +6,12 @@ var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice', 'sort', 'revers
 var arrayProto = Array.prototype
 var newProto = {
     notify: function () {
-        var deps = this.$deps
-        for (var i = 0, l = deps.length; i < l; i++) {
-            notifySubscribers(deps[i])
-        }
+        var subs = this.$events[subscribers]
+        notifySubscribers(subs)
     },
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {
 //            var uniq = {}
-//
 //            this[index] = observe(val, this[index], true)
 //            console.log("cccc")
 //            this.$deps.forEach(function (arr) {
@@ -31,7 +28,7 @@ var newProto = {
 //                })
 //            })
 
-            this.splice(index,1, val)
+            this.splice(index, 1, val)
 
         }
     },
@@ -63,6 +60,7 @@ var newProto = {
             for (var i = this.length - 1; i >= 0; i--) {
                 if (all.indexOf(this[i]) !== -1) {
                     _splice.call(this, i, 1)
+                    _splice.call(this.$proxy, i, 1)
                 }
             }
         } else if (typeof all === "function") {
@@ -70,10 +68,12 @@ var newProto = {
                 var el = this[i]
                 if (all(el, i)) {
                     _splice.call(this, i, 1)
+                    _splice.call(this.$proxy, i, 1)
                 }
             }
         } else {
             _splice.call(this, 0, this.length)
+            _splice.call(this.$proxy, 0, this.length)
         }
         if (!W3C) {
             this.$model = toJson(this)
@@ -96,6 +96,7 @@ arrayMethods.forEach(function (method) {
             args[i] = observe(arguments[i], 0, 1)
         }
         var result = original.apply(this, args)
+        asyncProxy(this.$proxy, original, args)
         if (!W3C) {
             this.$model = toJson(this)
         }
@@ -105,3 +106,25 @@ arrayMethods.forEach(function (method) {
     }
 })
 
+function asyncProxy(proxies, method, args) {
+    switch (method) {
+        case 'push':
+        case 'unshift':
+            args = createProxy(args.length)
+            break
+        case 'splice':
+            if (args.length > 2) {
+                args = [args[0], args[1]].concat(createProxy(args.length - 2))
+            }
+            break
+    }
+    method.apply(proxies, args)
+}
+
+function createProxy(n) {
+    var ret = []
+    for (var i = 0; i < n; i++) {
+        ret[i] = eachProxyFactory("el")
+    }
+    return ret
+}

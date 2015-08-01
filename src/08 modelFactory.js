@@ -29,7 +29,7 @@ avalon.define = function (id, factory) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$deps,$accessors").match(rword)
+var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$proxies,$accessors").match(rword)
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -57,6 +57,7 @@ function observe(obj, old, hasReturn) {
                 if (keys.join(";") === keys2.join(";")) {
                     for (var i in obj) {
                         if (obj.hasOwnProperty(i)) {
+                            //0.6 版本   var hack = old[i]
                             old[i] = obj[i]
                         }
                     }
@@ -83,10 +84,10 @@ function observeArray(array, old) {
         for (var i in newProto) {
             array[i] = newProto[i]
         }
-
-        hideProperty(array, "$active", true)
         hideProperty(array, "$events", {})
-        hideProperty(array, "$deps", [])
+        hideProperty(array, "$active", true)
+        hideProperty(array, "$proxy", createProxy(array.length))
+        array.$events[subscribers] = []
         array._ = observeObject({
             length: NaN
         })
@@ -112,9 +113,12 @@ function observeArray(array, old) {
     }
 }
 
+//监听对象属性值的变化(注意,数组元素不是数组的属性),通过对劫持当前对象的访问器实现
+//监听对象或数组的结构变化, 对对象的键值对进行增删重排, 或对数组的进行增删重排,都属于这范畴
+//   通过比较前后代理VM顺序实现
 
 function observeObject(source, $special, old) {
-    if (!source || source.nodeType > 0 || (source.$id && source.$deps)) {
+    if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
         return source
     }
     var $skipArray = Array.isArray(source.$skipArray) ? source.$skipArray : []
@@ -129,11 +133,13 @@ function observeObject(source, $special, old) {
     var computed = []
     var skip = []
     var simple = []
+    var $events = {}
     /* jshint ignore:start */
     names.forEach(function (name) {
         var val = source[name]
 
         if (isObservable(name, val, $skipArray, $special)) {
+            $events[name] = []
             var valueType = avalon.type(val)
             if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
                 computed.push(name)
@@ -144,6 +150,7 @@ function observeObject(source, $special, old) {
                     set: function (a) {
                         if (!stopRepeatAssign && typeof val.set === "function") {
                             val.set.call(this, a)
+                        
                         }
                     },
                     enumerable: true,
@@ -154,7 +161,7 @@ function observeObject(source, $special, old) {
                 if (oldAccessors[name]) {
                     accessors[name] = oldAccessors[name]
                 } else {
-                    accessors[name] = makeGetSet(name, val)
+                    accessors[name] = makeGetSet(name, val, $events[name])
                 }
             }
         } else {
@@ -178,25 +185,26 @@ function observeObject(source, $special, old) {
     }
     /* jshint ignore:end */
 
-
     skip.forEach(function (name) {
         $vmodel[name] = source[name]
-    })
-    simple.forEach(function (name, hack) {
-        $vmodel[name] = source[name]
-    })
-    computed.forEach(function (name, hack) {
-        hack = $vmodel[name]
     })
 
     if (old) {
         old.$events = {}
     }
+
+    hideProperty($vmodel, "$active", true)
+    hideProperty($vmodel, "$events", $events)
+    hideProperty($vmodel, "$proxy", [])
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "$id", "_" + (new Date - 0))
-    hideProperty($vmodel, "$active", true)
-    hideProperty($vmodel, "$events", {})
-    hideProperty($vmodel, "$deps", [])
+    //必须设置了$active,$events再处理simple列队的hack,这个hack为了将内部的订阅数组暴露出来
+    simple.forEach(function (name) {
+        $vmodel[name] = source[name]
+    })
+    computed.forEach(function (name, hack) {
+        hack = $vmodel[name]
+    })
     if (!kernel.newWatch) {
         for (var i in EventBus) {
             if (W3C) {
@@ -212,7 +220,7 @@ function observeObject(source, $special, old) {
 function toJson(val) {
     var xtype = avalon.type(val)
     if (xtype === "array") {
-        if (val.$active && val.$deps) {
+        if (val.$active && val.$events) {
             var array = []
             for (var i = 0; i < val.length; i++) {
                 array[i] = toJson(val[i])
@@ -238,42 +246,34 @@ var $modelDescriptor = {
     enumerable: false,
     configurable: true
 }
-function makeGetSet(key, value) {
-    var childVm = observe(value)
-    var subs = []
+function makeGetSet(key, value, list) {
+    var childVm = observe(value)//转换为VM
     if (childVm) {
-        childVm.$deps.push(subs)
         value = childVm
+        value.$events[subscribers] = list
     }
     return {
-        key: key,
         get: function () {
-            if (this.$events) {
-                this.$events[key] = subs
-                if (this.$active) {
-                    collectDependency(subs)
-                }
+            if (this.$active) {
+                collectDependency(this.$events[key])
             }
             return value
         },
         set: function (newVal) {
             if (value === newVal || stopRepeatAssign)
                 return
-            if (childVm) {
-                avalon.Array.remove(childVm.$deps, subs)
-            }
-
-            var oldValue = value
-            value = newVal
-            var newVm = observe(newVal, oldValue)
+            var oldValue = toJson(value)
+            var newVm = observe(newVal, value)
             if (newVm) {
-                newVm.$deps.push(subs)
                 value = newVm
+                //testVM.$events.a === testVM.a.$events[avalon.subscribers]
+                value.$events[subscribers] = list
+            } else {
+                value = newVal
             }
 
-            notifySubscribers(subs)
             if (this.$fire) {
-                this.$events[key] = subs
+                notifySubscribers(list)
                 this.$fire(key, value, oldValue)
             }
 

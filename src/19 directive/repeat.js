@@ -3,7 +3,19 @@ avalon.directive("repeat", {
     init: function (binding) {
         var type = binding.type
         binding.cache = {} //用于存放代理VM
-
+        var arr = binding.expr.split(".") || []
+        if (arr.length > 1) {
+            arr.pop()
+            var n = arr[0]
+            for (var i = 0, v; v = binding.vmodels[i++]; ) {
+                if (v && v.hasOwnProperty(n)) {
+                    var events = v[n].$events || {}
+                    events[subscribers] = events[subscribers] || []
+                    avalon.Array.ensure(events[subscribers], binding)
+                    break
+                }
+            }
+        }
         var elem = binding.element
         if (elem.nodeType === 1) {
             elem.removeAttribute(binding.name)
@@ -31,15 +43,38 @@ avalon.directive("repeat", {
         }
     },
     update: function (value, oldValue) {
-        //console.log(value, oldValue)
+        var xtype = avalon.type(value)
+        if (xtype !== "array" && xtype !== "object") {
+            avalon.log("warning:" + binding.expr + "只能是对象或数组")
+            return
+        }
+        var param = this.param || "el"
+        for (var i = 0; i < value.$proxy.length; i++) {
+            var proxy = value.$proxy[i]
+            var id = proxy.$id
+            if (this.cache[id]) {
+
+            } else {
+                this.cache[id] = cloneProxy(proxy, param, xtype)
+                //console.log(proxy, this.cache[id], "!")
+            }
+        }
+    },
+    update2: function (value, oldValue) {//比较的是$proxy
+        //  console.log(value, oldValue)
+
+        this.updating = true
+
+
         var source = toJson(value) //保存不会被同步的原始数据,防止在内部赋值过程中因ms-duplex被串改
-        console.log(source, oldValue)
+        //console.log(JSON.stringify(source), JSON.stringify(oldValue))
         var init = !oldValue
         var binding = this
         var elem = this.element
         var now = new Date() - 0
         var parent = elem.parentNode
         var renderKeys = []
+
         var xtype = avalon.type(value)
         if (xtype !== "array" && xtype !== "object") {
             avalon.log("warning:" + binding.expr + "只能是对象或数组")
@@ -86,7 +121,7 @@ avalon.directive("repeat", {
         var length = renderKeys.length
         var itemName = binding.param || "el"
         var proxies = []
-        for(var i = 0; i < length; i++) {
+        for (var i = 0; i < length; i++) {
             var index = xtype === "object" ? renderKeys[i] : i
             var proxy = retain[index]
 
@@ -96,10 +131,14 @@ avalon.directive("repeat", {
 
                 proxy.$active = false
                 var hack = proxy[itemName]
-                proxy.$active = true
-                proxy.$watch(itemName, function (a, b) {
-                    binding.$repeat[proxy.$index] = a
-                })
+                proxy.$active = true;
+
+                new function (p) {
+                    p.$watch(itemName, function (a) {
+                        binding.$repeat[p.$index] = a
+                    })
+                }(proxy)
+
             } else {
                 fragments.push({})
                 retain[index] = true
@@ -150,7 +189,7 @@ avalon.directive("repeat", {
             //移动或新增节点
             for (i = 0; i < length; i++) {
                 //如果是数组,必须将i转换为字符串,因为上方keys里面从retain取出来的都是字符串
-                var cur = xtype === "object" ? renderKeys[i] : i +"" 
+                var cur = xtype === "object" ? renderKeys[i] : i + ""
                 var pre = xtype === "object" ? renderKeys[i - 1] : i - 1
                 var old = keys[i]
                 var preEl = binding.cache[pre] ? binding.cache[pre].$anchor : binding.start
@@ -179,7 +218,7 @@ avalon.directive("repeat", {
             avalon(parent).val(parent.oldValue.split(","))
         }
         var callback = binding.renderedCallback || noop
-
+        this.updating = false
         callback.apply(parent, arguments)
         avalon.log("耗时 ", new Date() - now)
     }
@@ -190,6 +229,51 @@ avalon.directive("repeat", {
         priority: 1400
     })
 })
+
+function cloneProxy(proxy, name, type) {
+    if (type === "array") {
+        if (name !== "el") {
+            var clone = {}
+            var accessors = proxy.$accessors
+            accessors[name] = accessors["el"]
+            delete accessors["el"]
+            clone = Object.defineProperties(clone, accessors)
+            var names = [name]
+            for (var i in proxy) {
+                if (proxy.hasOwnProperty(i) && i !== "el") {
+                    if (!accessors[i]) {
+                        clone[i] = proxy[i] //复制非监听的属性
+                    }
+                    names.push(i)
+                }
+            }
+            "$active,$events,$proxy,$id".replace(rword, function (name) {
+                hideProperty(clone, name, proxy[name])
+            })
+            clone.$accessors = proxy.$accessors
+            if (!W3C) {
+                clone.hasOwnProperty = function (name) {
+                    return names.indexOf(name) !== -1
+                }
+            } else {
+                hideProperty(clone, "hasOwnProperty", function (name) {
+                    return names.indexOf(name) !== -1
+                })
+            }
+            if (!kernel.newWatch) {
+                for (i in EventBus) {
+                    if (W3C) {
+                        hideProperty(clone, i, EventBus[i])
+                    } else {
+                        clone[i] = EventBus[i].bind(clone)
+                    }
+                }
+            }
+            return clone
+        }
+    }
+    return proxy
+}
 
 function removeItem(node) {
     var fragment = avalonFragment.cloneNode(false)
@@ -263,30 +347,7 @@ function eachProxyFactory(itemName) {
         $remove: avalon.noop
     }
     source[itemName] = NaN
-//    source[itemName] = {
-//        get: function () {
-//            var e = this.$events || {}
-//            var array = e.$index
-//            e.$index = e[itemName] //#817 通过$index为el收集依赖
-//            try {
-//                return this.$host[this.$index]
-//            } finally {
-//                e.$index = array
-//            }
-//        },
-//        set: function (val) {
-//            try {
-//                var e = this.$events || {}
-//                console.log(val)
-//                var array = e.$index
-//
-//                e.$index = []
-//                this.$host.set(this.$index, val)
-//            } finally {
-//                e.$index = array
-//            }
-//        }
-//    }
+
     var second = {
         $last: 1,
         $first: 1,
@@ -295,7 +356,6 @@ function eachProxyFactory(itemName) {
     second[itemName] = 1
     var proxy = modelFactory(source, second)
     proxy.$id = generateID("$proxy$each")
-
     return proxy
 }
 
