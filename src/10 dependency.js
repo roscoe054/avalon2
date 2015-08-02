@@ -45,8 +45,8 @@ avalon.injectBinding = function (binding) {
                     delete binding.evaluator
                 }
                 if (binding.signature) {
-                    var a = getProxyIds(binding.$proxy)
-                    var b = getProxyIds(value && value.$proxy)
+                    var a = getProxyIds(binding.$proxy || [], true)
+                    var b = getProxyIds(value && value.$proxy || [])
 
                     if (a !== b) {
                         binding.handler.call(binding, value, binding.oldValue)
@@ -90,19 +90,14 @@ function injectDependency(list, binding) {
 
 
 
-function getProxyIds(a) {
-    var ret = []
-    if (Array.isArray(a)) {
-        for (var i = 0, n = a.length; i < n; i++) {
-            ret.push(a[i].$id)
-        }
+function getProxyIds(a, binding) {
+    if (!binding) {
+        return a.join(";")
     } else {
-        for (i in a) {
-            if (a.hasOwnProperty(i)) {
-                ret.push(a[i].$id)
-            }
+        var ret = []
+        for (var i = 0, el; el = a[i++]; ) {
+            ret.push(el.$id)
         }
+        return ret.join(";")
     }
-
-    return ret.join(";")
 }

@@ -63,7 +63,7 @@ function uniqSet(array) {
 var evaluatorPool = new Cache(128)
     //取得求值函数及其传参
 var rduplex = /\w\[.*\]|\w\.\w/
-var rproxy = /(\$proxy\$[a-z]+)\d+$/
+var rproxy = /(\$proxy\$[a-z]*)\d+$/
 var rthimRightParentheses = /\)\s*$/
 var rthimOtherParentheses = /\)\s*\|/g
 var rquoteFilterName = /\|\s*([$\w]+)/g

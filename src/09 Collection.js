@@ -11,25 +11,7 @@ var newProto = {
     },
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {
-//            var uniq = {}
-//            this[index] = observe(val, this[index], true)
-//            console.log("cccc")
-//            this.$deps.forEach(function (arr) {
-//                arr.forEach(function (el) {
-//                    var key = el.signature
-//                    if (key && !uniq[key] && el.proxies) {
-//                        uniq[key] = 1
-//                        el.proxies[index].$events[el.param || "el"].forEach(function (elem) {
-//                            if (!elem.proxies && elem.update) {
-//                                elem.update()
-//                            }
-//                        })
-//                    }
-//                })
-//            })
-
             this.splice(index, 1, val)
-
         }
     },
     contains: function (el) { //判定是否包含
@@ -170,7 +152,7 @@ function sortByIndex(array, indexes) {
 function createProxy(n) {
     var ret = []
     for (var i = 0; i < n; i++) {
-        ret[i] = eachProxyFactory("el")
+        ret[i] =  ("$proxy$" + Math.random()).replace(/0\.\d{2}/, "")       //  eachProxyFactory("el")
     }
     return ret
 }

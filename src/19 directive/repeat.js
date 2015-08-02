@@ -44,14 +44,18 @@ avalon.directive("repeat", {
         }
     },
     update: function (value, oldValue) {
+
         var xtype = avalon.type(value)
         var binding = this
         if (xtype !== "array" && xtype !== "object") {
             avalon.log("warning:" + binding.expr + "只能是对象或数组")
             return
         }
+        //  if (this.updating)
+        //      return
+        this.updating = true
         var init = !oldValue
-
+        var now = new Date()
         if (init) {
             binding.xtype = xtype
             binding.$outer = {}
@@ -81,13 +85,14 @@ avalon.directive("repeat", {
         var parent = elem.parentNode
 
         for (i = 0; i < length; i++) {
-            var el = value.$proxy[i]
-            var id = el.$id
+            var id = value.$proxy[i]
             var proxy = retain[id]
             if (!proxy) {
                 //  console.log(el)
-                proxy = cloneProxy(el, param, xtype)
-                this.cache[proxy.$id] = proxy
+                proxy = getProxyVM(this)
+                proxy.$id = id
+                //  proxy = cloneProxy(el, param, xtype)
+                this.cache[id] = proxy
 
                 proxy[param] = source[i]
                 var node = proxy.$anchor || (proxy.$anchor = elem.cloneNode(false))
@@ -103,7 +108,6 @@ avalon.directive("repeat", {
             proxy.$oldIndex = proxy.$index
             proxy.$active = true
             proxy.$index = i
-            proxy.$outer = binding.$outer
             if (xtype === "array") {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
@@ -114,7 +118,7 @@ avalon.directive("repeat", {
             }
             proxies.push(proxy)
         }
-
+        this.$proxy = proxies
         if (init) {
 
             parent.insertBefore(transation, elem)
@@ -125,11 +129,10 @@ avalon.directive("repeat", {
         } else {
             for (i in retain) {
                 if (retain[i] !== true) {
-                    removeItem(retain[i].$anchor)
-                    delete binding.cache[i]
+                    removeItem(retain[i].$anchor, "remove")
                     console.log("删除")
                     // 相当于delete binding.cache[key]
-                    //  proxyRecycler(binding.cache, i)
+                    proxyRecycler(binding.cache, i)
                     retain[i] = null
                 }
             }
@@ -139,7 +142,7 @@ avalon.directive("repeat", {
                 var pre = proxies[i - 1]
                 var preEl = pre ? pre.$anchor : binding.start
                 var fragment = fragments[i]
-                
+
                 if (!retain[proxy.$id]) {
                     //如果还没有插入到DOM树 或者 位置被挪动了
                     parent.insertBefore(fragment.content, preEl.nextSibling)
@@ -150,16 +153,22 @@ avalon.directive("repeat", {
                 } else if (proxy.$index !== proxy.$oldIndex) {
                     var curNode = removeItem(proxy.$anchor)
                     parent.insertBefore(curNode, preEl.nextSibling)
-                    proxy.$active = false
+                    //  proxy.$active = false
                     console.log("移动", proxy.$index, "-->", proxy.$oldIndex)
-                    proxy.$active = false
+                    //   proxy.$active = false
                 }
             }
 
 
         }
 
-
+        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
+            avalon(parent).val(parent.oldValue.split(","))
+        }
+        var callback = binding.renderedCallback || noop
+        this.updating = false
+        callback.apply(parent, arguments)
+        avalon.log("耗时 ", new Date() - now)
 
 
 
@@ -173,67 +182,23 @@ avalon.directive("repeat", {
     })
 })
 
-function cloneProxy(proxy, name, type) {
-    if (type === "array") {
-        if (name !== "el") {
-            var clone = {}
-            var accessors = proxy.$accessors
-            accessors[name] = accessors["el"]
-            delete accessors["el"]
-            clone = Object.defineProperties(clone, accessors)
-            var names = [name]
-            for (var i in proxy) {
-                if (proxy.hasOwnProperty(i) && i !== "el") {
-                    if (!accessors[i]) {
-                        clone[i] = proxy[i] //复制非监听的属性
-                    }
-                    names.push(i)
-                }
-            }
-            "$active,$events,$proxy,$id".replace(rword, function (name) {
-                hideProperty(clone, name, proxy[name])
-            })
-            clone.$accessors = proxy.$accessors
 
-            /* jshint ignore:start */
-            if (!W3C) {
-                clone.hasOwnProperty = function (name) {
-                    return names.indexOf(name) !== -1
-                }
-            } else {
-                hideProperty(clone, "hasOwnProperty", function (name) {
-                    return names.indexOf(name) !== -1
-                })
-            }
-            /* jshint ignore:end */
-            if (!kernel.newWatch) {
-                for (i in EventBus) {
-                    if (W3C) {
-                        hideProperty(clone, i, EventBus[i])
-                    } else {
-                        clone[i] = EventBus[i].bind(clone)
-                    }
-                }
-            }
-            return clone
-        }
-    }
-    return proxy
-}
 
 function removeItem(node) {
     var fragment = avalonFragment.cloneNode(false)
-    var self = node
-    while (node = node.previousSibling) {
-        if ((node.nodeValue || "").indexOf(self.nodeValue) === 0) {
+    var breakText = node.nodeValue
+    while (true) {
+        var pre = node.previousSibling
+        if (String(pre.nodeValue).indexOf(breakText) === 0) {
             break
         }
-        fragment.insertBefore(node, fragment.firstChild)
+        fragment.insertBefore(pre, fragment.firstChild)
 
     }
-    fragment.appendChild(self)
+    fragment.appendChild(node)
     return fragment
 }
+
 
 function shimController(data, transation, proxy, fragments, init) {
     var content = data.template.cloneNode(true)
@@ -252,14 +217,12 @@ function shimController(data, transation, proxy, fragments, init) {
 // {xx: 0, yy: 1, zz: 2}  -->  {xx: 0, yy: 1, zz: 2, uu: 3}
 // [xx: 0, yy: 1, zz: 2}  -->  {xx: 0, zz: 1, yy: 2}
 
-function getProxyVM(data) {
-    var factory = data.xtype === "object" ? withProxyAgent : eachProxyAgent
-    var proxy = factory(data)
-    var node = proxy.$anchor || (proxy.$anchor = data.element.cloneNode(false))
-    proxy.$watch = proxy.$watch
-    node.nodeValue = data.signature
-    proxy.$host = data.$repeat
-    proxy.$outer = data.$outer
+function getProxyVM(binding) {
+    var agent = binding.xtype === "object" ? withProxyAgent : eachProxyAgent
+    var proxy = agent(binding)
+    var node = proxy.$anchor || (proxy.$anchor = binding.element.cloneNode(false))
+    node.nodeValue = binding.signature
+    proxy.$outer = binding.$outer
     return proxy
 }
 
@@ -277,16 +240,12 @@ function eachProxyAgent(data, proxy) {
     if (!proxy) {
         proxy = eachProxyFactory(itemName)
     }
-    proxy.$remove = function () {
-        data.$repeat.removeAt(proxy.$index)
-    }
     return proxy
 }
 
 function eachProxyFactory(itemName) {
     var source = {
         $outer: {},
-        $host: [],
         $index: 0,
         $oldIndex: 0,
         $anchor: null,
