@@ -15,6 +15,9 @@
                 change: function () {
                     vm.aaa = "<strong>{{ccc}}</strong>"
                 },
+                obj: {
+                    bbb:555
+                },
                 a: []
             })
             vm.a.$watch('length', function (v) {
@@ -28,7 +31,8 @@
     </head>
     <body>
         <div ms-controller="test">
-            <div>{{aaa|html}}</div>
+            <div ms-title="aaa">{{aaa|html}}</div>
+            <div >{{obj.bbb}}</div>
             <button type="button" ms-click="change">xxxx</button>
         </div>
     </body>

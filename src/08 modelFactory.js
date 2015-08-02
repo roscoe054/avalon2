@@ -29,7 +29,7 @@ avalon.define = function (id, factory) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$proxies,$accessors").match(rword)
+var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$track,$accessors").match(rword)
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -86,7 +86,7 @@ function observeArray(array, old) {
         }
         hideProperty(array, "$events", {})
         hideProperty(array, "$active", true)
-        hideProperty(array, "$proxy", createProxy(array.length))
+        hideProperty(array, "$track", createTrack(array.length))
         array.$events[subscribers] = []
         array._ = observeObject({
             length: NaN
@@ -136,6 +136,7 @@ function observeObject(source, $special, old) {
     var $events = {}
     /* jshint ignore:start */
     names.forEach(function (name) {
+       // $proxy.push("$proxy$"+name)
         var val = source[name]
 
         if (isObservable(name, val, $skipArray, $special)) {
@@ -171,7 +172,7 @@ function observeObject(source, $special, old) {
     /* jshint ignore:end */
 
     accessors["$model"] = $modelDescriptor
-
+    $vmodel.$track = names
     $vmodel = Object.defineProperties($vmodel, accessors)
     /* jshint ignore:start */
     if (!W3C) {
@@ -179,9 +180,7 @@ function observeObject(source, $special, old) {
             return names.indexOf(name) !== -1
         }
     } else {
-        hideProperty($vmodel, "hasOwnProperty", function (name) {
-            return names.indexOf(name) !== -1
-        })
+        hideProperty($vmodel, "hasOwnProperty", trackBy)
     }
     /* jshint ignore:end */
 
@@ -195,7 +194,6 @@ function observeObject(source, $special, old) {
 
     hideProperty($vmodel, "$active", true)
     hideProperty($vmodel, "$events", $events)
-    hideProperty($vmodel, "$proxy", [])
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "$id", "_" + (new Date() - 0))
     //必须设置了$active,$events再处理simple列队的hack,这个hack为了将内部的订阅数组暴露出来
@@ -216,6 +214,10 @@ function observeObject(source, $special, old) {
     }
 
     return $vmodel
+}
+//让IE8+及所有标准浏览器的VM共用trackBy, toJson...
+function trackBy(name){
+    return this.$track.indexOf(name) !== -1
 }
 function toJson(val) {
     var xtype = avalon.type(val)

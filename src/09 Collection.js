@@ -42,7 +42,7 @@ var newProto = {
             for (var i = this.length - 1; i >= 0; i--) {
                 if (all.indexOf(this[i]) !== -1) {
                     _splice.call(this, i, 1)
-                    _splice.call(this.$proxy, i, 1)
+                    _splice.call(this.$track, i, 1)
                 }
             }
         } else if (typeof all === "function") {
@@ -50,12 +50,12 @@ var newProto = {
                 var el = this[i]
                 if (all(el, i)) {
                     _splice.call(this, i, 1)
-                    _splice.call(this.$proxy, i, 1)
+                    _splice.call(this.$track, i, 1)
                 }
             }
         } else {
             _splice.call(this, 0, this.length)
-            _splice.call(this.$proxy, 0, this.length)
+            _splice.call(this.$track, 0, this.length)
         }
         if (!W3C) {
             this.$model = toJson(this)
@@ -78,7 +78,7 @@ arrayMethods.forEach(function (method) {
             args[i] = observe(arguments[i], 0, 1)
         }
         var result = original.apply(this, args)
-        asyncProxy(this.$proxy, method, args)
+        asyncProxy(this.$track, method, args)
         if (!W3C) {
             this.$model = toJson(this)
         }
@@ -92,11 +92,11 @@ function asyncProxy(proxies, method, args) {
     switch (method) {
         case 'push':
         case 'unshift':
-            args = createProxy(args.length)
+            args = createTrack(args.length)
             break
         case 'splice':
             if (args.length > 2) {
-                args = [args[0], args[1]].concat(createProxy(args.length - 2))
+                args = [args[0], args[1]].concat(createTrack(args.length - 2))
             }
             break
     }
@@ -138,7 +138,7 @@ function sortByIndex(array, indexes) {
             }
         }
         if (hasSort) {
-            sortByIndex(this.$proxy, indexes)
+            sortByIndex(this.$track, indexes)
             if (!W3C) {
                 this.$model = toJson(this)
             }
@@ -149,10 +149,10 @@ function sortByIndex(array, indexes) {
 })
 
 
-function createProxy(n) {
+function createTrack(n) {
     var ret = []
     for (var i = 0; i < n; i++) {
-        ret[i] =  ("$proxy$" + Math.random()).replace(/0\.\d{2}/, "")       //  eachProxyFactory("el")
+        ret[i] =  ("$proxy$" + Math.random()).replace(/0\.\d{2}/, "") 
     }
     return ret
 }

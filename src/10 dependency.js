@@ -45,14 +45,18 @@ avalon.injectBinding = function (binding) {
                     delete binding.evaluator
                 }
                 if (binding.signature) {
-                    var a = getProxyIds(binding.$proxy || [], true)
-                    var b = getProxyIds(value && value.$proxy || [])
-
-                    if (a !== b) {
+                    var xtype = avalon.type(value)
+                    if (xtype !== "array" && xtype !== "object") {
+                        avalon.log("warning:" + binding.expr + "只能是对象或数组")
+                        return
+                    }
+                    binding.xtype = xtype
+                    var vtrack = getProxyIds(binding.$proxy || [], xtype)
+                    var mtrack = (value.$track || []).join(";")
+                    console.log(vtrack, mtrack)
+                    if (vtrack !== mtrack) {
                         binding.handler.call(binding, value, binding.oldValue)
-                        binding.oldValue = binding.xtype === "array" ? value.concat() : binding.xtype === "object" ?
-                                avalon.mix({}, value) : value
-                        // binding.proxies 
+                        binding.oldValue = xtype === "array" ? value.concat() :  avalon.mix({}, value) 
                     }
                 } else {
                     if (binding.oldValue !== value) {
@@ -60,7 +64,6 @@ avalon.injectBinding = function (binding) {
                         binding.oldValue = value
                     }
                 }
-                ///  console.log(binding.oldValue, value, isSameValue(binding.oldValue, value))
 
             }
             binding.update()
@@ -90,14 +93,11 @@ function injectDependency(list, binding) {
 
 
 
-function getProxyIds(a, binding) {
-    if (!binding) {
-        return a.join(";")
-    } else {
-        var ret = []
-        for (var i = 0, el; el = a[i++]; ) {
-            ret.push(el.$id)
-        }
-        return ret.join(";")
+function getProxyIds(a, isArray) {
+
+    var ret = []
+    for (var i = 0, el; el = a[i++]; ) {
+        ret.push(isArray ? el.$id : el.$key)
     }
+    return ret.join(";")
 }

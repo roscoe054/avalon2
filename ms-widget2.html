@@ -51,23 +51,31 @@
             var vm = avalon.define({
                 $id: "test",
                 array: [{
-                        a: 1
+                        a: 1, b: "1111",
                     }, {
-                        a: 2
+                        a: 2, b: "2222"
                     }, {
-                        a: 3
+                        a: 3, b: "3333"
                     }],
                 add: function () {
                     vm.array.push({
                         a: "4"
                     })
                 },
+                add2: function () {
+                    console.log("xxxx")
+                    vm.arr.push(new Date - 0)
+                },
                 setObject: function () {
                     vm.array.set(0, {a: 9})
                 },
                 arr: [1, 2, 3, 4],
                 show: function () {
-                    console.log(vm.$events.array[0])
+                    var rr = vm.array.map(function (el) {
+
+                        return el.$events.a.$uuid
+                    })
+                    console.log(rr)
                 }
             })//
             vm.array.forEach(function (el) {
@@ -81,7 +89,7 @@
                 /*
                  
                  <ul><li ms-repeat="array" >
-                 <input type=radio ms-click=$remove><input ms-duplex="el.a">{{el.a}}</li>
+                 <input type=radio ms-click=$remove>{{el.a}}<input ms-duplex="el.a"/></li>
                  </ul>
                  <button ms-click="add" type="button">add</button>
                  <button type=button ms-click=show>show</button>
@@ -89,14 +97,18 @@
                  */
             })
             body.appendChild(div)
-            avalon.scan(div, vm)
+              avalon.scan(div, vm)
 
 
 
         </script>
-        <h1>删除第一个元素后,然后再修改对文本域进行操作,发现不同步了</h1>
-        <ul ms-controller="test">
-            <li ms-repeat="arr">{{el}}</li>
-        </ul>
+        <h1>删除第一个元素后,再加一个,发现不同步了</h1>
+      <div ms-controller="test">
+            <ul>
+                <li ms-repeat="arr"> <input type="radio" ms-click="$remove"/><input ms-duplex="el"/>{{el}}</li>
+            </ul>
+            <button type="button" ms-click="add2">add</button>
+        </div>
+
     </body>
 </html>
