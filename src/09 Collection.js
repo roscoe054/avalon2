@@ -96,7 +96,7 @@ arrayMethods.forEach(function (method) {
             args[i] = observe(arguments[i], 0, 1)
         }
         var result = original.apply(this, args)
-        asyncProxy(this.$proxy, original, args)
+        asyncProxy(this.$proxy, method, args)
         if (!W3C) {
             this.$model = toJson(this)
         }
@@ -118,7 +118,7 @@ function asyncProxy(proxies, method, args) {
             }
             break
     }
-    method.apply(proxies, args)
+    Array.prototype[method].apply(proxies, args)
 }
 
 function createProxy(n) {

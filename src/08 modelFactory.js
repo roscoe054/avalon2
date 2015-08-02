@@ -197,7 +197,7 @@ function observeObject(source, $special, old) {
     hideProperty($vmodel, "$events", $events)
     hideProperty($vmodel, "$proxy", [])
     hideProperty($vmodel, "$accessors", accessors)
-    hideProperty($vmodel, "$id", "_" + (new Date - 0))
+    hideProperty($vmodel, "$id", "_" + (new Date() - 0))
     //必须设置了$active,$events再处理simple列队的hack,这个hack为了将内部的订阅数组暴露出来
     simple.forEach(function (name) {
         $vmodel[name] = source[name]

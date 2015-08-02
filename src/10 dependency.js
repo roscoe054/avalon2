@@ -47,9 +47,8 @@ avalon.injectBinding = function (binding) {
                 if (binding.signature) {
                     var a = getProxyIds(binding.$proxy)
                     var b = getProxyIds(value && value.$proxy)
-                    console.log(a, b)
-                    
-                    if ( a !== b) {
+
+                    if (a !== b) {
                         binding.handler.call(binding, value, binding.oldValue)
                         binding.oldValue = binding.xtype === "array" ? value.concat() : binding.xtype === "object" ?
                                 avalon.mix({}, value) : value
@@ -98,7 +97,7 @@ function getProxyIds(a) {
             ret.push(a[i].$id)
         }
     } else {
-        for (var i in a) {
+        for (i in a) {
             if (a.hasOwnProperty(i)) {
                 ret.push(a[i].$id)
             }
