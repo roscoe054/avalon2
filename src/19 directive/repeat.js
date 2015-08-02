@@ -80,7 +80,6 @@ avalon.directive("repeat", {
         var source = toJson(value)
         var parent = elem.parentNode
 
-
         for (i = 0; i < length; i++) {
             var el = value.$proxy[i]
             var id = el.$id
@@ -127,28 +126,33 @@ avalon.directive("repeat", {
             for (i in retain) {
                 if (retain[i] !== true) {
                     removeItem(retain[i].$anchor)
+                    delete binding.cache[i]
+                    console.log("删除")
                     // 相当于delete binding.cache[key]
-                    proxyRecycler(binding.cache, i)
+                    //  proxyRecycler(binding.cache, i)
                     retain[i] = null
                 }
             }
             for (i = 0; i < length; i++) {
-                el = value.$proxy[i]
-                id = el.$id
-                proxy = retain[id]
+                proxy = proxies[i]
+
                 var pre = proxies[i - 1]
                 var preEl = pre ? pre.$anchor : binding.start
                 var fragment = fragments[i]
-
-                if (!proxy) {
+                
+                if (!retain[proxy.$id]) {
                     //如果还没有插入到DOM树 或者 位置被挪动了
-                    console.log(fragment.content, preEl.nextSibling)
                     parent.insertBefore(fragment.content, preEl.nextSibling)
                     fragment.nodes && scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                     console.log("插入")
 
                 } else if (proxy.$index !== proxy.$oldIndex) {
+                    var curNode = removeItem(proxy.$anchor)
+                    parent.insertBefore(curNode, preEl.nextSibling)
+                    proxy.$active = false
+                    console.log("移动", proxy.$index, "-->", proxy.$oldIndex)
+                    proxy.$active = false
                 }
             }
 
@@ -193,11 +197,11 @@ function cloneProxy(proxy, name, type) {
 
             /* jshint ignore:start */
             if (!W3C) {
-                $vmodel.hasOwnProperty = function (name) {
+                clone.hasOwnProperty = function (name) {
                     return names.indexOf(name) !== -1
                 }
             } else {
-                hideProperty($vmodel, "hasOwnProperty", function (name) {
+                hideProperty(clone, "hasOwnProperty", function (name) {
                     return names.indexOf(name) !== -1
                 })
             }
