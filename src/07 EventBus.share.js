@@ -109,3 +109,15 @@ var EventBus = {
         }
     }
 }
+
+function addOldEventMethod(vm) {
+    if (!kernel.newWatch) {
+        for (var i in EventBus) {
+            if (W3C) {
+                hideProperty(vm, i, EventBus[i])
+            } else {
+                vm[i] = EventBus[i].bind(vm)
+            }
+        }
+    }
+}

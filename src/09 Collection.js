@@ -31,8 +31,9 @@ var newProto = {
     },
     removeAt: function (index) { //移除指定索引上的元素
         if ((index >>> 0) === index) {
-            this.splice(index, 1)
+           return this.splice(index, 1)
         }
+        return []
     },
     size: function () { //取得数组长度，这个函数可以同步视图，length不能
         return this._.length
@@ -152,7 +153,7 @@ function sortByIndex(array, indexes) {
 function createTrack(n) {
     var ret = []
     for (var i = 0; i < n; i++) {
-        ret[i] =  ("$proxy$" + Math.random()).replace(/0\.\d{2}/, "") 
+        ret[i] = generateID("$proxy$each")// ("$proxy$" + Math.random()).replace(/0\.\d{2}/, "") 
     }
     return ret
 }

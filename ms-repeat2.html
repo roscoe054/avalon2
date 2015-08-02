@@ -6,56 +6,41 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
         <script src="avalon.js" ></script>
 
-        <script >
-
-            function createData(num) {
-                var array = []
-                for (var i = 0; i < num; i++) {
-                    array.push([Math.random(), Math.random()])
-                }
-                return array
-            }
-            var vm = avalon.define({
-                $id: "test",
-                double_: createData(20),
-                change: function () {
-                    console.log("========")
-                    vm.double_ = createData(40)
-                }
-            })
 
 
-
-
-
-        </script>
-        <style>
-            table{
-                border-collapse: collapse;
-                border:1px solid black;
-                width:100%;
-            }
-            td{
-                border:1px solid black;
-            }
-        </style>
     </head>
     <body>
-        <fieldset ms-controller="test">
+        <script >
 
-            <h3>这是单个循环，原数组是一个一维数组</h3>
+            var vmodel = avalon.define({
+                $id: "overrideObject",
+                first: {
+                    array: ["aaa", "bbb", "ccc", "ddd"],
+                    object: {
+                        banana: "香蕉",
+                        apple: "苹果",
+                        peach: "桃子",
+                        pear: "雪梨"
+                    }
+                }
+            })
+            var body = document.body
+            var div = document.createElement("div")//<h2>重写一个对象</h2><ul><li ms-repeat="first.array">{{el}}</li>
+            div.innerHTML = '<h2>重写一个对象</h2><ul><li ms-repeat="first.array">{{el}}</li></ul><ol><li ms-repeat="first.object">{{$key}}:{{$val}}</li></ol>'
+            body.appendChild(div)
+            avalon.scan(div, vmodel)
 
-            <h3>这是双重循环，原数组是一个二维数组</h3>
-            <table>
-                <tr ms-repeat-elem="double_">
-                    <td ms-repeat="elem">{{el}}</td>
-                </tr>
-            </table>
-
-            <div><button ms-click="change">button</button></div>
-
-        </fieldset>
-
-
+            setTimeout(function () {
+                vmodel.first = {
+                    array: ["@@@", "###", "$$$", "%%%"],
+                    object: {
+                        grape: "葡萄",
+                        coconut: "椰子",
+                        pitaya: "火龙果",
+                        orange: "橙子"
+                    }
+                }
+            }, 3000)
+        </script>
     </body>
 </html>

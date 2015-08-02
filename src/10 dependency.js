@@ -52,11 +52,13 @@ avalon.injectBinding = function (binding) {
                     }
                     binding.xtype = xtype
                     var vtrack = getProxyIds(binding.$proxy || [], xtype)
-                    var mtrack = (value.$track || []).join(";")
-                    console.log(vtrack, mtrack)
-                    if (vtrack !== mtrack) {
+                    // 让非监数组与对象也能渲染到页面上
+                    var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
+                            Object.keys(value))
+                    binding.track = mtrack
+                    if (vtrack !== mtrack.join(";")) {
                         binding.handler.call(binding, value, binding.oldValue)
-                        binding.oldValue = xtype === "array" ? value.concat() :  avalon.mix({}, value) 
+                        binding.oldValue = 1 
                     }
                 } else {
                     if (binding.oldValue !== value) {

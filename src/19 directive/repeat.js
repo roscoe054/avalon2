@@ -64,8 +64,7 @@ avalon.directive("repeat", {
                 }
             }
         }
-        var track = value.$track
-        console.log(track)
+        var track = this.track
         if (binding.sortedCallback) { //如果有回调，则让它们排序
             var keys2 = binding.sortedCallback.call(parent, track)
             if (keys2 && Array.isArray(keys2)) {
@@ -82,7 +81,7 @@ avalon.directive("repeat", {
         var length = track.length
         var source = toJson(value)
         var parent = elem.parentNode
-
+        
         for (i = 0; i < length; i++) {
             var keyOrId = track[i] //array为随机数, object 为keyName
             var proxy = retain[keyOrId]
@@ -127,7 +126,7 @@ avalon.directive("repeat", {
             for (keyOrId in retain) {
                 if (retain[keyOrId] !== true) {
                     removeItem(retain[keyOrId].$anchor, "remove")
-                    avalon.log("删除", keyOrId)
+                    // avalon.log("删除", keyOrId)
                     // 相当于delete binding.cache[key]
                     proxyRecycler(binding.cache, keyOrId)
                     retain[keyOrId] = null
@@ -144,12 +143,12 @@ avalon.directive("repeat", {
                     parent.insertBefore(fragment.content, preEl.nextSibling)
                     scanNodeArray(fragment.nodes || [], fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
-                    avalon.log("插入")
+                    // avalon.log("插入")
 
                 } else if (proxy.$index !== proxy.$oldIndex) {
                     var curNode = removeItem(proxy.$anchor)// 如果位置被挪动了
                     parent.insertBefore(curNode, preEl.nextSibling)
-                    avalon.log("移动", proxy.$oldIndex, "-->", proxy.$index)
+                    // avalon.log("移动", proxy.$oldIndex, "-->", proxy.$index)
                 }
             }
 
@@ -268,6 +267,10 @@ function decorateProxy(proxy, binding, type) {
         }
         proxy.$watch(binding.param, function (a) {
             binding.$repeat[proxy.$index] = a
+        })
+    } else {
+        proxy.$watch("$val", function (a) {
+            binding.$repeat[proxy.$key] = a
         })
     }
 }
