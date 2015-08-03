@@ -78,6 +78,9 @@ function observeObject(source, $special, old) {
             var valueType = avalon.type(val)
             if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
                 computed.push(name)
+                
+                
+                
                 accessors[name] = {
                     get: function () {
                         return val.get.call(this)
@@ -94,9 +97,10 @@ function observeObject(source, $special, old) {
             } else {
                 simple.push(name)
                 if (oldAccessors[name]) {
+                 //   console.log( old.$events[name])
                     $events[name] = old.$events[name]
                     accessors[name] = oldAccessors[name]
-
+                   //  notifySubscribers( $events[name])
                 } else {
                     accessors[name] = makeGetSet(name, val, $events[name])
                 }
@@ -141,6 +145,8 @@ function observeObject(source, $special, old) {
     computed.forEach(function (name, hack) {
         hack = $vmodel[name]
     })
+ 
+    
     return $vmodel
 }
 function observeArray(array, old) {
@@ -261,14 +267,15 @@ function makeGetSet(key, value, list) {
                 return
             var oldValue = toJson(value)
             var newVm = observe(newVal, value)
+         
             if (newVm) {
+                
                 value = newVm
                 //testVM.$events.a === testVM.a.$events[avalon.subscribers]
                 value.$events[subscribers] = list
             } else {
                 value = newVal
             }
-
             if (this.$fire) {
                 notifySubscribers(this.$events[key])
                 this.$fire(key, value, oldValue)

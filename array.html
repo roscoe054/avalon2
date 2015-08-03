@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+    </head>
+    <body>
+        <script>
+            var vm = avalon.define({
+                $id: "test",
+                push: function () {
+                    vm.array.push("push" + (new Date - 0))
+                },
+                unshift: function () {
+                    vm.array.unshift("unshift" + (new Date - 0))
+                },
+                pop: function () {
+                    vm.array.pop()
+                },
+                shift: function () {
+                    vm.array.shift()
+                },
+                splice: function () {
+                    vm.array.splice(1, 1, "splice" + (new Date - 0), "splice" + (new Date - 56))
+                },
+                reverse: function () {
+                    vm.array.reverse()
+                },
+                set: function () {
+                    vm.array.set(0, "set" + (new Date - 0))
+                },
+                array: [10, 20, 30],
+                object: {
+                    a:111,
+                    b:222,
+                    c:333
+                }
+            })
+             setTimeout(function(){
+                 vm.object = {
+                     b: 555,
+                     a: 777,
+                     c: 888
+                 }
+             }, 3000)
+        </script>
+        <div ms-controller="test">
+          <ul>
+                <li ms-repeat-item="array"> <input type="radio" ms-click="$remove"/>{{item}}--"$index"{{$index}}<input ms-duplex="item"/></li>
+            </ul>
+            <ul>
+                <li ms-repeat="object">{{$key}}--{{$val}}<input ms-duplex="$val"/></li>
+            </ul>
+            <p><button type="button" ms-click="push">push</button>
+                <button type="button" ms-click="unshift">unshift</button>
+                <button type="button" ms-click="pop">pop</button>
+                <button type="button" ms-click="shift">shift</button>
+                <button type="button" ms-click="splice">splice</button>
+                <button type="button" ms-click="reverse">reverse</button>
+                <button type="button" ms-click="set">set</button></p>
+          <ul ms-each-item="array">
+                <li > <input type="radio" ms-click="$remove"/>{{item}}--{{$index}}<input ms-duplex="item"/></li>
+            </ul>
+        </div>
+
+    </body>
+</html>

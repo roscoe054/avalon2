@@ -6,41 +6,35 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge" /> 
         <script src="avalon.js" ></script>
 
-
-
     </head>
     <body>
         <script >
-
-            var vmodel = avalon.define({
-                $id: "overrideObject",
-                first: {
-                    array: ["aaa", "bbb", "ccc", "ddd"],
-                    object: {
-                        banana: "香蕉",
-                        apple: "苹果",
-                        peach: "桃子",
-                        pear: "雪梨"
-                    }
+            var vm = avalon.define({
+                $id: "test",
+                obj: {
+                   
                 }
             })
-            var body = document.body
-            var div = document.createElement("div")//<h2>重写一个对象</h2><ul><li ms-repeat="first.array">{{el}}</li>
-            div.innerHTML = '<h2>重写一个对象</h2><ul><li ms-repeat="first.array">{{el}}</li></ul><ol><li ms-repeat="first.object">{{$key}}:{{$val}}</li></ol>'
-            body.appendChild(div)
-            avalon.scan(div, vmodel)
+
 
             setTimeout(function () {
-                vmodel.first = {
-                    array: ["@@@", "###", "$$$", "%%%"],
-                    object: {
-                        grape: "葡萄",
-                        coconut: "椰子",
-                        pitaya: "火龙果",
-                        orange: "橙子"
-                    }
+                vm.obj = {
+                    aaa: 222
                 }
-            }, 3000)
+                console.log(vm.obj)
+                setTimeout(function () {
+                    vm.obj.aaa = 444
+                    setTimeout(function () {
+                      //  var h1 = div.getElementsByTagName("h1")[0]
+                      //  expect(h1.innerHTML).to.be("444")
+                      //  clearTest(vm, div, done)
+                    }, 1000)
+                }, 1000)
+            }, 1000)
+
         </script>
+        <div ms-controller="test">
+             <h1>{{obj.aaa}}</h1>
+        </div>
     </body>
 </html>

@@ -79,7 +79,7 @@ avalon.directive("repeat", {
         var retain = avalon.mix({}, this.cache)
         var elem = this.element
         var length = track.length
-        var source = toJson(value)
+
         var parent = elem.parentNode
         
         for (i = 0; i < length; i++) {
@@ -89,10 +89,10 @@ avalon.directive("repeat", {
                 proxy = getProxyVM(this)
                 if (xtype === "array") {
                     proxy.$id = keyOrId
-                    proxy[param] = source[i] //index
+                    proxy[param] = value[i] //index
                 } else {
                     proxy.$key = keyOrId
-                    proxy.$val = source[keyOrId]
+                    proxy.$val = value[keyOrId] //key
                 }
                 this.cache[keyOrId] = proxy
                 var node = proxy.$anchor || (proxy.$anchor = elem.cloneNode(false))
@@ -266,6 +266,7 @@ function decorateProxy(proxy, binding, type) {
             binding.$repeat.removeAt(proxy.$index)
         }
         proxy.$watch(binding.param, function (a) {
+            console.log(a)
             binding.$repeat[proxy.$index] = a
         })
     } else {

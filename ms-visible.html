@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>虚拟DOM测试</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+        <script>
+            var vm = avalon.define({
+                $id: "test",
+                toggle: false,
+                array:[1,2,3],
+                click:function(){
+                    vm.toggle = !vm.toggle
+                }
+            })
+        </script>
+        <style>
+            .aaa{
+                display: none
+            }
+        </style>
+    </head>
+    <body ms-controller="test">
+        <h1>测试虚拟DOM</h1>
+        <table border="1">
+            <tr>
+                <td class="aaa" ms-repeat="array"ms-visible="toggle">{{el}}</td><td>yyy</td>
+            </tr>
+        </table>
+        <button type="button" ms-click="click">btn</button>
+    </body>
+</html>

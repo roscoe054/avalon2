@@ -11,6 +11,9 @@ var newProto = {
     },
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {
+            if (index > this.length) {
+                throw Error(index +"set方法的第一个参数不能大于原数组长度")
+            }
             this.splice(index, 1, val)
         }
     },
@@ -31,7 +34,8 @@ var newProto = {
     },
     removeAt: function (index) { //移除指定索引上的元素
         if ((index >>> 0) === index) {
-           return this.splice(index, 1)
+
+            return this.splice(index, 1)
         }
         return []
     },

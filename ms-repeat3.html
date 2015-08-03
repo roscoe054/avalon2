@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>虚拟DOM测试</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+        <script>
+
+            var vm = avalon.define({
+                $id: "test",
+                $array: ["a", "b", "c", "d"],
+                aaa: ["a", "b"],
+                refresh: function () {
+                    vm.$array = ["c", "d", "a", "b"]
+                },
+                reverse: function () {
+                    vm.$array.reverse()
+                }
+
+            })
+
+        </script>
+    </head>
+    <body ms-controller="test">
+        <select  multiple="multiple">
+            <option ms-repeat="$array">{{el}}</option>
+        </select>
+        <div><button type="button" ms-click="refresh">refresh</button></div>
+        <div><button type="button" ms-click="reverse">reverse</button></div>
+    </body>
+</html>
