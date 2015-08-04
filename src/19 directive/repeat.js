@@ -128,7 +128,7 @@ avalon.directive("repeat", {
             }
             proxies.push(proxy)
         }
-        this.$proxy = proxies
+        this.proxies = proxies
         if (init) {
 
             parent.insertBefore(transation, elem)
@@ -172,7 +172,7 @@ avalon.directive("repeat", {
             for (keyOrId in this.cache) {
                 proxyRecycler(this.cache, keyOrId, param)
             }
-     
+
         }
         if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
             avalon(parent).val(parent.oldValue.split(","))
@@ -286,31 +286,16 @@ function eachProxyFactory(itemName) {
 function decorateProxy(proxy, binding, type) {
     if (type === "array") {
         proxy.$remove = function () {
-            try {
-                binding.$repeat.removeAt(proxy.$index)
-            } catch (e) {
-                console.log(e)
-
-            }
+            binding.$repeat.removeAt(proxy.$index)
         }
         var param = binding.param
         proxy.$watch(param, function fn(a) {
-            try {
-                proxy.$active = false
-                var index = proxy.$index
-                proxy.$active = true
-                binding.$repeat[index] = a
-            } catch (e) {
-                proxy.$unwatch(param, fn)
-            }
+            var index = proxy.$index
+            binding.$repeat[index] = a
         })
     } else {
         proxy.$watch("$val", function fn(a) {
-            try {
-                binding.$repeat[proxy.$key] = a
-            } catch (e) {
-                proxy.$unwatch("$val", fn)
-            }
+            binding.$repeat[proxy.$key] = a
         })
     }
 }

@@ -78,27 +78,35 @@ function observeObject(source, $special, old) {
             var valueType = avalon.type(val)
             if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
                 computed.push(name)
-                
 
-                accessors[name] = {
-                    get: function () {
-                        return val.get.call(this)
-                    },
-                    set: function (a) {
-                        if (!stopRepeatAssign && typeof val.set === "function") {
-                            val.set.call(this, a)
-                        }
-                    },
-                    enumerable: true,
-                    configurable: true
-                }
+                new function (key) {
+                    var old
+                    accessors[name] = {
+                        get: function () {
+                            return old = val.get.call(this)
+                        },
+                        set: function (x) {
+                            if (!stopRepeatAssign && typeof val.set === "function") {
+                                var older = old
+                                val.set.call(this, x)
+                                var newer = this[key]
+                                if (this.$fire && (newer !== older)) {
+                                    this.$fire(key, newer, older)
+                                }
+                            }
+                        },
+                        enumerable: true,
+                        configurable: true
+                    }
+                }(name)
+
             } else {
                 simple.push(name)
                 if (oldAccessors[name]) {
-      
+
                     $events[name] = old.$events[name]
                     accessors[name] = oldAccessors[name]
-      
+
                 } else {
                     accessors[name] = makeGetSet(name, val, $events[name])
                 }
@@ -133,9 +141,9 @@ function observeObject(source, $special, old) {
     hideProperty($vmodel, "$events", $events)
     hideProperty($vmodel, "$track", names)
     hideProperty($vmodel, "$accessors", accessors)
-    hideProperty($vmodel, "$id", "anonymous" )
+    hideProperty($vmodel, "$id", "anonymous")
     addOldEventMethod($vmodel)
-    
+
     //必须设置了$active,$events
     simple.forEach(function (name) {
         $vmodel[name] = source[name]
@@ -143,8 +151,8 @@ function observeObject(source, $special, old) {
     computed.forEach(function (name, hack) {
         hack = $vmodel[name]
     })
- 
-    
+
+
     return $vmodel
 }
 function observeArray(array, old) {
@@ -265,9 +273,9 @@ function makeGetSet(key, value, list) {
                 return
             var oldValue = toJson(value)
             var newVm = observe(newVal, value)
-         
+
             if (newVm) {
-                
+
                 value = newVm
                 //testVM.$events.a === testVM.a.$events[avalon.subscribers]
                 value.$events[subscribers] = list
@@ -275,7 +283,7 @@ function makeGetSet(key, value, list) {
                 value = newVal
             }
             if (this.$fire) {
-                notifySubscribers(this.$events[key],key, this)
+                notifySubscribers(this.$events[key], key, this)
                 this.$fire(key, value, oldValue)
             }
 
@@ -319,7 +327,7 @@ function collectDependency(subs) {
 
 function notifySubscribers(subs, key, a) {
     //console.log(subs, key, a)
-    if(!subs)
+    if (!subs)
         return
     if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
         rejectDisposeQueue()

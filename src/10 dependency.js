@@ -59,7 +59,7 @@ avalon.injectBinding = function (binding) {
                     }
                     binding.xtype = xtype
                     // 让非监数组与对象也能渲染到页面上
-                    var vtrack = getProxyIds(binding.$proxy || [], xtype)
+                    var vtrack = getProxyIds(binding.proxies || [], xtype)
                     var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
                             Object.keys(value))
 
