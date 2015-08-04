@@ -3,6 +3,7 @@ avalon.directive("repeat", {
     init: function (binding) {
         var type = binding.type
         binding.cache = {} //用于存放代理VM
+        binding.enterCount = 0
         var arr = binding.expr.split(".") || []
         if (arr.length > 1) {
             arr.pop()
@@ -46,7 +47,8 @@ avalon.directive("repeat", {
     update: function (value, oldValue) {
         var binding = this
         var xtype = this.xtype
-        this.updating = true
+
+        this.enterCount += 1
         var init = !oldValue
         var now = new Date()
         if (init) {
@@ -71,25 +73,29 @@ avalon.directive("repeat", {
                 track = keys2
             }
         }
+        console.log("进入repeat....")
         binding.$repeat = value
         var fragments = []
         var transation = init && avalonFragment.cloneNode(false)
         var proxies = []
         var param = this.param
         var retain = avalon.mix({}, this.cache)
+
         var elem = this.element
         var length = track.length
 
         var parent = elem.parentNode
-        
         for (i = 0; i < length; i++) {
+          
             var keyOrId = track[i] //array为随机数, object 为keyName
             var proxy = retain[keyOrId]
             if (!proxy) {
                 proxy = getProxyVM(this)
                 if (xtype === "array") {
                     proxy.$id = keyOrId
+                   
                     proxy[param] = value[i] //index
+ 
                 } else {
                     proxy.$key = keyOrId
                     proxy.$val = value[keyOrId] //key
@@ -104,13 +110,20 @@ avalon.directive("repeat", {
                 retain[keyOrId] = true
             }
             //重写proxy
-            proxy.$active = false
-            proxy.$oldIndex = proxy.$index
-            proxy.$active = true
-            proxy.$index = i
+
+            if (this.enterCount === 1) {// 防止多次进入,导致位置不对
+                proxy.$active = false
+                proxy.$oldIndex = proxy.$index
+                proxy.$active = true
+                proxy.$index = i
+            }
+
             if (xtype === "array") {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
+                // proxy[param] = source[i]
+            } else {
+                proxy.$val = toJson(value[keyOrId]) // 这里是处理vm.object = newObject的情况 
             }
             proxies.push(proxy)
         }
@@ -119,7 +132,7 @@ avalon.directive("repeat", {
 
             parent.insertBefore(transation, elem)
             fragments.forEach(function (fragment) {
-                scanNodeArray(fragment.nodes, fragment.vmodels)
+                scanNodeArray(fragment.nodes || [], fragment.vmodels)
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
         } else {
@@ -128,7 +141,7 @@ avalon.directive("repeat", {
                     removeItem(retain[keyOrId].$anchor, "remove")
                     // avalon.log("删除", keyOrId)
                     // 相当于delete binding.cache[key]
-                    proxyRecycler(binding.cache, keyOrId)
+                    proxyRecycler(binding.cache, keyOrId, param)
                     retain[keyOrId] = null
                 }
             }
@@ -159,7 +172,7 @@ avalon.directive("repeat", {
             avalon(parent).val(parent.oldValue.split(","))
         }
         var callback = binding.renderedCallback || noop
-        this.updating = false
+        this.enterCount -= 1
         callback.apply(parent, arguments)
         avalon.log("耗时 ", new Date() - now)
 
@@ -182,7 +195,7 @@ function removeItem(node) {
     var breakText = node.nodeValue
     while (true) {
         var pre = node.previousSibling
-        if (String(pre.nodeValue).indexOf(breakText) === 0) {
+        if (!pre || String(pre.nodeValue).indexOf(breakText) === 0) {
             break
         }
         fragment.insertBefore(pre, fragment.firstChild)
@@ -228,6 +241,7 @@ function eachProxyAgent(data, proxy) {
         if (candidate && candidate.hasOwnProperty(itemName)) {
             eachProxyPool.splice(i, 1)
             proxy = candidate
+            break
         }
     }
     if (!proxy) {
@@ -263,15 +277,31 @@ function eachProxyFactory(itemName) {
 function decorateProxy(proxy, binding, type) {
     if (type === "array") {
         proxy.$remove = function () {
-            binding.$repeat.removeAt(proxy.$index)
+            try {
+                binding.$repeat.removeAt(proxy.$index)
+            } catch (e) {
+                console.log(e)
+
+            }
         }
-        proxy.$watch(binding.param, function (a) {
-            console.log(a)
-            binding.$repeat[proxy.$index] = a
+        var param = binding.param
+        proxy.$watch(param, function fn(a) {
+            try {
+                proxy.$active = false
+                var index = proxy.$index
+                proxy.$active = true
+                binding.$repeat[index] = a
+            } catch (e) {
+                proxy.$unwatch(param, fn)
+            }
         })
     } else {
-        proxy.$watch("$val", function (a) {
-            binding.$repeat[proxy.$key] = a
+        proxy.$watch("$val", function fn(a) {
+            try {
+                binding.$repeat[proxy.$key] = a
+            } catch (e) {
+                proxy.$unwatch("$val", fn)
+            }
         })
     }
 }
@@ -299,11 +329,22 @@ function withProxyFactory() {
 }
 
 
-function proxyRecycler(cache, key) {
+function proxyRecycler(cache, key, param) {
     var proxy = cache[key]
     if (proxy) {
         var proxyPool = proxy.$id.indexOf("$proxy$each") === 0 ? eachProxyPool : withProxyPool
         proxy.$outer = {}
+        
+       for(var i in proxy.$events){
+           var a = proxy.$events[i]
+           if(Array.isArray(a)){
+               a.length = 0
+               if(i === param){
+                   proxy[param] = NaN
+               }
+           }
+       }
+        
         if (proxyPool.unshift(proxy) > kernel.maxRepeatSize) {
             proxyPool.pop()
         }

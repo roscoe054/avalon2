@@ -79,8 +79,7 @@ function observeObject(source, $special, old) {
             if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
                 computed.push(name)
                 
-                
-                
+
                 accessors[name] = {
                     get: function () {
                         return val.get.call(this)
@@ -88,7 +87,6 @@ function observeObject(source, $special, old) {
                     set: function (a) {
                         if (!stopRepeatAssign && typeof val.set === "function") {
                             val.set.call(this, a)
-
                         }
                     },
                     enumerable: true,
@@ -97,10 +95,10 @@ function observeObject(source, $special, old) {
             } else {
                 simple.push(name)
                 if (oldAccessors[name]) {
-                 //   console.log( old.$events[name])
+      
                     $events[name] = old.$events[name]
                     accessors[name] = oldAccessors[name]
-                   //  notifySubscribers( $events[name])
+      
                 } else {
                     accessors[name] = makeGetSet(name, val, $events[name])
                 }
@@ -277,7 +275,7 @@ function makeGetSet(key, value, list) {
                 value = newVal
             }
             if (this.$fire) {
-                notifySubscribers(this.$events[key])
+                notifySubscribers(this.$events[key],key, this)
                 this.$fire(key, value, oldValue)
             }
 
@@ -319,7 +317,10 @@ function collectDependency(subs) {
     dependencyDetection.collectDependency(subs)
 }
 
-function notifySubscribers(subs) {
+function notifySubscribers(subs, key, a) {
+    //console.log(subs, key, a)
+    if(!subs)
+        return
     if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
         rejectDisposeQueue()
     }

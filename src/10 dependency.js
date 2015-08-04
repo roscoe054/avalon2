@@ -31,34 +31,38 @@ function returnRandom() {
 
 avalon.injectBinding = function (binding) {
     if (binding.evaluator) { //如果是求值函数
-        dependencyDetection.begin({
-            callback: function (array) {
-                injectDependency(array, binding)
-            }
-        })
         binding.handler = binding.handler || directives[binding.type].update || noop
-        try {
-            binding.update = function () {
+        binding.update = function () {
+
+            try {
+                dependencyDetection.begin({
+                    callback: function (array) {
+                        injectDependency(array, binding)
+                    }
+                })
+               
                 var valueFn = ronduplex.test(binding.type) ? returnRandom : binding.evaluator
                 var value = valueFn.apply(0, binding.args)
-                if (binding.xtype && value === void 0) {
-                    delete binding.evaluator
+
+                if (binding.type === "duplex" ) {
+                    value() //ms-duplex进行依赖收集
                 }
+
+                dependencyDetection.end()
                 if (binding.signature) {
                     var xtype = avalon.type(value)
                     if (xtype !== "array" && xtype !== "object") {
-                        avalon.log("warning:" + binding.expr + "只能是对象或数组")
-                        return
+                        throw Error("warning:" + binding.expr + "只能是对象或数组")
                     }
                     binding.xtype = xtype
-                    var vtrack = getProxyIds(binding.$proxy || [], xtype)
                     // 让非监数组与对象也能渲染到页面上
+                    var vtrack = getProxyIds(binding.$proxy || [], xtype)
                     var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
                             Object.keys(value))
                     binding.track = mtrack
                     if (vtrack !== mtrack.join(";")) {
                         binding.handler.call(binding, value, binding.oldValue)
-                        binding.oldValue = 1 
+                        binding.oldValue = 1
                     }
                 } else {
                     if (binding.oldValue !== value) {
@@ -66,23 +70,23 @@ avalon.injectBinding = function (binding) {
                         binding.oldValue = value
                     }
                 }
+            } catch (e) {
+                log("warning:exception throwed in [avalon.injectBinding] ", e)
+                delete binding.evaluator
+                delete binding.update
+                var node = binding.element
+                if (node && node.nodeType === 3) {
+                    node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
+                }
+            }
 
-            }
-            binding.update()
-        } catch (e) {
-            log(e)
-            //  log("warning:exception throwed in [avalon.injectBinding] " + e)
-            delete binding.evaluator
-            delete binding.update
-            var node = binding.element
-            if (node && node.nodeType === 3) {
-                node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
-            }
-        } finally {
-            dependencyDetection.end()
         }
+        binding.update()
     }
 }
+
+
+
 
 //将依赖项(比它高层的访问器或构建视图刷新函数的绑定对象)注入到订阅者数组
 function injectDependency(list, binding) {
