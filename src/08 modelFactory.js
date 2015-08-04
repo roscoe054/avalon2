@@ -70,7 +70,6 @@ function observeObject(source, $special, old) {
     var $events = {}
     /* jshint ignore:start */
     names.forEach(function (name) {
-        // $proxy.push("$proxy$"+name)
         var val = source[name]
 
         if (isObservable(name, val, $skipArray, $special)) {
@@ -81,7 +80,7 @@ function observeObject(source, $special, old) {
 
                 new function (key) {
                     var old
-                    accessors[name] = {
+                    accessors[key] = {
                         get: function () {
                             return old = val.get.call(this)
                         },
@@ -151,7 +150,6 @@ function observeObject(source, $special, old) {
     computed.forEach(function (name, hack) {
         hack = $vmodel[name]
     })
-
 
     return $vmodel
 }

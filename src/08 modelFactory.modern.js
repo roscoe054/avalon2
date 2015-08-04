@@ -62,7 +62,6 @@ function observeObject(source, $special, old) {
     var $events = {}
     /* jshint ignore:start */
     names.forEach(function (name) {
-        // $proxy.push("$proxy$"+name)
         var val = source[name]
 
         if (isObservable(name, val, $skipArray, $special)) {
@@ -71,19 +70,27 @@ function observeObject(source, $special, old) {
             if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
                 computed.push(name)
 
-
-                accessors[name] = {
-                    get: function () {
-                        return val.get.call(this)
-                    },
-                    set: function (a) {
-                        if (!stopRepeatAssign && typeof val.set === "function") {
-                            val.set.call(this, a)
-                        }
-                    },
-                    enumerable: true,
-                    configurable: true
-                }
+                new function (key) {
+                    var old
+                    accessors[key] = {
+                        get: function () {
+                            return old = val.get.call(this)
+                        },
+                        set: function (x) {
+                            if (!stopRepeatAssign && typeof val.set === "function") {
+                                var older = old
+                                val.set.call(this, x)
+                                var newer = this[key]
+                                if (this.$fire && (newer !== older)) {
+                                    this.$fire(key, newer, older)
+                                }
+                            }
+                        },
+                        enumerable: true,
+                        configurable: true
+                    }
+                }(name)
+                
             } else {
                 simple.push(name)
                 if (oldAccessors[name]) {
@@ -131,7 +138,6 @@ function observeObject(source, $special, old) {
     computed.forEach(function (name, hack) {
         hack = $vmodel[name]
     })
-
 
     return $vmodel
 }
@@ -292,25 +298,6 @@ function isObservable(name, value, $skipArray, $special) {
         return false
     }
     return true
-}
-
-
-
-
-function collectDependency(subs) {
-    dependencyDetection.collectDependency(subs)
-}
-
-function notifySubscribers(subs, key, a) {
-    //console.log(subs, key, a)
-    if (!subs)
-        return
-    if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
-        rejectDisposeQueue()
-    }
-    for (var i = 0, sub; sub = subs[i++]; ) {
-        sub.update && sub.update()
-    }
 }
 
 
