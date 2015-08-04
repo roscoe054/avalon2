@@ -6,12 +6,20 @@ var disposeQueue = avalon.$$subscribers = []
 var beginTime = new Date()
 var oldInfo = {}
 var uuid2Node = {}
-function getUid(obj, makeID) { //IE9+,标准浏览器
-    if (!obj.uuid && !makeID) {
-        obj.uuid = ++disposeCount
-        //  uuid2Node[obj.uuid] = obj
+function getUid(data) { //IE9+,标准浏览器
+    if (!data.uuid) {
+        var elem = data.element
+        if (elem) {
+            if (elem.nodeType !== 1) {
+                data.uuid = data.type + (data.pos || 0) + "-" + getUid(elem.parentNode)
+            } else {
+                data.uuid = data.name + "-" + getUid(elem)
+            }
+        } else {
+            data.uuid = ++disposeCount
+        }
     }
-    return obj.uuid
+    return data.uuid
 }
 function getNode(uuid) {
     return uuid2Node[uuid]
@@ -19,18 +27,11 @@ function getNode(uuid) {
 //添加到回收列队中
 function injectDisposeQueue(data, list) {
     var lists = data.lists || (data.lists = [])
-    if (!data.uuid) {
-        var elem = data.element
-        if (elem.nodeType !== 1) {
-            data.uuid = data.type + (data.pos || 0) + "-" + getUid(elem.parentNode)
-        } else {
-            data.uuid = data.name + "-" + getUid(elem)
-        }
-    }
+    var uuid = getUid(data)
     avalon.Array.ensure(lists, list)
     list.$uuid = list.$uuid || generateID()
-    if (!disposeQueue[data.uuid]) {
-        disposeQueue[data.uuid] = 1
+    if (!disposeQueue[uuid]) {
+        disposeQueue[uuid] = 1
         disposeQueue.push(data)
     }
 }

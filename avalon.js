@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.46 built in 2015.8.4
+ avalon.js 1.46 built in 2015.8.5
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -955,7 +955,7 @@ var plugins = {
         rbind = new RegExp(o + ".*?" + c + "|\\sms-")
     }
 }
-
+kernel.async =true
 kernel.debug = true
 kernel.plugins = plugins
 kernel.plugins['interpolate'](["{{", "}}"])
@@ -1423,22 +1423,6 @@ function isObservable(name, value, $skipArray, $special) {
 
 
 
-function collectDependency(subs) {
-    dependencyDetection.collectDependency(subs)
-}
-
-function notifySubscribers(subs, key, a) {
-    //console.log(subs, key, a)
-    if (!subs)
-        return
-    if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
-        rejectDisposeQueue()
-    }
-    for (var i = 0, sub; sub = subs[i++]; ) {
-        sub.update && sub.update()
-    }
-}
-
 
 function hideProperty(host, name, value) {
     if (Object.defineProperty) {
@@ -1852,12 +1836,20 @@ var disposeQueue = avalon.$$subscribers = []
 var beginTime = new Date()
 var oldInfo = {}
 var uuid2Node = {}
-function getUid(obj, makeID) { //IE9+,标准浏览器
-    if (!obj.uuid && !makeID) {
-        obj.uuid = ++disposeCount
-        //  uuid2Node[obj.uuid] = obj
+function getUid(data) { //IE9+,标准浏览器
+    if (!data.uuid) {
+        var elem = data.element
+        if (elem) {
+            if (elem.nodeType !== 1) {
+                data.uuid = data.type + (data.pos || 0) + "-" + getUid(elem.parentNode)
+            } else {
+                data.uuid = data.name + "-" + getUid(elem)
+            }
+        } else {
+            data.uuid = ++disposeCount
+        }
     }
-    return obj.uuid
+    return data.uuid
 }
 function getNode(uuid) {
     return uuid2Node[uuid]
@@ -1865,18 +1857,11 @@ function getNode(uuid) {
 //添加到回收列队中
 function injectDisposeQueue(data, list) {
     var lists = data.lists || (data.lists = [])
-    if (!data.uuid) {
-        var elem = data.element
-        if (elem.nodeType !== 1) {
-            data.uuid = data.type + (data.pos || 0) + "-" + getUid(elem.parentNode)
-        } else {
-            data.uuid = data.name + "-" + getUid(elem)
-        }
-    }
+    var uuid = getUid(data)
     avalon.Array.ensure(lists, list)
     list.$uuid = list.$uuid || generateID()
-    if (!disposeQueue[data.uuid]) {
-        disposeQueue[data.uuid] = 1
+    if (!disposeQueue[uuid]) {
+        disposeQueue[uuid] = 1
         disposeQueue.push(data)
     }
 }
@@ -3250,6 +3235,55 @@ function scanText(textNode, vmodels, index) {
     }
 }
 
+
+function collectDependency(subs) {
+    dependencyDetection.collectDependency(subs)
+}
+
+function notifySubscribers(subs) {
+    if (!subs)
+        return
+    if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
+        rejectDisposeQueue()
+    }
+    if (kernel.async) {
+        buffer.render()
+        for (var i = 0, sub; sub = subs[i++]; ) {
+            if (sub.update) {
+                var uuid = getUid(sub)
+                if (!buffer.queue[uuid]) {
+                    buffer.queue[uuid] = 1
+                    buffer.queue.push(sub)
+                }
+            }
+        }
+    } else {
+        for (i = 0; sub = subs[i++]; ) {
+            sub.update && sub.update()//最小化刷新DOM树
+        }
+    }
+}
+//使用来自游戏界的双缓冲技术,减少对视图的冗余刷新
+var buffer = {
+    render: function () {
+        if (!this.locked) {
+            this.locked = 1
+            avalon.nextTick(function () {
+                buffer.flush()
+            })
+        }
+    },
+    queue: [],
+    flush: function () {
+        for (var i = 0, sub; sub = this.queue[i++]; ) {
+            sub.update()
+        }
+        this.queue.length = this.locked = 0
+        this.queue = []
+    }
+}
+
+
 var bools = ["autofocus,autoplay,async,allowTransparency,checked,controls",
     "declare,disabled,defer,defaultChecked,defaultSelected",
     "contentEditable,isMap,loop,multiple,noHref,noResize,noShade",
@@ -4452,6 +4486,7 @@ function proxyRecycler(cache, key, param) {
 //ms-skip绑定已经在scanTag 方法中实现
 avalon.directive("text", {
     update: function (value) {
+        console.log(value)
         var elem = this.element
         value = value == null ? "" : value //不在页面上显示undefined null
         if (elem.nodeType === 3) { //绑定在文本节点上

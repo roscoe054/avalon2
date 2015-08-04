@@ -321,22 +321,6 @@ function isObservable(name, value, $skipArray, $special) {
 
 
 
-function collectDependency(subs) {
-    dependencyDetection.collectDependency(subs)
-}
-
-function notifySubscribers(subs, key, a) {
-    //console.log(subs, key, a)
-    if (!subs)
-        return
-    if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
-        rejectDisposeQueue()
-    }
-    for (var i = 0, sub; sub = subs[i++]; ) {
-        sub.update && sub.update()
-    }
-}
-
 
 function hideProperty(host, name, value) {
     if (Object.defineProperty) {

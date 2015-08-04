@@ -5,35 +5,24 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
-        <script src="jquery.js"></script>
         <script>
+            avalon.config.async = true
             var vm = avalon.define({
                 $id: "test",
-                aaa: "<span>{{bbb}}</span>",
-                bbb: 111,
-                ccc: 222,
-                change: function () {
-                    vm.aaa = "<strong>{{ccc}}</strong>"
-                },
-                obj: {
-                    bbb:555
-                },
-                a: []
+                a: 1
             })
-            vm.a.$watch('length', function (v) {
-                console.log(v + "!!!")
-            });
-            vm.a = [1]// 触发回调
-            vm.a = []; // 不触发
-            vm.a = [1, 2, 3]; // 触发
-            vm.a = [];// 不触发
+            setTimeout(function () {
+                vm.a = 2
+                vm.a = 3
+                vm.a = 4
+                vm.a = 5
+                vm.a = 6
+            })
         </script>
     </head>
     <body>
         <div ms-controller="test">
-            <div ms-title="aaa">{{aaa|html}}</div>
-            <div >{{obj.bbb}}</div>
-            <button type="button" ms-click="change">xxxx</button>
+            <div id="aaa">{{a}}</div>
         </div>
     </body>
 </html>

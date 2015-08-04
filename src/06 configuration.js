@@ -50,7 +50,7 @@ var plugins = {
         rbind = new RegExp(o + ".*?" + c + "|\\sms-")
     }
 }
-
+kernel.async =true
 kernel.debug = true
 kernel.plugins = plugins
 kernel.plugins['interpolate'](["{{", "}}"])
