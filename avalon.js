@@ -1172,7 +1172,6 @@ function observeObject(source, $special, old) {
     var $events = {}
     /* jshint ignore:start */
     names.forEach(function (name) {
-        // $proxy.push("$proxy$"+name)
         var val = source[name]
 
         if (isObservable(name, val, $skipArray, $special)) {
@@ -1183,7 +1182,7 @@ function observeObject(source, $special, old) {
 
                 new function (key) {
                     var old
-                    accessors[name] = {
+                    accessors[key] = {
                         get: function () {
                             return old = val.get.call(this)
                         },
@@ -1253,7 +1252,6 @@ function observeObject(source, $special, old) {
     computed.forEach(function (name, hack) {
         hack = $vmodel[name]
     })
-
 
     return $vmodel
 }
@@ -1331,14 +1329,14 @@ function trackBy(name) {
 function toJson(val) {
     var xtype = avalon.type(val)
     if (xtype === "array") {
-        if (val.$active && val.$events) {
+        if (val.$events) {
             var array = []
             for (var i = 0; i < val.length; i++) {
                 array[i] = toJson(val[i])
             }
             return array
         }
-    } else if (xtype === "object" && val.$active) {
+    } else if (xtype === "object" && val.$events) {
         var obj = {}
         for (i in val) {
             if (val.hasOwnProperty(i)) {
@@ -4486,7 +4484,6 @@ function proxyRecycler(cache, key, param) {
 //ms-skip绑定已经在scanTag 方法中实现
 avalon.directive("text", {
     update: function (value) {
-        console.log(value)
         var elem = this.element
         value = value == null ? "" : value //不在页面上显示undefined null
         if (elem.nodeType === 3) { //绑定在文本节点上

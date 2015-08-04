@@ -211,14 +211,14 @@ function trackBy(name) {
 function toJson(val) {
     var xtype = avalon.type(val)
     if (xtype === "array") {
-        if (val.$active && val.$events) {
+        if (val.$events) {
             var array = []
             for (var i = 0; i < val.length; i++) {
                 array[i] = toJson(val[i])
             }
             return array
         }
-    } else if (xtype === "object" && val.$active) {
+    } else if (xtype === "object" && val.$events) {
         var obj = {}
         for (i in val) {
             if (val.hasOwnProperty(i)) {
