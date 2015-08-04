@@ -8,30 +8,35 @@
         <script>
             var vm = avalon.define({
                 $id: "test",
-                aaa: false,
-                h: [1, 4],
-                htext: "1,4",
-                d: "ccc"
+                array: [{
+                        a: 1
+                    }, {
+                        a: 2
+                    }, {
+                        a: 3
+                    }
+                ],
+                add: function () {
+                    vm.array.push({
+                        a: 6
+                    })
+                },
+                set: function () {
+                    vm.array[2].a = 5
+                }
             })
-            vm.h.$watch("length", function () {
-                vm.htext = vm.h.join(",")
-            })
+
         </script>
     </head>
     <body ms-controller="test">
-        <div><input ms-duplex-checked="aaa" type="radio"/>{{aaa}}</div>
-        <p>ms-duplex-number
-            <input ms-duplex-number="h" type="checkbox" value="1" />
-            <input ms-duplex-number="h" type="checkbox" value="2" />
-            <input ms-duplex-number="h" type="checkbox" value="3" />
-            <input ms-duplex-number="h" type="checkbox" value="4" />
-            {{htext}}</p>
-        <select ms-duplex="d">
-            <option>aaa</option>
-            <option>bbb</option>
-            <option>ccc</option>
-            <option>ddd</option>
-        </select>
-        {{d}}
+        <ul>
+            <li ms-repeat="array" >
+                <button type="button" ms-click="$remove"> del</button>
+                <input ms-duplex="el.a">{{el.a}}
+            </li>
+        </ul>
+        <button ms-click="add" type="button">add</button>
+        <button ms-click="set" type="button">set</button>
+
     </body>
 </html>

@@ -62,6 +62,7 @@ avalon.injectBinding = function (binding) {
                     var vtrack = getProxyIds(binding.$proxy || [], xtype)
                     var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
                             Object.keys(value))
+
                     binding.track = mtrack
                     if (vtrack !== mtrack.join(";")) {
                         binding.handler.call(binding, value, binding.oldValue)

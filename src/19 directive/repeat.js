@@ -73,7 +73,7 @@ avalon.directive("repeat", {
                 track = keys2
             }
         }
-        console.log("进入repeat....")
+        var action = "move"
         binding.$repeat = value
         var fragments = []
         var transation = init && avalonFragment.cloneNode(false)
@@ -86,17 +86,19 @@ avalon.directive("repeat", {
 
         var parent = elem.parentNode
         for (i = 0; i < length; i++) {
-          
+
             var keyOrId = track[i] //array为随机数, object 为keyName
             var proxy = retain[keyOrId]
             if (!proxy) {
+
                 proxy = getProxyVM(this)
                 if (xtype === "array") {
+                    action = "add"
                     proxy.$id = keyOrId
-                   
                     proxy[param] = value[i] //index
- 
+
                 } else {
+                    action = "append"
                     proxy.$key = keyOrId
                     proxy.$val = value[keyOrId] //key
                 }
@@ -121,7 +123,6 @@ avalon.directive("repeat", {
             if (xtype === "array") {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
-                // proxy[param] = source[i]
             } else {
                 proxy.$val = toJson(value[keyOrId]) // 这里是处理vm.object = newObject的情况 
             }
@@ -138,10 +139,11 @@ avalon.directive("repeat", {
         } else {
             for (keyOrId in retain) {
                 if (retain[keyOrId] !== true) {
+                    action = "del"
                     removeItem(retain[keyOrId].$anchor, "remove")
                     // avalon.log("删除", keyOrId)
                     // 相当于delete binding.cache[key]
-                    proxyRecycler(binding.cache, keyOrId, param)
+                    proxyRecycler(this.cache, keyOrId, param)
                     retain[keyOrId] = null
                 }
             }
@@ -165,18 +167,25 @@ avalon.directive("repeat", {
                 }
             }
 
-
         }
-
+        if (!value.$track) {//如果是非监控对象,那么就将其$events清空,阻止其持续监听
+            for (keyOrId in this.cache) {
+                proxyRecycler(this.cache, keyOrId, param)
+            }
+     
+        }
         if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
             avalon(parent).val(parent.oldValue.split(","))
         }
         var callback = binding.renderedCallback || noop
         this.enterCount -= 1
-        callback.apply(parent, arguments)
+        if (kernel.newWatch) {
+            callback.apply(parent, arguments)
+        } else {//兼容早期的传参方式
+            callback.call(parent, action)
+        }
+
         avalon.log("耗时 ", new Date() - now)
-
-
 
     }
 
@@ -315,7 +324,7 @@ function withProxyAgent() {
 function withProxyFactory() {
     var proxy = modelFactory({
         $key: "",
-        $val: "",
+        $val: NaN,
         $index: 0,
         $outer: {},
         $anchor: null
@@ -334,17 +343,20 @@ function proxyRecycler(cache, key, param) {
     if (proxy) {
         var proxyPool = proxy.$id.indexOf("$proxy$each") === 0 ? eachProxyPool : withProxyPool
         proxy.$outer = {}
-        
-       for(var i in proxy.$events){
-           var a = proxy.$events[i]
-           if(Array.isArray(a)){
-               a.length = 0
-               if(i === param){
-                   proxy[param] = NaN
-               }
-           }
-       }
-        
+
+        for (var i in proxy.$events) {
+            var a = proxy.$events[i]
+            if (Array.isArray(a)) {
+                a.length = 0
+                if (i === param) {
+                    proxy[param] = NaN
+
+                } else if (i === "$val") {
+                    proxy.$val = NaN
+                }
+            }
+        }
+
         if (proxyPool.unshift(proxy) > kernel.maxRepeatSize) {
             proxyPool.pop()
         }
