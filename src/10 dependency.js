@@ -30,9 +30,12 @@ function returnRandom() {
 }
 
 avalon.injectBinding = function (binding) {
-    if (binding.evaluator) { //如果是求值函数
+   // if () { //如果是求值函数
         binding.handler = binding.handler || directives[binding.type].update || noop
         binding.update = function () {
+            
+            if(!binding.evaluator)
+                  parseExpr(binding.expr, binding.vmodels, binding)
 
             try {
                 dependencyDetection.begin({
@@ -71,9 +74,8 @@ avalon.injectBinding = function (binding) {
                     }
                 }
             } catch (e) {
-                log("warning:exception throwed in [avalon.injectBinding] ", e)
                 delete binding.evaluator
-                delete binding.update
+                log("warning:exception throwed in [avalon.injectBinding] ", e)
                 var node = binding.element
                 if (node && node.nodeType === 3) {
                     node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
@@ -82,7 +84,7 @@ avalon.injectBinding = function (binding) {
 
         }
         binding.update()
-    }
+   // }
 }
 
 

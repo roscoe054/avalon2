@@ -47,9 +47,9 @@ function executeBindings(bindings, vmodels) {
     for (var i = 0, binding; binding = bindings[i++]; ) {
         binding.vmodels = vmodels
         directives[binding.type].init(binding)
-        parseExpr(binding.expr, binding.vmodels, binding)
+      
         avalon.injectBinding(binding)
-        if (binding.update && binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
+        if (binding.evaluator && binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
             //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
             binding.element.removeAttribute(binding.name)
         }
