@@ -275,16 +275,6 @@ function makeGetSet(key, value, list) {
     }
 }
 
-//比较两个值是否相等
-var isEqual = Object.is || function (v1, v2) {
-    if (v1 === 0 && v2 === 0) {
-        return 1 / v1 === 1 / v2
-    } else if (v1 !== v1) {
-        return v2 !== v2
-    } else {
-        return v1 === v2
-    }
-}
 
 function isObservable(name, value, $skipArray, $special) {
 

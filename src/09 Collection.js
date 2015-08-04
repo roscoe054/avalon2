@@ -133,7 +133,7 @@ function sortByIndex(array, indexes) {
         for (var i = 0, n = oldArray.length; i < n; i++) {
             var neo = newArray[i]
             var old = oldArray[i]
-            if (isEqual(neo, old)) {
+            if (neo === old) {
                 indexes.push(i)
             } else {
                 var index = oldArray.indexOf(neo)

@@ -219,40 +219,6 @@ function observe(obj, old, hasReturn) {
     }
 }
 
-
-//让IE8+及所有标准浏览器的VM共用trackBy, toJson,$modelDescriptor...
-function trackBy(name) {
-    return this.$track.indexOf(name) !== -1
-}
-function toJson(val) {
-    var xtype = avalon.type(val)
-    if (xtype === "array") {
-        if (val.$events) {
-            var array = []
-            for (var i = 0; i < val.length; i++) {
-                array[i] = toJson(val[i])
-            }
-            return array
-        }
-    } else if (xtype === "object" && val.$events) {
-        var obj = {}
-        for (i in val) {
-            if (val.hasOwnProperty(i)) {
-                obj[i] = toJson(val[i])
-            }
-        }
-        return obj
-    }
-    return val
-}
-var $modelDescriptor = {
-    get: function () {
-        return toJson(this)
-    },
-    set: noop,
-    enumerable: false,
-    configurable: true
-}
 function makeGetSet(key, value, list) {
     var childVm = observe(value)//转换为VM
     if (childVm) {
@@ -291,17 +257,6 @@ function makeGetSet(key, value, list) {
     }
 }
 
-//比较两个值是否相等
-var isEqual = Object.is || function (v1, v2) {
-    if (v1 === 0 && v2 === 0) {
-        return 1 / v1 === 1 / v2
-    } else if (v1 !== v1) {
-        return v2 !== v2
-    } else {
-        return v1 === v2
-    }
-}
-
 function isObservable(name, value, $skipArray, $special) {
 
     if (isFunction(value) || value && value.nodeType) {
@@ -316,9 +271,10 @@ function isObservable(name, value, $skipArray, $special) {
     return true
 }
 
-
-
-
+//让IE8+及所有标准浏览器的VM共用trackBy, toJson,$modelDescriptor...
+function trackBy(name) {
+    return this.$track.indexOf(name) !== -1
+}
 
 function hideProperty(host, name, value) {
     if (Object.defineProperty) {
@@ -333,6 +289,36 @@ function hideProperty(host, name, value) {
     }
 }
 
+function toJson(val) {
+    var xtype = avalon.type(val)
+    if (xtype === "array") {
+        if (val.$events) {
+            var array = []
+            for (var i = 0; i < val.length; i++) {
+                array[i] = toJson(val[i])
+            }
+            return array
+        }
+    } else if (xtype === "object" && val.$events) {
+        var obj = {}
+        for (i in val) {
+            if (val.hasOwnProperty(i)) {
+                obj[i] = toJson(val[i])
+            }
+        }
+        return obj
+    }
+    return val
+}
+
+var $modelDescriptor = {
+    get: function () {
+        return toJson(this)
+    },
+    set: noop,
+    enumerable: false,
+    configurable: true
+}
 
 var $watch = function (expr, callback, option) {
     var watcher = {
