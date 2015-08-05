@@ -12,7 +12,7 @@ var newProto = {
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {
             if (index > this.length) {
-                throw Error(index +"set方法的第一个参数不能大于原数组长度")
+                throw Error(index + "set方法的第一个参数不能大于原数组长度")
             }
             this.splice(index, 1, val)
         }
@@ -34,7 +34,6 @@ var newProto = {
     },
     removeAt: function (index) { //移除指定索引上的元素
         if ((index >>> 0) === index) {
-
             return this.splice(index, 1)
         }
         return []
@@ -76,14 +75,13 @@ var _splice = arrayProto.splice
 arrayMethods.forEach(function (method) {
     var original = arrayProto[method]
     newProto[method] = function () {
-        // avoid leaking arguments:
-        // http://jsperf.com/closure-with-arguments
+        // 继续尝试劫持数组元素的属性
         var args = []
         for (var i = 0, n = arguments.length; i < n; i++) {
             args[i] = observe(arguments[i], 0, 1)
         }
         var result = original.apply(this, args)
-        asyncProxy(this.$track, method, args)
+        addTrack(this.$track, method, args)
         if (!W3C) {
             this.$model = toJson(this)
         }
@@ -92,35 +90,6 @@ arrayMethods.forEach(function (method) {
         return result
     }
 })
-
-function asyncProxy(proxies, method, args) {
-    switch (method) {
-        case 'push':
-        case 'unshift':
-            args = createTrack(args.length)
-            break
-        case 'splice':
-            if (args.length > 2) {
-                args = [args[0], args[1]].concat(createTrack(args.length - 2))
-            }
-            break
-    }
-    Array.prototype[method].apply(proxies, args)
-}
-
-function sortByIndex(array, indexes) {
-    var map = {};
-    for (var i = 0, n = indexes.length; i < n; i++) {
-        map[i] = array[i]
-        var j = indexes[i]
-        if (j in map) {
-            array[i] = map[j]
-            delete map[j]
-        } else {
-            array[i] = array[j]
-        }
-    }
-}
 
 "sort,reverse".replace(rword, function (method) {
     newProto[method] = function () {
@@ -153,11 +122,39 @@ function sortByIndex(array, indexes) {
     }
 })
 
+function sortByIndex(array, indexes) {
+    var map = {};
+    for (var i = 0, n = indexes.length; i < n; i++) {
+        map[i] = array[i]
+        var j = indexes[i]
+        if (j in map) {
+            array[i] = map[j]
+            delete map[j]
+        } else {
+            array[i] = array[j]
+        }
+    }
+}
 
 function createTrack(n) {
     var ret = []
     for (var i = 0; i < n; i++) {
-        ret[i] = generateID("$proxy$each")// ("$proxy$" + Math.random()).replace(/0\.\d{2}/, "") 
+        ret[i] = generateID("$proxy$each")
     }
     return ret
+}
+
+function addTrack(track, method, args) {
+    switch (method) {
+        case 'push':
+        case 'unshift':
+            args = createTrack(args.length)
+            break
+        case 'splice':
+            if (args.length > 2) {
+                args = [args[0], args[1]].concat(createTrack(args.length - 2))
+            }
+            break
+    }
+    Array.prototype[method].apply(track, args)
 }

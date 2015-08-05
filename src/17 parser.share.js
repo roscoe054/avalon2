@@ -200,8 +200,6 @@ function parseExpr(code, scopes, data) {
 }
 
 
-//parseExpr的智能引用代理
-
 function stringifyExpr(code){
   var hasExpr = rexpr.test(code) //比如ms-class="width{{w}}"的情况
   if (hasExpr) {
@@ -216,6 +214,7 @@ function stringifyExpr(code){
      return code
   }
 }
+//parseExpr的智能引用代理
 
 function parseExprProxy(code, scopes, data) {
     avalon.log("parseExprProxy方法即将被废弃")

@@ -1550,7 +1550,7 @@ var newProto = {
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {
             if (index > this.length) {
-                throw Error(index +"set方法的第一个参数不能大于原数组长度")
+                throw Error(index + "set方法的第一个参数不能大于原数组长度")
             }
             this.splice(index, 1, val)
         }
@@ -1572,7 +1572,6 @@ var newProto = {
     },
     removeAt: function (index) { //移除指定索引上的元素
         if ((index >>> 0) === index) {
-
             return this.splice(index, 1)
         }
         return []
@@ -1614,14 +1613,13 @@ var _splice = arrayProto.splice
 arrayMethods.forEach(function (method) {
     var original = arrayProto[method]
     newProto[method] = function () {
-        // avoid leaking arguments:
-        // http://jsperf.com/closure-with-arguments
+        // 继续尝试劫持数组元素的属性
         var args = []
         for (var i = 0, n = arguments.length; i < n; i++) {
             args[i] = observe(arguments[i], 0, 1)
         }
         var result = original.apply(this, args)
-        asyncProxy(this.$track, method, args)
+        addTrack(this.$track, method, args)
         if (!W3C) {
             this.$model = toJson(this)
         }
@@ -1630,35 +1628,6 @@ arrayMethods.forEach(function (method) {
         return result
     }
 })
-
-function asyncProxy(proxies, method, args) {
-    switch (method) {
-        case 'push':
-        case 'unshift':
-            args = createTrack(args.length)
-            break
-        case 'splice':
-            if (args.length > 2) {
-                args = [args[0], args[1]].concat(createTrack(args.length - 2))
-            }
-            break
-    }
-    Array.prototype[method].apply(proxies, args)
-}
-
-function sortByIndex(array, indexes) {
-    var map = {};
-    for (var i = 0, n = indexes.length; i < n; i++) {
-        map[i] = array[i]
-        var j = indexes[i]
-        if (j in map) {
-            array[i] = map[j]
-            delete map[j]
-        } else {
-            array[i] = array[j]
-        }
-    }
-}
 
 "sort,reverse".replace(rword, function (method) {
     newProto[method] = function () {
@@ -1691,13 +1660,41 @@ function sortByIndex(array, indexes) {
     }
 })
 
+function sortByIndex(array, indexes) {
+    var map = {};
+    for (var i = 0, n = indexes.length; i < n; i++) {
+        map[i] = array[i]
+        var j = indexes[i]
+        if (j in map) {
+            array[i] = map[j]
+            delete map[j]
+        } else {
+            array[i] = array[j]
+        }
+    }
+}
 
 function createTrack(n) {
     var ret = []
     for (var i = 0; i < n; i++) {
-        ret[i] = generateID("$proxy$each")// ("$proxy$" + Math.random()).replace(/0\.\d{2}/, "") 
+        ret[i] = generateID("$proxy$each")
     }
     return ret
+}
+
+function addTrack(track, method, args) {
+    switch (method) {
+        case 'push':
+        case 'unshift':
+            args = createTrack(args.length)
+            break
+        case 'splice':
+            if (args.length > 2) {
+                args = [args[0], args[1]].concat(createTrack(args.length - 2))
+            }
+            break
+    }
+    Array.prototype[method].apply(track, args)
 }
 /*********************************************************************
  *                           依赖调度系统                             *
@@ -1724,72 +1721,70 @@ var dependencyDetection = (function () {
     };
 })()
 //将绑定对象注入到其依赖项的订阅数组中
-var ronduplex = /^on$/
+var roneval = /^on$/
 
 function returnRandom() {
     return new Date() - 0
 }
 
 avalon.injectBinding = function (binding) {
-   // if () { //如果是求值函数
-        binding.handler = binding.handler || directives[binding.type].update || noop
-        binding.update = function () {
-            
-            if(!binding.evaluator)
-                  parseExpr(binding.expr, binding.vmodels, binding)
 
-            try {
-                dependencyDetection.begin({
-                    callback: function (array) {
-                        injectDependency(array, binding)
-                    }
-                })
-               
-                var valueFn = ronduplex.test(binding.type) ? returnRandom : binding.evaluator
-                var value = valueFn.apply(0, binding.args)
+    binding.handler = binding.handler || directives[binding.type].update || noop
+    binding.update = function () {
 
-                if (binding.type === "duplex" ) {
-                    value() //ms-duplex进行依赖收集
+        if (!binding.evaluator) {
+            parseExpr(binding.expr, binding.vmodels, binding)
+        }
+        try {
+            dependencyDetection.begin({
+                callback: function (array) {
+                    injectDependency(array, binding)
                 }
+            })
 
-                dependencyDetection.end()
-                if (binding.signature) {
-                    var xtype = avalon.type(value)
-                    if (xtype !== "array" && xtype !== "object") {
-                        throw Error("warning:" + binding.expr + "只能是对象或数组")
-                    }
-                    binding.xtype = xtype
-                    // 让非监数组与对象也能渲染到页面上
-                    var vtrack = getProxyIds(binding.proxies || [], xtype)
-                    var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
-                            Object.keys(value))
+            var valueFn = roneval.test(binding.type) ? returnRandom : binding.evaluator
+            var value = valueFn.apply(0, binding.args)
 
-                    binding.track = mtrack
-                    if (vtrack !== mtrack.join(";")) {
-                        binding.handler.call(binding, value, binding.oldValue)
-                        binding.oldValue = 1
-                    }
-                } else {
-                    if (binding.oldValue !== value) {
-                        binding.handler.call(binding, value, binding.oldValue)
-                        binding.oldValue = value
-                    }
-                }
-            } catch (e) {
-                delete binding.evaluator
-                log("warning:exception throwed in [avalon.injectBinding] ", e)
-                var node = binding.element
-                if (node && node.nodeType === 3) {
-                    node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
-                }
+            if (binding.type === "duplex") {
+                value() //ms-duplex进行依赖收集
             }
 
+            dependencyDetection.end()
+            if (binding.signature) {
+                var xtype = avalon.type(value)
+                if (xtype !== "array" && xtype !== "object") {
+                    throw Error("warning:" + binding.expr + "只能是对象或数组")
+                }
+                binding.xtype = xtype
+                // 让非监数组与对象也能渲染到页面上
+                var vtrack = getProxyIds(binding.proxies || [], xtype)
+                var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
+                        Object.keys(value))
+
+                binding.track = mtrack
+                if (vtrack !== mtrack.join(";")) {
+                    binding.handler.call(binding, value, binding.oldValue)
+                    binding.oldValue = 1
+                }
+            } else {
+                if (binding.oldValue !== value) {
+                    binding.handler.call(binding, value, binding.oldValue)
+                    binding.oldValue = value
+                }
+            }
+        } catch (e) {
+            delete binding.evaluator
+            log("warning:exception throwed in [avalon.injectBinding] ", e)
+            var node = binding.element
+            if (node && node.nodeType === 3) {
+                node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
+            }
         }
-        binding.update()
-   // }
+
+    }
+    binding.update()
+
 }
-
-
 
 
 //将依赖项(比它高层的访问器或构建视图刷新函数的绑定对象)注入到订阅者数组
@@ -1802,9 +1797,7 @@ function injectDependency(list, binding) {
 }
 
 
-
 function getProxyIds(a, isArray) {
-
     var ret = []
     for (var i = 0, el; el = a[i++]; ) {
         ret.push(isArray ? el.$id : el.$key)
@@ -2815,8 +2808,6 @@ function parseExpr(code, scopes, data) {
 }
 
 
-//parseExpr的智能引用代理
-
 function stringifyExpr(code){
   var hasExpr = rexpr.test(code) //比如ms-class="width{{w}}"的情况
   if (hasExpr) {
@@ -2831,6 +2822,7 @@ function stringifyExpr(code){
      return code
   }
 }
+//parseExpr的智能引用代理
 
 function parseExprProxy(code, scopes, data) {
     avalon.log("parseExprProxy方法即将被废弃")
@@ -3253,6 +3245,7 @@ var buffer = {
         if (!this.locked) {
             this.locked = 1
             avalon.nextTick(function () {
+                console.log("flush")
                 buffer.flush()
             })
         }
@@ -3267,7 +3260,49 @@ var buffer = {
     }
 }
 
+avalon.transition = function(name, defination){
+    
+}
 
+/*
+	  transition: function (target, cb) {
+	    var self = this
+	    var current = this.childVM
+	    this.unsetCurrent()
+	    this.setCurrent(target)
+	    switch (self.transMode) {
+	      case 'in-out':
+	        target.$before(self.anchor, function () {
+	          self.remove(current, cb)
+	        })
+	        break
+	      case 'out-in':
+	        self.remove(current, function () {
+	          if (!target._isDestroyed) {
+	            target.$before(self.anchor, cb)
+	          }
+	        })
+	        break
+	      default:
+	        self.remove(current)
+	        target.$before(self.anchor, cb)
+	    }
+	  },
+                  
+                  
+	  update: function (id, oldId) {
+	    var el = this.el
+	    var vm = this.el.__vue__ || this.vm
+	    var hooks = _.resolveAsset(vm.$options, 'transitions', id)
+	    id = id || 'v'
+	    el.__v_trans = new Transition(el, id, hooks, vm)
+	    if (oldId) {
+	      _.removeClass(el, oldId + '-transition')
+	    }
+	    _.addClass(el, id + '-transition')
+	  }
+          
+         */
 var bools = ["autofocus,autoplay,async,allowTransparency,checked,controls",
     "declare,disabled,defer,defaultChecked,defaultSelected",
     "contentEditable,isMap,loop,multiple,noHref,noResize,noShade",
@@ -4486,6 +4521,34 @@ avalon.directive("text", {
         }
     }
 })
+avalon.directive("transition", {
+    priority: 105,
+    init: function (binding) {
+        var text = binding.expr,
+                className,
+                rightExpr
+        var colonIndex = text.replace(rexprg, function (a) {
+            return a.replace(/./g, "0")
+        }).indexOf(":") //取得第一个冒号的位置
+        if (colonIndex === -1) { // 比如 ms-class="aaa bbb ccc" 的情况
+            className = text
+            rightExpr = true
+        } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
+            className = text.slice(0, colonIndex)
+            rightExpr = text.slice(colonIndex + 1)
+        }
+        if (!rexpr.test(text)) {
+            className = JSON.stringify(className)
+        } else {
+            className = stringifyExpr(className)
+        }
+        binding.expr = "[" + className + "," + rightExpr + "]"
+    },
+    update: function (arr) {
+       console.log(arr)
+    }
+})
+
 function parseDisplay(nodeName, val) {
     //用于取得此类标签的默认display值
     var key = "_" + nodeName

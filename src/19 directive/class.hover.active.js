@@ -1,31 +1,13 @@
 //根据VM的属性值或表达式的值切换类名，ms-class="xxx yyy zzz:flag"
 //http://www.cnblogs.com/rubylouvre/archive/2012/12/17/2818540.html
 avalon.directive("class", {
-
     init: function (binding) {
-        var oldStyle = binding.param,
-            text = binding.expr,
-            className,
-            rightExpr
+        var oldStyle = binding.param
         if (!oldStyle || isFinite(oldStyle)) {
             binding.param = "" //去掉数字
-            var colonIndex = text.replace(rexprg, function (a) {
-                    return a.replace(/./g, "0")
-                }).indexOf(":") //取得第一个冒号的位置
-            if (colonIndex === -1) { // 比如 ms-class="aaa bbb ccc" 的情况
-                className = text
-                rightExpr = true
-            } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
-                className = text.slice(0, colonIndex)
-                rightExpr = text.slice(colonIndex + 1)
-            }
-            if (!rexpr.test(text)) {
-                className = JSON.stringify(className)
-            } else {
-                className = stringifyExpr(className)
-            }
-            binding.expr = "[" + className + "," + rightExpr + "]"
+            directives.transition.init(binding)
         } else {
+            log('ms-' + method + '-xxx="yyy"这种用法已经过时,请使用ms-' + method + '="xxx:yyy"')
             binding.expr = '[' + JSON.stringify(oldStyle) + "," + binding.expr + "]"
             binding.oldStyle = oldStyle
         }
@@ -84,3 +66,4 @@ avalon.directive("class", {
 "hover,active".replace(rword, function (name) {
     directives[name] = directives["class"]
 })
+

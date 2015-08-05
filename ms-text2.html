@@ -1,31 +1,36 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>虚拟DOM测试</title>
+        <title>avalon2</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
+         <style>
+            .expand-transition {
+                transition: all .3s ease;
+                height: 30px;
+                padding: 10px;
+                background-color: #eee;
+                overflow: hidden;
+            }
+            .expand-enter, .expand-leave {
+                height: 0;
+                padding: 0 10px;
+                opacity: 0;
+            }
+        </style>
         <script>
             var vm = avalon.define({
                 $id: "test",
-                a: 111,
-                b: 222,
-                c: 777,
-                change1: function () {
-                    vm.a = 10
-                    vm.b = 22
-                },
-                change2: function () {
-                    vm.a = 55
-                    vm.b = 8
+                show: true,
+                change: function () {
+                   vm.show = !vm.show
                 }
             })
         </script>
     </head>
     <body ms-controller="test">
-        <h1>测试虚拟DOM</h1>
-        <div>{{a}}</div>
-        <p><button ms-click="change1" type="button">click 1</button></p>
-        <p><button ms-click="change2" type="button">click 2</button></p>
+        <div ms-if="show" ms-transition="ccc">动画</div>
+        <p><button ms-click="change" type="button">click 1</button></p>
     </body>
 </html>

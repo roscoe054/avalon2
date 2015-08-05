@@ -23,72 +23,70 @@ var dependencyDetection = (function () {
     };
 })()
 //将绑定对象注入到其依赖项的订阅数组中
-var ronduplex = /^on$/
+var roneval = /^on$/
 
 function returnRandom() {
     return new Date() - 0
 }
 
 avalon.injectBinding = function (binding) {
-   // if () { //如果是求值函数
-        binding.handler = binding.handler || directives[binding.type].update || noop
-        binding.update = function () {
-            
-            if(!binding.evaluator)
-                  parseExpr(binding.expr, binding.vmodels, binding)
 
-            try {
-                dependencyDetection.begin({
-                    callback: function (array) {
-                        injectDependency(array, binding)
-                    }
-                })
-               
-                var valueFn = ronduplex.test(binding.type) ? returnRandom : binding.evaluator
-                var value = valueFn.apply(0, binding.args)
+    binding.handler = binding.handler || directives[binding.type].update || noop
+    binding.update = function () {
 
-                if (binding.type === "duplex" ) {
-                    value() //ms-duplex进行依赖收集
+        if (!binding.evaluator) {
+            parseExpr(binding.expr, binding.vmodels, binding)
+        }
+        try {
+            dependencyDetection.begin({
+                callback: function (array) {
+                    injectDependency(array, binding)
                 }
+            })
 
-                dependencyDetection.end()
-                if (binding.signature) {
-                    var xtype = avalon.type(value)
-                    if (xtype !== "array" && xtype !== "object") {
-                        throw Error("warning:" + binding.expr + "只能是对象或数组")
-                    }
-                    binding.xtype = xtype
-                    // 让非监数组与对象也能渲染到页面上
-                    var vtrack = getProxyIds(binding.proxies || [], xtype)
-                    var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
-                            Object.keys(value))
+            var valueFn = roneval.test(binding.type) ? returnRandom : binding.evaluator
+            var value = valueFn.apply(0, binding.args)
 
-                    binding.track = mtrack
-                    if (vtrack !== mtrack.join(";")) {
-                        binding.handler.call(binding, value, binding.oldValue)
-                        binding.oldValue = 1
-                    }
-                } else {
-                    if (binding.oldValue !== value) {
-                        binding.handler.call(binding, value, binding.oldValue)
-                        binding.oldValue = value
-                    }
-                }
-            } catch (e) {
-                delete binding.evaluator
-                log("warning:exception throwed in [avalon.injectBinding] ", e)
-                var node = binding.element
-                if (node && node.nodeType === 3) {
-                    node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
-                }
+            if (binding.type === "duplex") {
+                value() //ms-duplex进行依赖收集
             }
 
+            dependencyDetection.end()
+            if (binding.signature) {
+                var xtype = avalon.type(value)
+                if (xtype !== "array" && xtype !== "object") {
+                    throw Error("warning:" + binding.expr + "只能是对象或数组")
+                }
+                binding.xtype = xtype
+                // 让非监数组与对象也能渲染到页面上
+                var vtrack = getProxyIds(binding.proxies || [], xtype)
+                var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
+                        Object.keys(value))
+
+                binding.track = mtrack
+                if (vtrack !== mtrack.join(";")) {
+                    binding.handler.call(binding, value, binding.oldValue)
+                    binding.oldValue = 1
+                }
+            } else {
+                if (binding.oldValue !== value) {
+                    binding.handler.call(binding, value, binding.oldValue)
+                    binding.oldValue = value
+                }
+            }
+        } catch (e) {
+            delete binding.evaluator
+            log("warning:exception throwed in [avalon.injectBinding] ", e)
+            var node = binding.element
+            if (node && node.nodeType === 3) {
+                node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
+            }
         }
-        binding.update()
-   // }
+
+    }
+    binding.update()
+
 }
-
-
 
 
 //将依赖项(比它高层的访问器或构建视图刷新函数的绑定对象)注入到订阅者数组
@@ -101,9 +99,7 @@ function injectDependency(list, binding) {
 }
 
 
-
 function getProxyIds(a, isArray) {
-
     var ret = []
     for (var i = 0, el; el = a[i++]; ) {
         ret.push(isArray ? el.$id : el.$key)
