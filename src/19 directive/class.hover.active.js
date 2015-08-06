@@ -5,10 +5,10 @@ avalon.directive("class", {
         var oldStyle = binding.param
         if (!oldStyle || isFinite(oldStyle)) {
             binding.param = "" //去掉数字
-            directives.transition.init(binding)
+            directives.effect.init(binding)
         } else {
             log('ms-' + method + '-xxx="yyy"这种用法已经过时,请使用ms-' + method + '="xxx:yyy"')
-            binding.expr = '[' + JSON.stringify(oldStyle) + "," + binding.expr + "]"
+            binding.expr = '[' + quote(oldStyle) + "," + binding.expr + "]"
             binding.oldStyle = oldStyle
         }
 

@@ -5,24 +5,22 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
+   
+    </head>
+    <body ms-controller="test">
+
+        <style>
+            .abc{width: 100px; height: 100px; background-color: #000;}
+        </style>
         <script>
-            avalon.config.async = true
-            var vm = avalon.define({
-                $id: "test",
-                a: 1
-            })
-            setTimeout(function () {
-                vm.a = 2
-                vm.a = 3
-                vm.a = 4
-                vm.a = 5
-                vm.a = 6
+            avalon.define('test', function (vm) {
+                vm.a = true
             })
         </script>
-    </head>
-    <body>
-        <div ms-controller="test">
-            <div id="aaa">{{a}}</div>
-        </div>
+
+        <div ms-class-1="abc:a" >1111</div>
+
+        <div class="dd" ms-class-1="{{a?'abc':''}}" >1111</div> 
     </body>
+
 </html>

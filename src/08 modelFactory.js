@@ -117,7 +117,7 @@ function observeObject(source, $special, old) {
     /* jshint ignore:end */
 
     accessors["$model"] = $modelDescriptor
-    $vmodel = Object.defineProperties($vmodel, accessors)
+    $vmodel = Object.defineProperties($vmodel, accessors, source)
     /* jshint ignore:start */
     if (!W3C) {
         $vmodel.hasOwnProperty = function (name) {
@@ -202,7 +202,6 @@ function observe(obj, old, hasReturn) {
                 if (keys.join(";") === keys2.join(";")) {
                     for (var i in obj) {
                         if (obj.hasOwnProperty(i)) {
-                            //0.6 版本   var hack = old[i]
                             old[i] = obj[i]
                         }
                     }

@@ -28,11 +28,10 @@ function notifySubscribers(subs) {
 }
 //使用来自游戏界的双缓冲技术,减少对视图的冗余刷新
 var buffer = {
-    render: function () {
+    render: function (isAnimate) {
         if (!this.locked) {
-            this.locked = 1
+            this.locked = isAnimate ? root.offsetHeight + 10 : 1
             avalon.nextTick(function () {
-                console.log("flush")
                 buffer.flush()
             })
         }
@@ -47,46 +46,43 @@ var buffer = {
     }
 }
 
-avalon.transition = function(name, defination){
-    
-}
 
 /*
-	  transition: function (target, cb) {
-	    var self = this
-	    var current = this.childVM
-	    this.unsetCurrent()
-	    this.setCurrent(target)
-	    switch (self.transMode) {
-	      case 'in-out':
-	        target.$before(self.anchor, function () {
-	          self.remove(current, cb)
-	        })
-	        break
-	      case 'out-in':
-	        self.remove(current, function () {
-	          if (!target._isDestroyed) {
-	            target.$before(self.anchor, cb)
-	          }
-	        })
-	        break
-	      default:
-	        self.remove(current)
-	        target.$before(self.anchor, cb)
-	    }
-	  },
-                  
-                  
-	  update: function (id, oldId) {
-	    var el = this.el
-	    var vm = this.el.__vue__ || this.vm
-	    var hooks = _.resolveAsset(vm.$options, 'transitions', id)
-	    id = id || 'v'
-	    el.__v_trans = new Transition(el, id, hooks, vm)
-	    if (oldId) {
-	      _.removeClass(el, oldId + '-transition')
-	    }
-	    _.addClass(el, id + '-transition')
-	  }
-          
-         */
+ transition: function (target, cb) {
+ var self = this
+ var current = this.childVM
+ this.unsetCurrent()
+ this.setCurrent(target)
+ switch (self.transMode) {
+ case 'in-out':
+ target.$before(self.anchor, function () {
+ self.remove(current, cb)
+ })
+ break
+ case 'out-in':
+ self.remove(current, function () {
+ if (!target._isDestroyed) {
+ target.$before(self.anchor, cb)
+ }
+ })
+ break
+ default:
+ self.remove(current)
+ target.$before(self.anchor, cb)
+ }
+ },
+ 
+ 
+ update: function (id, oldId) {
+ var el = this.el
+ var vm = this.el.__vue__ || this.vm
+ var hooks = _.resolveAsset(vm.$options, 'transitions', id)
+ id = id || 'v'
+ el.__v_trans = new Transition(el, id, hooks, vm)
+ if (oldId) {
+ _.removeClass(el, oldId + '-transition')
+ }
+ _.addClass(el, id + '-transition')
+ }
+ 
+ */

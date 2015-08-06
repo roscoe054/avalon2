@@ -5,25 +5,134 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
+        <script src="jquery.js"></script>
         <script>
+            avalon.effect("expand", {
+               
+                leave: function (elem, done) {
+                    $(elem).hide(300, done)//提供动画效果,如果在CSS中指定了具有动画效果的同名的类名,则不会执行这个
+                },
+                enter: function (elem, done) {
+                    $(elem).show(300, done)//提供动画效果,如果在CSS中指定了具有动画效果的同名的类名,则不会执行这个
+                },
+                beforeLeave: function () {//在动画前做一些事
+                    console.log("before")
+                },
+                afterLeave: function () {//在动画后做一些事
+                    console.log("after")
+                },
+                cancelLeave: function () {
+                }
+            })
+            var array = []
             var vm = avalon.define({
                 $id: "test",
-                a: 111,
-                b: 222,
-                c: 777,
-                change1: function () {
-                    vm.a = 10
-                    vm.b = 22
+                hide: function () {
+                    avalon.effect.remove(this, this.parentNode, function (el) {
+                        array.push(el)
+                        console.log("已经被移除了", el)
+                    })
                 },
-                change2: function () {
-                    vm.a = 55
-                    vm.b = 8
+                add: function () {
+                    var el = array.shift()
+                    if (el) {
+                        console.log(el && el.className)
+                        avalon.effect.append(el, document.body, function (el) {
+                            console.log("添加", el)
+                        })
+                    }
                 }
             })
         </script>
+        <style>
+            .expand {
+                transition: all .3s ease;
+                height: 30px;
+                padding: 10px;
+                background-color: #eee;
+                overflow: hidden;
+            }
+            .expand-enter,
+            .expand-leave {
+                height: 0;
+                padding: 0 10px;
+                opacity: 0;
+            }
+            .bounce{
+                height: 30px;
+                padding: 10px;
+                background-color: #eee;
+                -webkit-animation-duration: .5s;
+                -webkit-animation-duration: .5s;
+            }
+            .bounce-enter {
+                animation-name:  bounce-in;
+                -webkit-animation-name:  bounce-in;
+            }
+            .bounce-leave {
+                animation-name:  bounce-out;
+                -webkit-animation-name:  bounce-out;
+            }
+            @keyframes bounce-in {
+                0% {
+                    opacity: 0;
+                    height: 0;
+                    padding: 0 10px;
+                }
+                100% {
+                    opacity: 1;
+                    height: 30px;
+                    padding: 10px;
+                }
+            }
+            @keyframes bounce-out {
+                0% {
+                    opacity: 1;
+                    height: 30px;
+                    padding: 10px;
+                }
+                100% {
+                    opacity: 0;
+                    height: 0;
+                    padding: 0 10px;
+                }
+            }
+            @-webkit-keyframes bounce-in {
+                0% {
+                    opacity: 0;
+                    height: 0;
+                    padding: 0 10px;
+                }
+                100% {
+                    opacity: 1;
+                    height: 30px;
+                    padding: 10px;
+                }
+            }
+            @-webkit-keyframes bounce-out {
+                0% {
+                    opacity: 1;
+                    height: 30px;
+                    padding: 10px;
+                }
+                100% {
+                    opacity: 0;
+                    height: 0;
+                    padding: 0 10px;
+                }
+            }
+            .jsani{
+                height: 30px;
+                padding: 10px;
+                background-color: #eee;
+                overflow: hidden;
+            }
+        </style>
     </head>
     <body ms-controller="test">
-        <h1>测试虚拟DOM</h1>
-       
+        <h1 >测试虚拟DOM</h1>
+        <div ms-click="hide" class="jsani expand" ms-effect="expand">点我执行动画</div>
+        <!--        <div ms-click="hide" class="bounce" ms-effect="bounce">点我执行动画</div>-->class="expand"
+        <button ms-click="add" type="button">添加元素</button>
     </body>
 </html>

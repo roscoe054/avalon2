@@ -44,7 +44,7 @@ var attrDir = avalon.directive("attr", {
             if (outer) {
                 binding.element = binding.end
                 elem.parentNode.insertBefore(binding.end, elem)
-                elem.parentNode.insertBefore(binding.start, end)
+                elem.parentNode.insertBefore(binding.start, binding.end)
             } else {
                 elem.insertBefore(binding.start, elem.firstChild)
                 elem.appendChild(binding.end)
