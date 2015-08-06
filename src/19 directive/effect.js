@@ -146,9 +146,6 @@ function effectFactory(el) {
     instance.useCss = driver !== "j"
     instance.name = name
     instance.callbacks = avalon.effects[name] || {}
-    //   instance.enterClass = name + "-enter"
-    //  instance.leaveClass = name + "-leave"
-
 
     return instance
 
@@ -157,6 +154,7 @@ function effectFactory(el) {
 function Effect() {// 动画是一组组存放的
 
 }
+
 
 Effect.prototype = {
     contrustor: Effect,
@@ -167,106 +165,94 @@ Effect.prototype = {
         return getEffectClass(this, "leave")
     },
     enter: function (before, after) {
+        if (document.hidden) {
+            return
+        }
         var me = this
-        var el = this.el
+        var el = me.el
         callEffectHook(me, "beforeEnter")
-        before(el)
-        if (this.useCss) {
+        before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
+
+        if (me.useCss) {
             var curEnterClass = me.enterClass()
             //注意,css动画的发生有几个必要条件
             //1.定义了时长,2.有要改变的样式,3.必须插入DOM树 4.display不能等于none
-            //5.document.hide不能为true, 6必须延迟一下才修改样式
-            this.update = function () {
-
-                var eventName = this.driver === "t" ? transitionEndEvent : animationEndEvent
-                avalon(el).removeClass(curEnterClass)
+            //5.document.hide不能为true, 6transtion必须延迟一下才修改样式
+            me.update = function () {
+                var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
                 el.addEventListener(eventName, function fn() {
                     el.removeEventListener(eventName, fn)
+                    if (me.driver === "a") {
+                        avalon(el).removeClass(curEnterClass)
+                    }
                     callEffectHook(me, "afterEnter")
-                    after(el)
+                    after && after(el)
+                    me.dispose()
                 })
+                if (me.driver === "t") {//transtion延迟触发
+                    avalon(el).removeClass(curEnterClass)
+                }
             }
 
-            avalon(el).addClass(curEnterClass)
+            avalon(el).addClass(curEnterClass)//animation会立即触发
             buffer.render(true)
-            buffer.queue.push(this)
+            buffer.queue.push(me)
 
         } else {
-
             callEffectHook(this, "enter", function () {
-
                 callEffectHook(me, "afterEnter")
                 after(el)
             })
         }
     },
     leave: function (before, after) {
-        var el = this.el
-        var me = this
-        callEffectHook(me, "beforeLeave")
-        if (this.useCss) {
-            var eventName = this.driver === "t" ? transitionEndEvent : animationEndEvent
-            el.addEventListener(eventName, function fn() {
-                el.removeEventListener(eventName, fn)
+        if (document.hidden) {
+            return
+        }
 
-                avalon(el).removeClass(curLeaveClass)
-                console.log(curLeaveClass)
-                callEffectHook(me, "afterLeave")
-                after(el)
-            })
-            before(el)
+        var me = this
+        var el = me.el
+
+        callEffectHook(me, "beforeLeave")
+        if (me.useCss) {
             var curLeaveClass = me.leaveClass()
-            avalon(el).addClass(curLeaveClass)
+            this.update = function () {
+                var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
+                el.addEventListener(eventName, function fn() {
+                    el.removeEventListener(eventName, fn)
+                    before(el) //这里可能做移出DOM树操作,因此必须位于动画之后
+                    avalon(el).removeClass(curLeaveClass)
+                    callEffectHook(me, "afterLeave")
+                    after && after(el)
+                    me.dispose()
+                })
+
+            }
+
+            avalon(el).addClass(curLeaveClass)//animation立即触发
+            buffer.render(true)
+            buffer.queue.push(me)
+
+
         } else {
             callEffectHook(me, "leave", function () {
                 before(el)
-
                 callEffectHook(me, "afterLeave")
                 after(el)
             })
-
         }
 
-        //console.log("sssss")
-    }
-}
-
-function animateImpl(effect, type, before, after) {
-    if (document.hidden === false) {
-
-        var el = effect.el
-        callEffectHook(effect, camelize("before-" + type))
-        before(el)
-        if (effect.useCss) {
-            var className = getEffectClass(effect, "enter")
-            //注意,css动画的发生有几个必要条件
-            //1.定义了时长,2.有要改变的样式,3.必须插入DOM树 4.display不能等于none
-            //5.document.hide不能为true, 6必须延迟一下才修改样式
-            effect.update = function () {
-
-                var eventName = effect.driver === "t" ? transitionEndEvent : animationEndEvent
-                avalon(el).removeClass(className)
-                el.addEventListener(eventName, function fn() {
-                    el.removeEventListener(eventName, fn)
-                    callEffectHook(effect, camelize("after-" + type))
-                    after(el)
-                })
-            }
-
-            avalon(el).addClass(className)
-            buffer.render(true)
-            buffer.queue.push(this)
-
-        } else {
-
-            callEffectHook(this, type, function () {
-
-                callEffectHook(effect, camelize("after-" + type))
-                after(el)
-            })
+    },
+    dispose: function () {
+        this.upate = this.el = this.driver = this.useCss = this.callbacks = null
+        if (effectPool.unshift(this) > 100) {
+            effectPool.pop()
         }
     }
+
+
 }
+
 
 function getEffectClass(instance, type) {
     var a = instance.callbacks[type + "Class"]
@@ -276,15 +262,14 @@ function getEffectClass(instance, type) {
         return a
     return instance.name + "-" + type
 }
+
+
 function callEffectHook(effect, name, cb) {
     var hook = effect.callbacks[name]
     if (hook) {
         hook.call(effect, effect.el, cb)
     }
 }
-
-var PageVisibility = avalon.cssName("hide", document)
-console.log(PageVisibility, "!!!")
 
 var applyEffect = function (el, dir, before, after) {
     var effect = effectFactory(el)
@@ -322,46 +307,4 @@ avalon.mix(avalon.effect, {
         }, after)
     }
 })
-
-
-//transtion动画
-//首先元素必须添加一个带transition-duration的类名,或者在内联style指定transition-duration
-//(这个可能有厂商前缀,如-webkit,-o-)
-//然后定义一组类名, 通常包括两个,一个表示进入时触发的动画,另一个是表示离开时触发的动画
-//如果是repeat可以支持更多动画效果
-//如果你的动画没有在avalon.effects上注册,这两个类名,默认是在动画名后加上"-enter","-leave"
-//如你的动画名是flip ,那么框架在进入时添加flip-enter类名, 离开时添加flip-leave
-//如果你要注册动画,其代码如下:
-/*
- * 
- avalon.effect("bounce",{
- enterClass: "bounce-in",
- leaveClass: "bounce-out"
- })
- * 
- */
-//这样在运行动画时,框架为你元素添加上的是.bounce-in, .bounce-out,而不是.bounce-enter, .bounce-leave
-//如果你想随机执行各种动画效果, 这两个配置项可以改成函数
-/*
- var ani = ["rotate-in", "flip", "zoom-in", "roll", "speed","elastic"]
- var lastIndex = NaN
- function getRandomAni(){
- while(true){
- var index =  ~~Math.random() * 6
- if(index != lastIndex){
- lastIndex = index
- return ani[index]
- }
- }
- }
- avalon.effect("bounce",{
- enterClass: getRandomAni
- leaveClass: getRandomAni
- })
- */
-
-//
-//animation动画
-//首先元素必须添加一个带animation-duration的类名,或者在内联style指定animation-duration
-//其他流程一样
 
