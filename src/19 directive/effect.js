@@ -284,12 +284,14 @@ function callEffectHook(effect, name, cb) {
 }
 
 var applyEffect = function (el, dir, before, after, opts) {
+    if (typeof after !== "function") {
+        after = noop
+        opts = after
+    }
     var effect = effectFactory(el, opts)
     if (!effect) {
         before()
-        if (after) {
-            after()
-        }
+        after()
         return false
     } else {
         var method = dir ? 'enter' : 'leave'
@@ -300,25 +302,25 @@ var applyEffect = function (el, dir, before, after, opts) {
 avalon.mix(avalon.effect, {
     apply: applyEffect,
     //下面这4个方法还有待商讨
-    append: function (el, parent, after) {
+    append: function (el, parent, after, opts) {
         return applyEffect(el, 1, function () {
             parent.appendChild(el)
-        }, after)
+        }, after, opts)
     },
-    before: function (el, target, after) {
+    before: function (el, target, after, opts) {
         return applyEffect(el, 1, function () {
             target.parentNode.insertBefore(el, target)
-        }, after)
+        }, after, opts)
     },
-    remove: function (el, parent, after) {
+    remove: function (el, parent, after, opts) {
         return applyEffect(el, 0, function () {
             parent.removeChild(el)
-        }, after)
+        }, after, opts)
     },
-    move: function (el, otherParent, after) {
+    move: function (el, otherParent, after, opts) {
         return applyEffect(el, 0, function () {
             otherParent.appendChild(el)
-        }, after)
+        }, after, opts)
     }
 })
 

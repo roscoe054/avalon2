@@ -48,8 +48,6 @@ avalon.directive("include", {
 
             if (binding.effectName) {
                 leaveEl.className = binding.effectClass
-                leaveEl.setAttribute("data-effect-name", binding.effectName)
-                leaveEl.setAttribute("data-effect-driver", binding.effectDriver)
                 target.insertBefore(leaveEl, binding.end)
             }
 
@@ -68,7 +66,7 @@ avalon.directive("include", {
                     ifGroup.appendChild(leaveEl)
                     binding.templateCache[lastID] = leaveEl
                 }
-            })
+            }, binding)
 
 
             var enterEl = target
