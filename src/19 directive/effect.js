@@ -139,8 +139,8 @@ function effectFactory(el, opts) {
         return null
     }
     if (opts) {
-        var name = opts.name
-        var driver = opts.driver
+        var name = opts.effectName
+        var driver = opts.effectDriver
     } else {
         name = el.getAttribute("data-effect-name")
         driver = el.getAttribute("data-effect-driver")
