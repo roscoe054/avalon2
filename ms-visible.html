@@ -5,29 +5,34 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
+        <link rel="stylesheet" href="animate.css" type="text/css">
         <script>
+            avalon.effect("toggle", {
+                enterClass: "flipInX",
+                leaveClass: "flipOutX"
+            })
             var vm = avalon.define({
                 $id: "test",
-                toggle: false,
-                array:[1,2,3],
-                click:function(){
+                toggle: true,
+                array: [1, 2, 3],
+                click: function () {
                     vm.toggle = !vm.toggle
                 }
             })
         </script>
         <style>
             .aaa{
-                display: none
+                width:200px;
+                height: 40px;
+                background:#D2E0E6;
             }
         </style>
     </head>
     <body ms-controller="test">
         <h1>测试虚拟DOM</h1>
-        <table border="1">
-            <tr>
-                <td class="aaa" ms-repeat="array"ms-visible="toggle">{{el}}</td><td>yyy</td>
-            </tr>
-        </table>
+
+        <div class="aaa animated"  ms-effect='toggle'  ms-visible="toggle">xxxx</div>
+
         <button type="button" ms-click="click">btn</button>
     </body>
 </html>

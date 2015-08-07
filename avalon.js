@@ -4296,34 +4296,18 @@ var getXHR = function () {
 }
 //将所有远程加载的模板,以字符串形式存放到这里
 var templatePool = avalon.templateCache = {}
-function toFragment(div) {
-    var dom = avalonFragment.cloneNode(false),
-            firstChild
-    while (firstChild = div.firstChild) {
-        dom.appendChild(firstChild)
-    }
-    return dom
-}
+
 function getTemplateContainer(binding, id, text) {
     var div = binding.templateCache && binding.templateCache[id]
     if (div) {
-        delete binding.templateCache[id]
-        return div
-    } else {
-        div = document.createElement("div")
-        var dom = avalon.parseHTML(text)
-        div.appendChild(dom)
-        return div
+        var dom = binding.createDocumentFragment(),
+                firstChild
+        while (firstChild = div.firstChild) {
+            dom.appendChild(firstChild)
+        }
+        return dom
     }
-//    if (div) {
-//        var dom = avalonFragment.cloneNode(false),
-//                firstChild
-//        while (firstChild = div.firstChild) {
-//            dom.appendChild(firstChild)
-//        }
-//        return dom
-//    }
-
+    return avalon.parseHTML(text)
 
 }
 avalon.directive("include", {
@@ -4350,44 +4334,39 @@ avalon.directive("include", {
             var lastID = binding.includeLastID
 
             binding.includeLastID = val
-            var leaveEl = DOC.createElement("div")
+            var leaveEl = DOC.createElement(elem.tagName)
+
             if (binding.effectName) {
-                leaveEl.id = "leave"
                 leaveEl.className = binding.effectClass
                 leaveEl.setAttribute("data-effect-name", binding.effectName)
                 leaveEl.setAttribute("data-effect-driver", binding.effectDriver)
                 target.insertBefore(leaveEl, binding.end)
             }
-            var hasLeaveEffect = false
+
             while (true) {
                 var node = binding.start.nextSibling
                 if (node && node !== leaveEl) {
                     leaveEl.appendChild(node)
-                    hasLeaveEffect = true
+
                 } else {
                     break
                 }
             }
-            
-           // if (hasLeaveEffect) {
-                avalon.effect.remove(leaveEl, target, function () {// 新添加元素的动画 
-                     if (binding.templateCache) {
-                        ifGroup.appendChild(leaveEl)
-                        binding.templateCache[lastID] = leaveEl
-                    }
-                })
-           // }
+
+            avalon.effect.remove(leaveEl, target, function () {// 新添加元素的动画 
+                 if (binding.templateCache) {
+                    ifGroup.appendChild(leaveEl)
+                    binding.templateCache[lastID] = leaveEl
+                }
+            })
 
 
-            var enterEl = getTemplateContainer(binding, val, text)
-            enterEl.className = binding.effectClass
-            enterEl.setAttribute("data-effect-name", binding.effectName)
-            enterEl.setAttribute("data-effect-driver", binding.effectDriver)
-            avalon.effect.before(enterEl, binding.end, function () {// 新添加元素的动画 
-                var nodes = avalon.slice(enterEl.childNodes)
-                var fragment = toFragment(enterEl)
+            var enterEl = target
+            var fragment = getTemplateContainer(binding, val, text)
+            var nodes = avalon.slice(fragment.childNodes)
+
+            avalon.effect.apply(enterEl, 1, function () {// 新添加元素的动画 
                 target.insertBefore(fragment, binding.end)
-                enterEl.parentNode.removeChild(enterEl)
                 scanNodeArray(nodes, vmodels)
             })
 
@@ -4891,12 +4870,17 @@ avalon.directive("visible", {
     update: function (val) {
         var elem = this.element
         if (val) {
-            elem.style.display = ""
-            if (avalon(elem).css("display") === "none") {
-                elem.style.display = parseDisplay(elem.nodeName)
-            }
+            avalon.effect.apply(elem, 1, function () {
+                elem.style.display = ""
+                if (avalon(elem).css("display") === "none") {
+                    elem.style.display = parseDisplay(elem.nodeName)
+                }
+            })
         } else {
-            elem.style.display = "none"
+            avalon.effect.apply(elem, 0, function () {
+                elem.style.display = "none"
+            })
+
         }
     }
 })

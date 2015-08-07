@@ -21,12 +21,17 @@ avalon.directive("visible", {
     update: function (val) {
         var elem = this.element
         if (val) {
-            elem.style.display = ""
-            if (avalon(elem).css("display") === "none") {
-                elem.style.display = parseDisplay(elem.nodeName)
-            }
+            avalon.effect.apply(elem, 1, function () {
+                elem.style.display = ""
+                if (avalon(elem).css("display") === "none") {
+                    elem.style.display = parseDisplay(elem.nodeName)
+                }
+            })
         } else {
-            elem.style.display = "none"
+            avalon.effect.apply(elem, 0, function () {
+                elem.style.display = "none"
+            })
+
         }
     }
 })

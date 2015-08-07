@@ -10,17 +10,27 @@
            
             .contain{
                 border: 1px solid red;
-               // position:absolute;
+                position:relative;
               //  width:90%;
                 top:0px;
+                height:340px;
             }
             .aaa {
                 background: #a9ea00;
+                
                 height:300px;
             }
-             .bbb {
+            .bbb {
                 background: #e0f2be;
                 height:300px;
+            }
+            .bounceInLeft{
+                position: absolute;
+                width:100%;
+            }
+            .bounceOutLeft{
+                position: absolute;
+                width:100%;
             }
         </style>
         <script>
@@ -44,8 +54,10 @@
         </script>
     </head>
     <body ms-controller="test">
-       
-        <div ms-include-src="'include2'+aaa" class="contain animated" ms-effect="xxx"></div>
+        <h1>需要处理与data-include-replace, data-include-cache一起使用的情况 </h1>
+        <div class='contain' style='overflow: hidden'>
+        <div ms-include-src="'include2'+aaa"  class=" animated" ms-effect="xxx"></div>
+        <div>
          <button type="button" ms-click="change">change</button>
 <!--        <div ms-include-src="'include2'+aaa" class="contain animated" data-include-replace="true"></div>-->
     </body>
