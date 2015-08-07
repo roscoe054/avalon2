@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.46 built in 2015.8.6
+ avalon.js 1.46 built in 2015.8.7
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -3335,6 +3335,10 @@ var attrDir = avalon.directive("attr", {
             var elem = binding.element
             binding.includeRendered = getBindingCallback(elem, "data-include-rendered", binding.vmodels)
             binding.includeLoaded = getBindingCallback(elem, "data-include-loaded", binding.vmodels)
+            binding.effectName = elem.getAttribute("data-effect-name")
+            binding.effectDriver = elem.getAttribute("data-effect-driver")
+            binding.effectClass = elem.className
+            //console.log(binding.type, binding.effectName, binding.effectDriver, binding.effectClass, "!")
             var outer = binding.includeReplace = !!avalon(elem).data("includeReplace")
             if (avalon(elem).data("includeCache")) {
                 binding.templateCache = {}
@@ -4005,7 +4009,7 @@ new function () {
 
 
 
-var effectPool = []
+var effectPool = []//重复利用动画实例
 function effectFactory(el) {
     if (!el || el.nodeType !== 1 || !el.getAttribute("data-effect-name")) {
         return null
@@ -4018,17 +4022,13 @@ function effectFactory(el) {
     instance.useCss = driver !== "j"
     instance.name = name
     instance.callbacks = avalon.effects[name] || {}
-    //   instance.enterClass = name + "-enter"
-    //  instance.leaveClass = name + "-leave"
-
 
     return instance
 
 
 }
-function Effect() {// 动画是一组组存放的
 
-}
+function Effect() {}// 动画实例,做成类的形式,是为了共用所有原型方法
 
 Effect.prototype = {
     contrustor: Effect,
@@ -4039,69 +4039,99 @@ Effect.prototype = {
         return getEffectClass(this, "leave")
     },
     enter: function (before, after) {
+        if (document.hidden) {
+            return
+        }
         var me = this
-        var el = this.el
+        var el = me.el
         callEffectHook(me, "beforeEnter")
-         before(el)
-        if (this.useCss) {
+        before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
+
+        if (me.useCss) {
             var curEnterClass = me.enterClass()
             //注意,css动画的发生有几个必要条件
             //1.定义了时长,2.有要改变的样式,3.必须插入DOM树 4.display不能等于none
-            //5.document.hide不能为true, 6必须延迟一下才修改样式
-            this.update = function () {
+            //5.document.hide不能为true, 6transtion必须延迟一下才修改样式
 
-                var eventName = this.driver === "t" ? transitionEndEvent : animationEndEvent
-                avalon(el).removeClass(curEnterClass)
+            me.update = function () {
+                var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
+
                 el.addEventListener(eventName, function fn() {
                     el.removeEventListener(eventName, fn)
+                    if (me.driver === "a") {
+                        avalon(el).removeClass(curEnterClass)
+                    }
                     callEffectHook(me, "afterEnter")
-                    after(el)
+                    after && after(el)
+                    me.dispose()
                 })
+                if (me.driver === "t") {//transtion延迟触发
+                    avalon(el).removeClass(curEnterClass)
+                }
             }
-           
-            avalon(el).addClass(curEnterClass)
+
+            avalon(el).addClass(curEnterClass)//animation会立即触发
             buffer.render(true)
-            buffer.queue.push(this)
+            buffer.queue.push(me)
 
         } else {
-          
             callEffectHook(this, "enter", function () {
-               
                 callEffectHook(me, "afterEnter")
-                after(el)
+                after && after(el)
+                me.dispose()
             })
         }
     },
     leave: function (before, after) {
-        var el = this.el
+        if (document.hidden) {
+            return
+        }
+
         var me = this
+        var el = me.el
+
         callEffectHook(me, "beforeLeave")
-        if (this.useCss) {
-            var eventName = this.driver === "t" ? transitionEndEvent : animationEndEvent
-            el.addEventListener(eventName, function fn() {
-                el.removeEventListener(eventName, fn)
-              
-                avalon(el).removeClass(curLeaveClass)
-                console.log(curLeaveClass)
-                callEffectHook(me, "afterLeave")
-                after(el)
-            })
-              before(el)
+        if (me.useCss) {
             var curLeaveClass = me.leaveClass()
-            avalon(el).addClass(curLeaveClass)
+            this.update = function () {
+                var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
+                el.addEventListener(eventName, function fn() {
+                    el.removeEventListener(eventName, fn)
+                    before(el) //这里可能做移出DOM树操作,因此必须位于动画之后
+                    avalon(el).removeClass(curLeaveClass)
+                    callEffectHook(me, "afterLeave")
+                    after && after(el)
+                    me.dispose()
+                })
+
+            }
+
+            avalon(el).addClass(curLeaveClass)//animation立即触发
+            buffer.render(true)
+            buffer.queue.push(me)
+
+
         } else {
             callEffectHook(me, "leave", function () {
                 before(el)
-
                 callEffectHook(me, "afterLeave")
-                after(el)
+                after && after(el)
+                me.dispose()
             })
-
         }
 
-        //console.log("sssss")
+    },
+    dispose: function () {//销毁与回收到池子中
+        this.upate = this.el = this.driver = this.useCss = this.callbacks = null
+        if (effectPool.unshift(this) > 100) {
+            effectPool.pop()
+        }
     }
+
+
 }
+
+
 function getEffectClass(instance, type) {
     var a = instance.callbacks[type + "Class"]
     if (typeof a === "string")
@@ -4110,15 +4140,14 @@ function getEffectClass(instance, type) {
         return a
     return instance.name + "-" + type
 }
+
+
 function callEffectHook(effect, name, cb) {
     var hook = effect.callbacks[name]
     if (hook) {
         hook.call(effect, effect.el, cb)
     }
 }
-
-var PageVisibility = avalon.cssName("hide", document)
-console.log(PageVisibility,"!!!")
 
 var applyEffect = function (el, dir, before, after) {
     var effect = effectFactory(el)
@@ -4127,6 +4156,7 @@ var applyEffect = function (el, dir, before, after) {
         if (after) {
             after()
         }
+        return false
     } else {
         var method = dir ? 'enter' : 'leave'
         effect[method](before, after)
@@ -4134,70 +4164,29 @@ var applyEffect = function (el, dir, before, after) {
 }
 
 avalon.mix(avalon.effect, {
+    apply: applyEffect,
+    //下面这4个方法还有待商讨
     append: function (el, parent, after) {
-
-        applyEffect(el, 1, function () {
+        return applyEffect(el, 1, function () {
             parent.appendChild(el)
         }, after)
     },
-    before: function (el, parent, after) {
-        applyEffect(el, 1, function () {
-            parent.insertBefore(el, parent.firstChild)
+    before: function (el, target, after) {
+        return applyEffect(el, 1, function () {
+            target.parentNode.insertBefore(el, target)
         }, after)
     },
     remove: function (el, parent, after) {
-        applyEffect(el, 0, function () {
+        return applyEffect(el, 0, function () {
             parent.removeChild(el)
         }, after)
     },
     move: function (el, otherParent, after) {
-        applyEffect(el, 0, function () {
+        return applyEffect(el, 0, function () {
             otherParent.appendChild(el)
         }, after)
     }
 })
-
-
-//transtion动画
-//首先元素必须添加一个带transition-duration的类名,或者在内联style指定transition-duration
-//(这个可能有厂商前缀,如-webkit,-o-)
-//然后定义一组类名, 通常包括两个,一个表示进入时触发的动画,另一个是表示离开时触发的动画
-//如果是repeat可以支持更多动画效果
-//如果你的动画没有在avalon.effects上注册,这两个类名,默认是在动画名后加上"-enter","-leave"
-//如你的动画名是flip ,那么框架在进入时添加flip-enter类名, 离开时添加flip-leave
-//如果你要注册动画,其代码如下:
-/*
- * 
- avalon.effect("bounce",{
- enterClass: "bounce-in",
- leaveClass: "bounce-out"
- })
- * 
- */
-//这样在运行动画时,框架为你元素添加上的是.bounce-in, .bounce-out,而不是.bounce-enter, .bounce-leave
-//如果你想随机执行各种动画效果, 这两个配置项可以改成函数
-/*
- var ani = ["rotate-in", "flip", "zoom-in", "roll", "speed","elastic"]
- var lastIndex = NaN
- function getRandomAni(){
- while(true){
- var index =  ~~Math.random() * 6
- if(index != lastIndex){
- lastIndex = index
- return ani[index]
- }
- }
- }
- avalon.effect("bounce",{
- enterClass: getRandomAni
- leaveClass: getRandomAni
- })
- */
-
-//
-//animation动画
-//首先元素必须添加一个带animation-duration的类名,或者在内联style指定animation-duration
-//其他流程一样
 
 
 avalon.directive("html", {
@@ -4261,30 +4250,36 @@ avalon.directive("if", {
             return
         }
         if (val) { //插回DOM树
+            function alway() {
+                if (elem.getAttribute(binding.name)) {
+                    elem.removeAttribute(binding.name)
+                    scanAttr(elem, binding.vmodels)
+                }
+                binding.rollback = null
+            }
             if (elem.nodeType === 8) {
-                elem.parentNode.replaceChild(binding.template, elem)
-                //   animate.enter(binding.template, elem.parentNode)
-                elem = binding.element = binding.template //这时可能为null
+                var hasEffect = avalon.effect.apply(binding.keep, 1, function () {
+                    elem.parentNode.replaceChild(binding.keep, elem)
+                    elem = binding.element = binding.keep //这时可能为null
+                    alway()
+                })
+                hasEffect = hasEffect === false
             }
-            if (elem.getAttribute(binding.name)) {
-                elem.removeAttribute(binding.name)
-                scanAttr(elem, binding.vmodels)
-            }
-            binding.rollback = null
+            if (!hasEffect)
+                alway()
         } else { //移出DOM树，并用注释节点占据原位置
             if (elem.nodeType === 1) {
                 var node = binding.element = DOC.createComment("ms-if")
-
-
-                elem.parentNode.replaceChild(node, elem)
-                //     animate.leave(elem, node.parentNode, node)
-                binding.template = elem //元素节点
-                ifGroup.appendChild(elem)
-                binding.rollback = function () {
-                    if (elem.parentNode === ifGroup) {
-                        ifGroup.removeChild(elem)
+                avalon.effect.apply(elem, 0, function () {
+                    elem.parentNode.replaceChild(node, elem)
+                    binding.keep = elem //元素节点
+                    ifGroup.appendChild(elem)
+                    binding.rollback = function () {
+                        if (elem.parentNode === ifGroup) {
+                            ifGroup.removeChild(elem)
+                        }
                     }
-                }
+                })
             }
         }
     }
@@ -4299,20 +4294,37 @@ var rnoscriptText = /<noscript.*?>([\s\S]+?)<\/noscript>/im
 var getXHR = function () {
     return new (window.XMLHttpRequest || ActiveXObject)("Microsoft.XMLHTTP") // jshint ignore:line
 }
-
+//将所有远程加载的模板,以字符串形式存放到这里
 var templatePool = avalon.templateCache = {}
-
-function getTemplateNodes(binding, id, text) {
+function toFragment(div) {
+    var dom = avalonFragment.cloneNode(false),
+            firstChild
+    while (firstChild = div.firstChild) {
+        dom.appendChild(firstChild)
+    }
+    return dom
+}
+function getTemplateContainer(binding, id, text) {
     var div = binding.templateCache && binding.templateCache[id]
     if (div) {
-        var dom = avalonFragment.cloneNode(false),
-                firstChild
-        while (firstChild = div.firstChild) {
-            dom.appendChild(firstChild)
-        }
-        return dom
+        delete binding.templateCache[id]
+        return div
+    } else {
+        div = document.createElement("div")
+        var dom = avalon.parseHTML(text)
+        div.appendChild(dom)
+        return div
     }
-    return avalon.parseHTML(text)
+//    if (div) {
+//        var dom = avalonFragment.cloneNode(false),
+//                firstChild
+//        while (firstChild = div.firstChild) {
+//            dom.appendChild(firstChild)
+//        }
+//        return dom
+//    }
+
+
 }
 avalon.directive("include", {
     init: directives.attr.init,
@@ -4322,8 +4334,8 @@ avalon.directive("include", {
         var vmodels = binding.vmodels
         var rendered = binding.includeRendered
         var loaded = binding.includeLoaded
-        var replace = binding.includeReplace
-        var target = replace ? elem.parentNode : elem
+        var outer = binding.includeReplace
+        var target = outer ? elem.parentNode : elem
         var scanTemplate = function (text) {
             if (loaded) {
                 var newText = loaded.apply(target, [text].concat(vmodels))
@@ -4336,28 +4348,50 @@ avalon.directive("include", {
                 }, NaN)
             }
             var lastID = binding.includeLastID
-            if (binding.templateCache && lastID && lastID !== val) {
-                var lastTemplate = binding.templateCache[lastID]
-                if (!lastTemplate) {
-                    lastTemplate = binding.templateCache[lastID] = DOC.createElement("div")
-                    ifGroup.appendChild(lastTemplate)
-                }
-            }
+
             binding.includeLastID = val
+            var leaveEl = DOC.createElement("div")
+            if (binding.effectName) {
+                leaveEl.id = "leave"
+                leaveEl.className = binding.effectClass
+                leaveEl.setAttribute("data-effect-name", binding.effectName)
+                leaveEl.setAttribute("data-effect-driver", binding.effectDriver)
+                target.insertBefore(leaveEl, binding.end)
+            }
+            var hasLeaveEffect = false
             while (true) {
                 var node = binding.start.nextSibling
-                if (node && node !== binding.end) {
-                    target.removeChild(node)
-                    if (lastTemplate)
-                        lastTemplate.appendChild(node)
+                if (node && node !== leaveEl) {
+                    leaveEl.appendChild(node)
+                    hasLeaveEffect = true
                 } else {
                     break
                 }
             }
-            var dom = getTemplateNodes(binding, val, text)
-            var nodes = avalon.slice(dom.childNodes)
-            target.insertBefore(dom, binding.endInclude)
-            scanNodeArray(nodes, vmodels)
+            
+           // if (hasLeaveEffect) {
+                avalon.effect.remove(leaveEl, target, function () {// 新添加元素的动画 
+                     if (binding.templateCache) {
+                        ifGroup.appendChild(leaveEl)
+                        binding.templateCache[lastID] = leaveEl
+                    }
+                })
+           // }
+
+
+            var enterEl = getTemplateContainer(binding, val, text)
+            enterEl.className = binding.effectClass
+            enterEl.setAttribute("data-effect-name", binding.effectName)
+            enterEl.setAttribute("data-effect-driver", binding.effectDriver)
+            avalon.effect.before(enterEl, binding.end, function () {// 新添加元素的动画 
+                var nodes = avalon.slice(enterEl.childNodes)
+                var fragment = toFragment(enterEl)
+                target.insertBefore(fragment, binding.end)
+                enterEl.parentNode.removeChild(enterEl)
+                scanNodeArray(nodes, vmodels)
+            })
+
+
         }
 
         if (binding.param === "src") {

@@ -35,6 +35,10 @@ var attrDir = avalon.directive("attr", {
             var elem = binding.element
             binding.includeRendered = getBindingCallback(elem, "data-include-rendered", binding.vmodels)
             binding.includeLoaded = getBindingCallback(elem, "data-include-loaded", binding.vmodels)
+            binding.effectName = elem.getAttribute("data-effect-name")
+            binding.effectDriver = elem.getAttribute("data-effect-driver")
+            binding.effectClass = elem.className
+            //console.log(binding.type, binding.effectName, binding.effectDriver, binding.effectClass, "!")
             var outer = binding.includeReplace = !!avalon(elem).data("includeReplace")
             if (avalon(elem).data("includeCache")) {
                 binding.templateCache = {}

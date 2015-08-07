@@ -1,54 +1,52 @@
-
-<!DOCTYPE html>
 <html>
     <head>
-        <title>虚拟DOM测试</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="utf-8">
+        <title>duplexHooks</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=8" />
         <script src="avalon.js"></script>
-        <link rel="stylesheet" href="animate.css" type="text/css">
+         <link rel="stylesheet" href="animate.css" type="text/css">
+        
+        <style>
+           
+            .contain{
+                border: 1px solid red;
+               // position:absolute;
+              //  width:90%;
+                top:0px;
+            }
+            .aaa {
+                background: #a9ea00;
+                height:300px;
+            }
+             .bbb {
+                background: #e0f2be;
+                height:300px;
+            }
+        </style>
         <script>
             avalon.effect("xxx", {
-                leaveClass: "slideOutLeft",
-                enterClass: "slideInLeft"
+                leaveClass: "bounceOutLeft",
+                enterClass: "bounceInLeft"
 
             })
             avalon.effect("yyy", {
                 enterClass: "zoomInDown",
                 leaveClass: "zoomOutUp"
             })
-            var array = []
-            var vm = avalon.define({
+            var a = avalon.define({
                 $id: "test",
-                hide: function () {
-                    avalon.effect.remove(this, this.parentNode, function (el) {
-                        array.push(el)
-                        console.log("已经被移除了", el)
-                    })
-                },
-                add: function () {
-                    var el = array.shift()
-                    if (el) {
-                        avalon.effect.before(el, document.body, function (el) {
-                            console.log("添加", el)
-                        })
-                    }
+                aaa: "aaa.html",
+                change: function() {
+                    a.aaa = a.aaa === "aaa.html" ? "bbb.html" : "aaa.html"
                 }
             })
+ 
         </script>
-        <style>
-            .box{
-                display: inline-block;
-                width:200px;
-                height:200px;
-                background-color: #eee;
-            }
-        </style>
     </head>
     <body ms-controller="test">
-        <h1 >测试虚拟DOM</h1>
-        <div ms-click="hide" class="animated box" ms-effect="xxx">点我执行动画</div>
-        <div ms-click="hide"  class="animated box" ms-effect="yyy">点我执行动画</div>
-        <button ms-click="add" type="button">添加元素</button>
+       
+        <div ms-include-src="'include2'+aaa" class="contain animated" ms-effect="xxx"></div>
+         <button type="button" ms-click="change">change</button>
+<!--        <div ms-include-src="'include2'+aaa" class="contain animated" data-include-replace="true"></div>-->
     </body>
 </html>

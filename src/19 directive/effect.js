@@ -133,7 +133,7 @@ new function () {
 
 
 
-var effectPool = []
+var effectPool = []//重复利用动画实例
 function effectFactory(el) {
     if (!el || el.nodeType !== 1 || !el.getAttribute("data-effect-name")) {
         return null
@@ -151,10 +151,8 @@ function effectFactory(el) {
 
 
 }
-function Effect() {// 动画是一组组存放的
 
-}
-
+function Effect() {}// 动画实例,做成类的形式,是为了共用所有原型方法
 
 Effect.prototype = {
     contrustor: Effect,
@@ -178,8 +176,10 @@ Effect.prototype = {
             //注意,css动画的发生有几个必要条件
             //1.定义了时长,2.有要改变的样式,3.必须插入DOM树 4.display不能等于none
             //5.document.hide不能为true, 6transtion必须延迟一下才修改样式
+
             me.update = function () {
                 var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
+
                 el.addEventListener(eventName, function fn() {
                     el.removeEventListener(eventName, fn)
                     if (me.driver === "a") {
@@ -201,7 +201,8 @@ Effect.prototype = {
         } else {
             callEffectHook(this, "enter", function () {
                 callEffectHook(me, "afterEnter")
-                after(el)
+                after && after(el)
+                me.dispose()
             })
         }
     },
@@ -238,12 +239,13 @@ Effect.prototype = {
             callEffectHook(me, "leave", function () {
                 before(el)
                 callEffectHook(me, "afterLeave")
-                after(el)
+                after && after(el)
+                me.dispose()
             })
         }
 
     },
-    dispose: function () {
+    dispose: function () {//销毁与回收到池子中
         this.upate = this.el = this.driver = this.useCss = this.callbacks = null
         if (effectPool.unshift(this) > 100) {
             effectPool.pop()
@@ -278,6 +280,7 @@ var applyEffect = function (el, dir, before, after) {
         if (after) {
             after()
         }
+        return false
     } else {
         var method = dir ? 'enter' : 'leave'
         effect[method](before, after)
@@ -285,24 +288,25 @@ var applyEffect = function (el, dir, before, after) {
 }
 
 avalon.mix(avalon.effect, {
+    apply: applyEffect,
+    //下面这4个方法还有待商讨
     append: function (el, parent, after) {
-
-        applyEffect(el, 1, function () {
+        return applyEffect(el, 1, function () {
             parent.appendChild(el)
         }, after)
     },
-    before: function (el, parent, after) {
-        applyEffect(el, 1, function () {
-            parent.insertBefore(el, parent.firstChild)
+    before: function (el, target, after) {
+        return applyEffect(el, 1, function () {
+            target.parentNode.insertBefore(el, target)
         }, after)
     },
     remove: function (el, parent, after) {
-        applyEffect(el, 0, function () {
+        return applyEffect(el, 0, function () {
             parent.removeChild(el)
         }, after)
     },
     move: function (el, otherParent, after) {
-        applyEffect(el, 0, function () {
+        return applyEffect(el, 0, function () {
             otherParent.appendChild(el)
         }, after)
     }
