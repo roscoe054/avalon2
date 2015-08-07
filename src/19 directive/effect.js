@@ -7,10 +7,10 @@ avalon.directive("effect", {
         var colonIndex = text.replace(rexprg, function (a) {
             return a.replace(/./g, "0")
         }).indexOf(":") //取得第一个冒号的位置
-        if (colonIndex === -1) { // 比如 ms-class="aaa bbb ccc" 的情况
+        if (colonIndex === -1) { // 比如 ms-class/effect="aaa bbb ccc" 的情况
             className = text
             rightExpr = true
-        } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
+        } else { // 比如 ms-class/effect-1="ui-state-active:checked" 的情况
             className = text.slice(0, colonIndex)
             rightExpr = text.slice(colonIndex + 1)
         }
@@ -159,6 +159,15 @@ function effectFactory(el, opts) {
     return instance
 
 
+}
+
+function effectBinding(elem, binding) {
+    binding.effectName = elem.getAttribute("data-effect-name")
+    binding.effectDriver = elem.getAttribute("data-effect-driver")
+    var stagger = +elem.getAttribute("data-effect-stagger")
+    binding.effectLeaveStagger = +elem.getAttribute("data-effect-leave-stagger") || stagger
+    binding.effectEnterStagger = +elem.getAttribute("data-effect-enter-stagger") || stagger
+    binding.effectClass = elem.className
 }
 
 function Effect() {

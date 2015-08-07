@@ -2724,9 +2724,11 @@ function parseExpr(code, scopes, data) {
         //https://github.com/RubyLouvre/avalon/issues/583
         data.vars.forEach(function (v) {
             var reg = new RegExp("\\b" + v + "(?:\\.\\w+|\\[\\w+\\])+", "ig")
-            code = code.replace(reg, function (_) {
+            code = code.replace(reg, function (_, cap) {
                 var c = _.charAt(v.length)
-                var r = IEVersion ? code.slice(arguments[1] + _.length) : RegExp.rightContext
+                //var r = IEVersion ? code.slice(arguments[1] + _.length) : RegExp.rightContext
+                //https://github.com/RubyLouvre/avalon/issues/966
+                var r =  code.slice(cap + _.length) 
                 var method = /^\s*\(/.test(r)
                 if (c === "." || c === "[" || method) { //比如v为aa,我们只匹配aa.bb,aa[cc],不匹配aaa.xxx
                     var name = "var" + String(Math.random()).replace(/^0\./, "")
@@ -3883,10 +3885,10 @@ avalon.directive("effect", {
         var colonIndex = text.replace(rexprg, function (a) {
             return a.replace(/./g, "0")
         }).indexOf(":") //取得第一个冒号的位置
-        if (colonIndex === -1) { // 比如 ms-class="aaa bbb ccc" 的情况
+        if (colonIndex === -1) { // 比如 ms-class/effect="aaa bbb ccc" 的情况
             className = text
             rightExpr = true
-        } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
+        } else { // 比如 ms-class/effect-1="ui-state-active:checked" 的情况
             className = text.slice(0, colonIndex)
             rightExpr = text.slice(colonIndex + 1)
         }
@@ -4010,12 +4012,21 @@ new function () {
 
 
 var effectPool = []//重复利用动画实例
-function effectFactory(el) {
-    if (!el || el.nodeType !== 1 || !el.getAttribute("data-effect-name")) {
+function effectFactory(el, opts) {
+    if (!el || el.nodeType !== 1) {
         return null
     }
-    var name = el.getAttribute("data-effect-name")
-    var driver = el.getAttribute("data-effect-driver")
+    if (opts) {
+        var name = opts.effectName
+        var driver = opts.effectDriver
+    } else {
+        name = el.getAttribute("data-effect-name")
+        driver = el.getAttribute("data-effect-driver")
+    }
+    if (!name || !driver) {
+        return null
+    }
+
     var instance = effectPool.pop() || new Effect()
     instance.el = el
     instance.driver = driver
@@ -4028,7 +4039,17 @@ function effectFactory(el) {
 
 }
 
-function Effect() {}// 动画实例,做成类的形式,是为了共用所有原型方法
+function effectBinding(elem, binding) {
+    binding.effectName = elem.getAttribute("data-effect-name")
+    binding.effectDriver = elem.getAttribute("data-effect-driver")
+    var stagger = +elem.getAttribute("data-effect-stagger")
+    binding.effectLeaveStagger = +elem.getAttribute("data-effect-leave-stagger") || stagger
+    binding.effectEnterStagger = +elem.getAttribute("data-effect-enter-stagger") || stagger
+    binding.effectClass = elem.className
+}
+
+function Effect() {
+}// 动画实例,做成类的形式,是为了共用所有原型方法
 
 Effect.prototype = {
     contrustor: Effect,
@@ -4149,13 +4170,15 @@ function callEffectHook(effect, name, cb) {
     }
 }
 
-var applyEffect = function (el, dir, before, after) {
-    var effect = effectFactory(el)
+var applyEffect = function (el, dir, before, after, opts) {
+    if (typeof after !== "function") {
+        after = noop
+        opts = after
+    }
+    var effect = effectFactory(el, opts)
     if (!effect) {
         before()
-        if (after) {
-            after()
-        }
+        after()
         return false
     } else {
         var method = dir ? 'enter' : 'leave'
@@ -4166,25 +4189,25 @@ var applyEffect = function (el, dir, before, after) {
 avalon.mix(avalon.effect, {
     apply: applyEffect,
     //下面这4个方法还有待商讨
-    append: function (el, parent, after) {
+    append: function (el, parent, after, opts) {
         return applyEffect(el, 1, function () {
             parent.appendChild(el)
-        }, after)
+        }, after, opts)
     },
-    before: function (el, target, after) {
+    before: function (el, target, after, opts) {
         return applyEffect(el, 1, function () {
             target.parentNode.insertBefore(el, target)
-        }, after)
+        }, after, opts)
     },
-    remove: function (el, parent, after) {
+    remove: function (el, parent, after, opts) {
         return applyEffect(el, 0, function () {
             parent.removeChild(el)
-        }, after)
+        }, after, opts)
     },
-    move: function (el, otherParent, after) {
+    move: function (el, otherParent, after, opts) {
         return applyEffect(el, 0, function () {
             otherParent.appendChild(el)
-        }, after)
+        }, after, opts)
     }
 })
 
@@ -4338,8 +4361,6 @@ avalon.directive("include", {
 
             if (binding.effectName) {
                 leaveEl.className = binding.effectClass
-                leaveEl.setAttribute("data-effect-name", binding.effectName)
-                leaveEl.setAttribute("data-effect-driver", binding.effectDriver)
                 target.insertBefore(leaveEl, binding.end)
             }
 
@@ -4358,7 +4379,7 @@ avalon.directive("include", {
                     ifGroup.appendChild(leaveEl)
                     binding.templateCache[lastID] = leaveEl
                 }
-            })
+            }, binding)
 
 
             var enterEl = target
@@ -4497,6 +4518,7 @@ avalon.directive("repeat", {
         var elem = binding.element
         if (elem.nodeType === 1) {
             elem.removeAttribute(binding.name)
+            effectBinding(elem, binding)
             binding.param = binding.param || "el"
             binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", binding.vmodels)
             binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
@@ -4614,32 +4636,52 @@ avalon.directive("repeat", {
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
         } else {
+
+            var staggerIndex = binding.staggerIndex = 0
             for (keyOrId in retain) {
                 if (retain[keyOrId] !== true) {
                     action = "del"
-                    removeItem(retain[keyOrId].$anchor, "remove")
+                    removeItem(retain[keyOrId].$anchor, binding)
                     // avalon.log("删除", keyOrId)
                     // 相当于delete binding.cache[key]
                     proxyRecycler(this.cache, keyOrId, param)
                     retain[keyOrId] = null
                 }
             }
+
+
+
+            //  console.log(effectEnterStagger)
             for (i = 0; i < length; i++) {
                 proxy = proxies[i]
                 keyOrId = xtype === "array" ? proxy.$id : proxy.$key
                 var pre = proxies[i - 1]
                 var preEl = pre ? pre.$anchor : binding.start
                 if (!retain[keyOrId]) {//如果还没有插入到DOM树
-                    var fragment = fragments[i]
-
-                    parent.insertBefore(fragment.content, preEl.nextSibling)
-                    scanNodeArray(fragment.nodes || [], fragment.vmodels)
-                    fragment.nodes = fragment.vmodels = null
+                    (function (fragment, preElement) {
+                        var nodes = fragment.nodes
+                        var vmodels = fragment.vmodels
+                        if (nodes) {
+                            staggerIndex = mayStaggerAnimate(binding.effectEnterStagger, function () {
+                                parent.insertBefore(fragment.content, preElement.nextSibling)
+                                scanNodeArray(nodes, vmodels)
+                                animateRepeat(nodes, 1, binding)
+                            }, staggerIndex)
+                        }
+                        fragment.nodes = fragment.vmodels = null
+                    })(fragments[i], preEl)
                     // avalon.log("插入")
 
                 } else if (proxy.$index !== proxy.$oldIndex) {
-                    var curNode = removeItem(proxy.$anchor)// 如果位置被挪动了
-                    parent.insertBefore(curNode, preEl.nextSibling)
+                    (function (proxy2, preElement) {
+                        staggerIndex = mayStaggerAnimate(binding.effectEnterStagger, function () {
+                            var curNode = removeItem(proxy2.$anchor)// 如果位置被挪动了
+                            var inserted = avalon.slice(curNode.childNodes)
+                            parent.insertBefore(curNode, preElement.nextSibling)
+                            animateRepeat(inserted, 1, binding)
+                        }, staggerIndex)
+                    })(proxy, preEl)
+
                     // avalon.log("移动", proxy.$oldIndex, "-->", proxy.$index)
                 }
             }
@@ -4675,19 +4717,48 @@ avalon.directive("repeat", {
 })
 
 
+function animateRepeat(nodes, isEnter, binding) {
+    for (var i = 0, node; node = nodes[i++]; ) {
+        if (node.className === binding.effectClass) {
+            avalon.effect.apply(node, isEnter, noop, noop, binding)
+        }
+    }
+}
 
-function removeItem(node) {
+function mayStaggerAnimate(staggerTime, callback, index) {
+    if (staggerTime) {
+        setTimeout(callback, (++index) * staggerTime)
+    } else {
+        callback()
+    }
+    return index
+}
+
+
+function removeItem(node, binding) {
     var fragment = avalonFragment.cloneNode(false)
-    var breakText = node.nodeValue
+    var last = node
+    var breakText = last.nodeValue
+    var staggerIndex = binding && Math.max(+binding.staggerIndex, 0)
     while (true) {
         var pre = node.previousSibling
         if (!pre || String(pre.nodeValue).indexOf(breakText) === 0) {
             break
         }
-        fragment.insertBefore(pre, fragment.firstChild)
-
+        if (binding && (pre.className === binding.effectClass)) {
+            (function (cur) {
+                binding.staggerIndex = mayStaggerAnimate(binding.effectLeaveStagger, function () {
+                    avalon.effect.apply(cur, 0, noop, function () {
+                        fragment.appendChild(cur)
+                    }, binding)
+                }, staggerIndex)
+            })(pre);
+            node = pre
+        } else {
+            fragment.insertBefore(pre, fragment.firstChild)
+        }
     }
-    fragment.appendChild(node)
+    fragment.appendChild(last)
     return fragment
 }
 
