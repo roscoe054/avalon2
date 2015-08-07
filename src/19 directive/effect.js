@@ -134,12 +134,21 @@ new function () {
 
 
 var effectPool = []//重复利用动画实例
-function effectFactory(el) {
-    if (!el || el.nodeType !== 1 || !el.getAttribute("data-effect-name")) {
+function effectFactory(el, opts) {
+    if (!el || el.nodeType !== 1) {
         return null
     }
-    var name = el.getAttribute("data-effect-name")
-    var driver = el.getAttribute("data-effect-driver")
+    if (opts) {
+        var name = opts.name
+        var driver = opts.driver
+    } else {
+        name = el.getAttribute("data-effect-name")
+        driver = el.getAttribute("data-effect-driver")
+    }
+    if (!name || !driver) {
+        return null
+    }
+
     var instance = effectPool.pop() || new Effect()
     instance.el = el
     instance.driver = driver
@@ -152,7 +161,8 @@ function effectFactory(el) {
 
 }
 
-function Effect() {}// 动画实例,做成类的形式,是为了共用所有原型方法
+function Effect() {
+}// 动画实例,做成类的形式,是为了共用所有原型方法
 
 Effect.prototype = {
     contrustor: Effect,
@@ -273,8 +283,8 @@ function callEffectHook(effect, name, cb) {
     }
 }
 
-var applyEffect = function (el, dir, before, after) {
-    var effect = effectFactory(el)
+var applyEffect = function (el, dir, before, after, opts) {
+    var effect = effectFactory(el, opts)
     if (!effect) {
         before()
         if (after) {
