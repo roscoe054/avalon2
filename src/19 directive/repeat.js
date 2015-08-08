@@ -106,7 +106,7 @@ avalon.directive("repeat", {
                 this.cache[keyOrId] = proxy
                 var node = proxy.$anchor || (proxy.$anchor = elem.cloneNode(false))
                 node.nodeValue = this.signature
-                shimController(binding, transation, proxy, fragments, init)
+                shimController(binding, transation, proxy, fragments,init && !binding.effectDriver)
                 decorateProxy(proxy, binding, xtype)
             } else {
                 fragments.push({})
@@ -130,7 +130,8 @@ avalon.directive("repeat", {
             proxies.push(proxy)
         }
         this.proxies = proxies
-        if (init) {
+        
+        if (init && !binding.effectDriver) {
 
             parent.insertBefore(transation, elem)
             fragments.forEach(function (fragment) {
@@ -151,8 +152,6 @@ avalon.directive("repeat", {
                 }
             }
 
-
-
             //  console.log(effectEnterStagger)
             for (i = 0; i < length; i++) {
                 proxy = proxies[i]
@@ -171,7 +170,7 @@ avalon.directive("repeat", {
                             }, staggerIndex)
                         }
                         fragment.nodes = fragment.vmodels = null
-                    })(fragments[i], preEl)
+                    })(fragments[i], preEl)// jshint ignore:line
                     // avalon.log("插入")
 
                 } else if (proxy.$index !== proxy.$oldIndex) {
@@ -182,7 +181,7 @@ avalon.directive("repeat", {
                             parent.insertBefore(curNode, preElement.nextSibling)
                             animateRepeat(inserted, 1, binding)
                         }, staggerIndex)
-                    })(proxy, preEl)
+                    })(proxy, preEl)// jshint ignore:line
 
                     // avalon.log("移动", proxy.$oldIndex, "-->", proxy.$index)
                 }
@@ -222,7 +221,7 @@ avalon.directive("repeat", {
 function animateRepeat(nodes, isEnter, binding) {
     for (var i = 0, node; node = nodes[i++]; ) {
         if (node.className === binding.effectClass) {
-            avalon.effect.apply(node, isEnter, noop, noop, binding)
+           avalon.effect.apply(node, isEnter, noop, noop, binding) 
         }
     }
 }
@@ -247,15 +246,16 @@ function removeItem(node, binding) {
         if (!pre || String(pre.nodeValue).indexOf(breakText) === 0) {
             break
         }
+
         if (binding && (pre.className === binding.effectClass)) {
+            node = pre;
             (function (cur) {
                 binding.staggerIndex = mayStaggerAnimate(binding.effectLeaveStagger, function () {
                     avalon.effect.apply(cur, 0, noop, function () {
                         fragment.appendChild(cur)
                     }, binding)
                 }, staggerIndex)
-            })(pre);
-            node = pre
+            })(pre);// jshint ignore:line
         } else {
             fragment.insertBefore(pre, fragment.firstChild)
         }

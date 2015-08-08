@@ -78,7 +78,7 @@ var transitionEndEvent
 var animationEndEvent
 var transitionDuration = avalon.cssName("transition-duration")
 var animationDuration = avalon.cssName("animation-duration")
-new function () {
+new function () {// jshint ignore:line
     var checker = {
         'TransitionEvent': 'transitionend',
         'WebKitTransitionEvent': 'webkitTransitionEnd',
@@ -117,7 +117,7 @@ new function () {
         'WebKitAnimationEvent': 'webkitAnimationEnd'
     }
     var ani;
-    for (var name in checker) {
+    for (name in checker) {
         if (window[name]) {
             ani = checker[name];
             break;
@@ -128,10 +128,7 @@ new function () {
         animationEndEvent = ani
     }
 
-}
-
-
-
+}()
 
 var effectPool = []//重复利用动画实例
 function effectFactory(el, opts) {
@@ -167,7 +164,7 @@ function effectBinding(elem, binding) {
     var stagger = +elem.getAttribute("data-effect-stagger")
     binding.effectLeaveStagger = +elem.getAttribute("data-effect-leave-stagger") || stagger
     binding.effectEnterStagger = +elem.getAttribute("data-effect-enter-stagger") || stagger
-    binding.effectClass = elem.className
+    binding.effectClass = elem.className || NaN
 }
 
 function Effect() {
@@ -198,7 +195,6 @@ Effect.prototype = {
 
             me.update = function () {
                 var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
-
                 el.addEventListener(eventName, function fn() {
                     el.removeEventListener(eventName, fn)
                     if (me.driver === "a") {
@@ -280,7 +276,7 @@ function getEffectClass(instance, type) {
     if (typeof a === "string")
         return a
     if (typeof a === "function")
-        return a
+        return a()
     return instance.name + "-" + type
 }
 
@@ -292,11 +288,17 @@ function callEffectHook(effect, name, cb) {
     }
 }
 
-var applyEffect = function (el, dir, before, after, opts) {
-    if (typeof after !== "function") {
-        after = noop
-        opts = after
+var applyEffect = function (el, dir/*[before, [after, [opts]]]*/) {
+    var args = aslice.call(arguments, 0)
+    if (typeof args[2] !== "function") {
+        args.splice(2, 0, noop)
     }
+    if (typeof args[3] !== "function") {
+        args.splice(3, 0, noop)
+    }
+    var before = args[2]
+    var after = args[3]
+    var opts = args[4]
     var effect = effectFactory(el, opts)
     if (!effect) {
         before()
@@ -310,7 +312,6 @@ var applyEffect = function (el, dir, before, after, opts) {
 
 avalon.mix(avalon.effect, {
     apply: applyEffect,
-    //下面这4个方法还有待商讨
     append: function (el, parent, after, opts) {
         return applyEffect(el, 1, function () {
             parent.appendChild(el)
@@ -324,11 +325,6 @@ avalon.mix(avalon.effect, {
     remove: function (el, parent, after, opts) {
         return applyEffect(el, 0, function () {
             parent.removeChild(el)
-        }, after, opts)
-    },
-    move: function (el, otherParent, after, opts) {
-        return applyEffect(el, 0, function () {
-            otherParent.appendChild(el)
         }, after, opts)
     }
 })

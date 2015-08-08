@@ -14,9 +14,9 @@
             })
             var vm = avalon.define({
                 $id: "test",
-                array: ["a", "b", "c", "d","d"],
+                array: ["a", "b", "c", "d", "d"],
                 add: function () {
-                    vm.array.push(55,66,33, "3","o","p")
+                    vm.array.push(55, 66, 33, "3", "o", "p")
                 },
                 reverse: function () {
                     vm.array.reverse()
@@ -24,18 +24,11 @@
                 pop: function () {
                     vm.array.pop()
                 },
-                remove: function(){
-                    vm.array.splice(1,5)
+                remove: function () {
+                    vm.array.splice(1, 5)
                 }
             })
-            vm.array.$watch("length", function (a, b) {
-                console.log(a, b)
-            })
-            setTimeout(function () {
-             //   vm.array.push(1, 2)
-                // vm.array.shift()
-                // vm.array.set(0, "7")
-            }, 3000)
+
         </script>
         <style>
             li{
@@ -46,7 +39,6 @@
     </head>
     <body ms-controller="test">
         <h1>ms-repeat</h1>
-
         <ul>
             <li ms-repeat="array" class="animated" data-effect-stagger="40" ms-effect="xxx">{{el}}*{{$index}}</li> 
         </ul>
