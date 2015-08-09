@@ -73,7 +73,7 @@ avalon.directive("include", {
 
 
             var enterEl = target,
-                before = after = avalon.noop
+                after = avalon.noop
             // if(outer && binding.effectName) {
             //     enterEl = DOC.createElement(leaveEl.tagName)
             //     enterEl.className = binding.effectClass
@@ -82,7 +82,7 @@ avalon.directive("include", {
             //         if(enterEl != target && enterEl.parentNode) enterEl.parentNode.removeChild(enterEl) 
             //     }
             // } else {
-                before = function () {// 新添加元素的动画 
+            var before = function () {// 新添加元素的动画 
                     target.insertBefore(fragment, binding.end)
                     scanNodeArray(nodes, vmodels)
                 }
