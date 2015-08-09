@@ -117,7 +117,7 @@ function observeObject(source, $special, old) {
     /* jshint ignore:end */
 
     accessors["$model"] = $modelDescriptor
-    $vmodel = defineProperties($vmodel, accessors, source)
+    $vmodel = Object.defineProperties($vmodel, accessors, source)
     /* jshint ignore:start */
     if (!W3C) {
         $vmodel.hasOwnProperty = function (name) {
@@ -276,7 +276,7 @@ function trackBy(name) {
 }
 
 function hideProperty(host, name, value) {
-    if (canHideOwn) {
+    if (Object.defineProperty) {
         Object.defineProperty(host, name, {
             value: value,
             writable: true,

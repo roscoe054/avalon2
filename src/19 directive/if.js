@@ -10,7 +10,7 @@ avalon.directive("if", {
             return
         }
         if (val) { //插回DOM树
-            function alway() {// jshint ignore:line
+            function alway() {
                 if (elem.getAttribute(binding.name)) {
                     elem.removeAttribute(binding.name)
                     scanAttr(elem, binding.vmodels)

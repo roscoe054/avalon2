@@ -20,7 +20,6 @@ avalon.directive("repeat", {
         var elem = binding.element
         if (elem.nodeType === 1) {
             elem.removeAttribute(binding.name)
-            effectBinding(elem, binding)
             binding.param = binding.param || "el"
             binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", binding.vmodels)
             binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
@@ -106,7 +105,7 @@ avalon.directive("repeat", {
                 this.cache[keyOrId] = proxy
                 var node = proxy.$anchor || (proxy.$anchor = elem.cloneNode(false))
                 node.nodeValue = this.signature
-                shimController(binding, transation, proxy, fragments,init && !binding.effectDriver)
+                shimController(binding, transation, proxy, fragments, init)
                 decorateProxy(proxy, binding, xtype)
             } else {
                 fragments.push({})
@@ -130,8 +129,7 @@ avalon.directive("repeat", {
             proxies.push(proxy)
         }
         this.proxies = proxies
-        
-        if (init && !binding.effectDriver) {
+        if (init) {
 
             parent.insertBefore(transation, elem)
             fragments.forEach(function (fragment) {
@@ -139,50 +137,32 @@ avalon.directive("repeat", {
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
         } else {
-
-            var staggerIndex = binding.staggerIndex = 0
             for (keyOrId in retain) {
                 if (retain[keyOrId] !== true) {
                     action = "del"
-                    removeItem(retain[keyOrId].$anchor, binding)
+                    removeItem(retain[keyOrId].$anchor, "remove")
                     // avalon.log("删除", keyOrId)
                     // 相当于delete binding.cache[key]
                     proxyRecycler(this.cache, keyOrId, param)
                     retain[keyOrId] = null
                 }
             }
-
-            //  console.log(effectEnterStagger)
             for (i = 0; i < length; i++) {
                 proxy = proxies[i]
                 keyOrId = xtype === "array" ? proxy.$id : proxy.$key
                 var pre = proxies[i - 1]
                 var preEl = pre ? pre.$anchor : binding.start
                 if (!retain[keyOrId]) {//如果还没有插入到DOM树
-                    (function (fragment, preElement) {
-                        var nodes = fragment.nodes
-                        var vmodels = fragment.vmodels
-                        if (nodes) {
-                            staggerIndex = mayStaggerAnimate(binding.effectEnterStagger, function () {
-                                parent.insertBefore(fragment.content, preElement.nextSibling)
-                                scanNodeArray(nodes, vmodels)
-                                animateRepeat(nodes, 1, binding)
-                            }, staggerIndex)
-                        }
-                        fragment.nodes = fragment.vmodels = null
-                    })(fragments[i], preEl)// jshint ignore:line
+                    var fragment = fragments[i]
+
+                    parent.insertBefore(fragment.content, preEl.nextSibling)
+                    scanNodeArray(fragment.nodes || [], fragment.vmodels)
+                    fragment.nodes = fragment.vmodels = null
                     // avalon.log("插入")
 
                 } else if (proxy.$index !== proxy.$oldIndex) {
-                    (function (proxy2, preElement) {
-                        staggerIndex = mayStaggerAnimate(binding.effectEnterStagger, function () {
-                            var curNode = removeItem(proxy2.$anchor)// 如果位置被挪动了
-                            var inserted = avalon.slice(curNode.childNodes)
-                            parent.insertBefore(curNode, preElement.nextSibling)
-                            animateRepeat(inserted, 1, binding)
-                        }, staggerIndex)
-                    })(proxy, preEl)// jshint ignore:line
-
+                    var curNode = removeItem(proxy.$anchor)// 如果位置被挪动了
+                    parent.insertBefore(curNode, preEl.nextSibling)
                     // avalon.log("移动", proxy.$oldIndex, "-->", proxy.$index)
                 }
             }
@@ -218,49 +198,19 @@ avalon.directive("repeat", {
 })
 
 
-function animateRepeat(nodes, isEnter, binding) {
-    for (var i = 0, node; node = nodes[i++]; ) {
-        if (node.className === binding.effectClass) {
-           avalon.effect.apply(node, isEnter, noop, noop, binding) 
-        }
-    }
-}
 
-function mayStaggerAnimate(staggerTime, callback, index) {
-    if (staggerTime) {
-        setTimeout(callback, (++index) * staggerTime)
-    } else {
-        callback()
-    }
-    return index
-}
-
-
-function removeItem(node, binding) {
+function removeItem(node) {
     var fragment = avalonFragment.cloneNode(false)
-    var last = node
-    var breakText = last.nodeValue
-    var staggerIndex = binding && Math.max(+binding.staggerIndex, 0)
+    var breakText = node.nodeValue
     while (true) {
         var pre = node.previousSibling
         if (!pre || String(pre.nodeValue).indexOf(breakText) === 0) {
             break
         }
+        fragment.insertBefore(pre, fragment.firstChild)
 
-        if (binding && (pre.className === binding.effectClass)) {
-            node = pre;
-            (function (cur) {
-                binding.staggerIndex = mayStaggerAnimate(binding.effectLeaveStagger, function () {
-                    avalon.effect.apply(cur, 0, noop, function () {
-                        fragment.appendChild(cur)
-                    }, binding)
-                }, staggerIndex)
-            })(pre);// jshint ignore:line
-        } else {
-            fragment.insertBefore(pre, fragment.firstChild)
-        }
     }
-    fragment.appendChild(last)
+    fragment.appendChild(node)
     return fragment
 }
 

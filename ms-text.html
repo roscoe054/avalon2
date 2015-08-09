@@ -40,8 +40,8 @@
 
             })
             avalon.effect("yyy", {
-                enterClass: "zoomInDown",
-                leaveClass: "zoomOutUp"
+                enterClass: "zoomIn",
+                leaveClass: "zoomOut"
             })
             var a = avalon.define({
                 $id: "test",
@@ -56,9 +56,11 @@
     <body ms-controller="test">
         <h1>需要处理与data-include-replace, data-include-cache一起使用的情况 </h1>
         <div class='contain' style='overflow: hidden'>
-        <div ms-include-src="'include2'+aaa"  class=" animated" ms-effect="xxx"></div>
-        <div>
+        <div ms-include-src="'include2'+aaa"  class=" animated" ms-effect="xxx" data-include-cache="true"></div>
+        </div>
          <button type="button" ms-click="change">change</button>
-<!--        <div ms-include-src="'include2'+aaa" class="contain animated" data-include-replace="true"></div>-->
+        <div class='contain' style='overflow: hidden'>
+        <div ms-include-src="'include2'+aaa" class="contain animated" ms-effect="yyy" data-include-replace="true && 0" data-include-cache="true"></div>
+        </div>
     </body>
 </html>

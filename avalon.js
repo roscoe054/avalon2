@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.8
+ avalon.js 1.5 built in 2015.8.9
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1219,7 +1219,7 @@ function observeObject(source, $special, old) {
     /* jshint ignore:end */
 
     accessors["$model"] = $modelDescriptor
-    $vmodel = defineProperties($vmodel, accessors, source)
+    $vmodel = Object.defineProperties($vmodel, accessors, source)
     /* jshint ignore:start */
     if (!W3C) {
         $vmodel.hasOwnProperty = function (name) {
@@ -1378,7 +1378,7 @@ function trackBy(name) {
 }
 
 function hideProperty(host, name, value) {
-    if (canHideOwn) {
+    if (Object.defineProperty) {
         Object.defineProperty(host, name, {
             value: value,
             writable: true,
@@ -2724,11 +2724,9 @@ function parseExpr(code, scopes, data) {
         //https://github.com/RubyLouvre/avalon/issues/583
         data.vars.forEach(function (v) {
             var reg = new RegExp("\\b" + v + "(?:\\.\\w+|\\[\\w+\\])+", "ig")
-            code = code.replace(reg, function (_, cap) {
+            code = code.replace(reg, function (_) {
                 var c = _.charAt(v.length)
-                //var r = IEVersion ? code.slice(arguments[1] + _.length) : RegExp.rightContext
-                //https://github.com/RubyLouvre/avalon/issues/966
-                var r =  code.slice(cap + _.length) 
+                var r = IEVersion ? code.slice(arguments[1] + _.length) : RegExp.rightContext
                 var method = /^\s*\(/.test(r)
                 if (c === "." || c === "[" || method) { //比如v为aa,我们只匹配aa.bb,aa[cc],不匹配aaa.xxx
                     var name = "var" + String(Math.random()).replace(/^0\./, "")
@@ -3349,6 +3347,7 @@ var attrDir = avalon.directive("attr", {
             binding.end = DOC.createComment("ms-include-end")
             if (outer) {
                 binding.element = binding.end
+                binding._element = elem
                 elem.parentNode.insertBefore(binding.end, elem)
                 elem.parentNode.insertBefore(binding.start, binding.end)
             } else {
@@ -3885,10 +3884,10 @@ avalon.directive("effect", {
         var colonIndex = text.replace(rexprg, function (a) {
             return a.replace(/./g, "0")
         }).indexOf(":") //取得第一个冒号的位置
-        if (colonIndex === -1) { // 比如 ms-class/effect="aaa bbb ccc" 的情况
+        if (colonIndex === -1) { // 比如 ms-class="aaa bbb ccc" 的情况
             className = text
             rightExpr = true
-        } else { // 比如 ms-class/effect-1="ui-state-active:checked" 的情况
+        } else { // 比如 ms-class-1="ui-state-active:checked" 的情况
             className = text.slice(0, colonIndex)
             rightExpr = text.slice(colonIndex + 1)
         }
@@ -3956,7 +3955,7 @@ var transitionEndEvent
 var animationEndEvent
 var transitionDuration = avalon.cssName("transition-duration")
 var animationDuration = avalon.cssName("animation-duration")
-new function () {// jshint ignore:line
+new function () {
     var checker = {
         'TransitionEvent': 'transitionend',
         'WebKitTransitionEvent': 'webkitTransitionEnd',
@@ -3995,7 +3994,7 @@ new function () {// jshint ignore:line
         'WebKitAnimationEvent': 'webkitAnimationEnd'
     }
     var ani;
-    for (name in checker) {
+    for (var name in checker) {
         if (window[name]) {
             ani = checker[name];
             break;
@@ -4006,7 +4005,10 @@ new function () {// jshint ignore:line
         animationEndEvent = ani
     }
 
-}()
+}
+
+
+
 
 var effectPool = []//重复利用动画实例
 function effectFactory(el, opts) {
@@ -4034,15 +4036,6 @@ function effectFactory(el, opts) {
     return instance
 
 
-}
-
-function effectBinding(elem, binding) {
-    binding.effectName = elem.getAttribute("data-effect-name")
-    binding.effectDriver = elem.getAttribute("data-effect-driver")
-    var stagger = +elem.getAttribute("data-effect-stagger")
-    binding.effectLeaveStagger = +elem.getAttribute("data-effect-leave-stagger") || stagger
-    binding.effectEnterStagger = +elem.getAttribute("data-effect-enter-stagger") || stagger
-    binding.effectClass = elem.className || NaN
 }
 
 function Effect() {
@@ -4073,6 +4066,7 @@ Effect.prototype = {
 
             me.update = function () {
                 var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
+
                 el.addEventListener(eventName, function fn() {
                     el.removeEventListener(eventName, fn)
                     if (me.driver === "a") {
@@ -4154,7 +4148,7 @@ function getEffectClass(instance, type) {
     if (typeof a === "string")
         return a
     if (typeof a === "function")
-        return a()
+        return a
     return instance.name + "-" + type
 }
 
@@ -4166,17 +4160,11 @@ function callEffectHook(effect, name, cb) {
     }
 }
 
-var applyEffect = function (el, dir/*[before, [after, [opts]]]*/) {
-    var args = aslice.call(arguments, 0)
-    if (typeof args[2] !== "function") {
-        args.splice(2, 0, noop)
+var applyEffect = function (el, dir, before, after, opts) {
+    if (typeof after !== "function") {
+        after = noop
+        opts = after
     }
-    if (typeof args[3] !== "function") {
-        args.splice(3, 0, noop)
-    }
-    var before = args[2]
-    var after = args[3]
-    var opts = args[4]
     var effect = effectFactory(el, opts)
     if (!effect) {
         before()
@@ -4190,6 +4178,7 @@ var applyEffect = function (el, dir/*[before, [after, [opts]]]*/) {
 
 avalon.mix(avalon.effect, {
     apply: applyEffect,
+    //下面这4个方法还有待商讨
     append: function (el, parent, after, opts) {
         return applyEffect(el, 1, function () {
             parent.appendChild(el)
@@ -4202,7 +4191,12 @@ avalon.mix(avalon.effect, {
     },
     remove: function (el, parent, after, opts) {
         return applyEffect(el, 0, function () {
-            parent.removeChild(el)
+            if(el.parentNode === parent) parent.removeChild(el)
+        }, after, opts)
+    },
+    move: function (el, otherParent, after, opts) {
+        return applyEffect(el, 0, function () {
+            otherParent.appendChild(el)
         }, after, opts)
     }
 })
@@ -4269,7 +4263,7 @@ avalon.directive("if", {
             return
         }
         if (val) { //插回DOM树
-            function alway() {// jshint ignore:line
+            function alway() {
                 if (elem.getAttribute(binding.name)) {
                     elem.removeAttribute(binding.name)
                     scanAttr(elem, binding.vmodels)
@@ -4319,7 +4313,7 @@ var templatePool = avalon.templateCache = {}
 function getTemplateContainer(binding, id, text) {
     var div = binding.templateCache && binding.templateCache[id]
     if (div) {
-        var dom = binding.createDocumentFragment(),
+        var dom = DOC.createDocumentFragment(),
                 firstChild
         while (firstChild = div.firstChild) {
             dom.appendChild(firstChild)
@@ -4339,6 +4333,8 @@ avalon.directive("include", {
         var loaded = binding.includeLoaded
         var outer = binding.includeReplace
         var target = outer ? elem.parentNode : elem
+        var _ele = binding._element
+        if(_ele && _ele.parentNode && outer) _ele.parentNode.removeChild(_ele)
         var scanTemplate = function (text) {
             if (loaded) {
                 var newText = loaded.apply(target, [text].concat(vmodels))
@@ -4350,10 +4346,10 @@ avalon.directive("include", {
                     rendered.call(target)
                 }, NaN)
             }
-            var lastID = binding.includeLastID
+            var lastID = binding.includeLastID || "_default" // 默认
 
             binding.includeLastID = val
-            var leaveEl = DOC.createElement(elem.tagName)
+            var leaveEl = binding.templateCache && binding.templateCache[lastID] || DOC.createElement(elem.tagName || binding._element.tagName)
 
             if (binding.effectName) {
                 leaveEl.className = binding.effectClass
@@ -4373,19 +4369,31 @@ avalon.directive("include", {
             avalon.effect.remove(leaveEl, target, function () {// 新添加元素的动画 
                  if (binding.templateCache) {
                     ifGroup.appendChild(leaveEl)
+                    leaveEl.setAttribute("sb", lastID)
                     binding.templateCache[lastID] = leaveEl
                 }
             }, binding)
 
 
-            var enterEl = target
+            var enterEl = target,
+                before = after = avalon.noop
+            // if(outer && binding.effectName) {
+            //     enterEl = DOC.createElement(leaveEl.tagName)
+            //     enterEl.className = binding.effectClass
+            //     target.insertBefore(enterEl, binding.end)
+            //     after = function() {
+            //         if(enterEl != target && enterEl.parentNode) enterEl.parentNode.removeChild(enterEl) 
+            //     }
+            // } else {
+                before = function () {// 新添加元素的动画 
+                    target.insertBefore(fragment, binding.end)
+                    scanNodeArray(nodes, vmodels)
+                }
+            // }
             var fragment = getTemplateContainer(binding, val, text)
             var nodes = avalon.slice(fragment.childNodes)
 
-            avalon.effect.apply(enterEl, 1, function () {// 新添加元素的动画 
-                target.insertBefore(fragment, binding.end)
-                scanNodeArray(nodes, vmodels)
-            })
+            avalon.effect.apply(enterEl, "enter", before, after)
 
 
         }
@@ -4514,7 +4522,6 @@ avalon.directive("repeat", {
         var elem = binding.element
         if (elem.nodeType === 1) {
             elem.removeAttribute(binding.name)
-            effectBinding(elem, binding)
             binding.param = binding.param || "el"
             binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", binding.vmodels)
             binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
@@ -4600,7 +4607,7 @@ avalon.directive("repeat", {
                 this.cache[keyOrId] = proxy
                 var node = proxy.$anchor || (proxy.$anchor = elem.cloneNode(false))
                 node.nodeValue = this.signature
-                shimController(binding, transation, proxy, fragments,init && !binding.effectDriver)
+                shimController(binding, transation, proxy, fragments, init)
                 decorateProxy(proxy, binding, xtype)
             } else {
                 fragments.push({})
@@ -4624,8 +4631,7 @@ avalon.directive("repeat", {
             proxies.push(proxy)
         }
         this.proxies = proxies
-        
-        if (init && !binding.effectDriver) {
+        if (init) {
 
             parent.insertBefore(transation, elem)
             fragments.forEach(function (fragment) {
@@ -4633,50 +4639,32 @@ avalon.directive("repeat", {
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
         } else {
-
-            var staggerIndex = binding.staggerIndex = 0
             for (keyOrId in retain) {
                 if (retain[keyOrId] !== true) {
                     action = "del"
-                    removeItem(retain[keyOrId].$anchor, binding)
+                    removeItem(retain[keyOrId].$anchor, "remove")
                     // avalon.log("删除", keyOrId)
                     // 相当于delete binding.cache[key]
                     proxyRecycler(this.cache, keyOrId, param)
                     retain[keyOrId] = null
                 }
             }
-
-            //  console.log(effectEnterStagger)
             for (i = 0; i < length; i++) {
                 proxy = proxies[i]
                 keyOrId = xtype === "array" ? proxy.$id : proxy.$key
                 var pre = proxies[i - 1]
                 var preEl = pre ? pre.$anchor : binding.start
                 if (!retain[keyOrId]) {//如果还没有插入到DOM树
-                    (function (fragment, preElement) {
-                        var nodes = fragment.nodes
-                        var vmodels = fragment.vmodels
-                        if (nodes) {
-                            staggerIndex = mayStaggerAnimate(binding.effectEnterStagger, function () {
-                                parent.insertBefore(fragment.content, preElement.nextSibling)
-                                scanNodeArray(nodes, vmodels)
-                                animateRepeat(nodes, 1, binding)
-                            }, staggerIndex)
-                        }
-                        fragment.nodes = fragment.vmodels = null
-                    })(fragments[i], preEl)// jshint ignore:line
+                    var fragment = fragments[i]
+
+                    parent.insertBefore(fragment.content, preEl.nextSibling)
+                    scanNodeArray(fragment.nodes || [], fragment.vmodels)
+                    fragment.nodes = fragment.vmodels = null
                     // avalon.log("插入")
 
                 } else if (proxy.$index !== proxy.$oldIndex) {
-                    (function (proxy2, preElement) {
-                        staggerIndex = mayStaggerAnimate(binding.effectEnterStagger, function () {
-                            var curNode = removeItem(proxy2.$anchor)// 如果位置被挪动了
-                            var inserted = avalon.slice(curNode.childNodes)
-                            parent.insertBefore(curNode, preElement.nextSibling)
-                            animateRepeat(inserted, 1, binding)
-                        }, staggerIndex)
-                    })(proxy, preEl)// jshint ignore:line
-
+                    var curNode = removeItem(proxy.$anchor)// 如果位置被挪动了
+                    parent.insertBefore(curNode, preEl.nextSibling)
                     // avalon.log("移动", proxy.$oldIndex, "-->", proxy.$index)
                 }
             }
@@ -4712,49 +4700,19 @@ avalon.directive("repeat", {
 })
 
 
-function animateRepeat(nodes, isEnter, binding) {
-    for (var i = 0, node; node = nodes[i++]; ) {
-        if (node.className === binding.effectClass) {
-           avalon.effect.apply(node, isEnter, noop, noop, binding) 
-        }
-    }
-}
 
-function mayStaggerAnimate(staggerTime, callback, index) {
-    if (staggerTime) {
-        setTimeout(callback, (++index) * staggerTime)
-    } else {
-        callback()
-    }
-    return index
-}
-
-
-function removeItem(node, binding) {
+function removeItem(node) {
     var fragment = avalonFragment.cloneNode(false)
-    var last = node
-    var breakText = last.nodeValue
-    var staggerIndex = binding && Math.max(+binding.staggerIndex, 0)
+    var breakText = node.nodeValue
     while (true) {
         var pre = node.previousSibling
         if (!pre || String(pre.nodeValue).indexOf(breakText) === 0) {
             break
         }
+        fragment.insertBefore(pre, fragment.firstChild)
 
-        if (binding && (pre.className === binding.effectClass)) {
-            node = pre;
-            (function (cur) {
-                binding.staggerIndex = mayStaggerAnimate(binding.effectLeaveStagger, function () {
-                    avalon.effect.apply(cur, 0, noop, function () {
-                        fragment.appendChild(cur)
-                    }, binding)
-                }, staggerIndex)
-            })(pre);// jshint ignore:line
-        } else {
-            fragment.insertBefore(pre, fragment.firstChild)
-        }
     }
-    fragment.appendChild(last)
+    fragment.appendChild(node)
     return fragment
 }
 
