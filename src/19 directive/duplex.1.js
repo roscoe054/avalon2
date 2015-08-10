@@ -6,7 +6,7 @@ var duplexBinding = avalon.directive("duplex", {
     init: function (binding, hasCast) {
         var elem = binding.element
         var vmodels = binding.vmodels
-        binding.changed = getBindingCallback(elem, "binding-duplex-changed", vmodels) || noop
+        binding.changed = getBindingCallback(elem, "data-duplex-changed", vmodels) || noop
         var params = []
         var casting = oneObject("string,number,boolean,checked")
         if (elem.type === "radio" && binding.param === "") {
@@ -53,7 +53,7 @@ var duplexBinding = avalon.directive("duplex", {
         }
         for (var i in avalon.vmodels) {
             var v = avalon.vmodels[i]
-            //  v.$fire("avalon-ms-duplex-init", binding)
+            v.$fire("avalon-ms-duplex-init", binding)
         }
         var cpipe = binding.pipe || (binding.pipe = pipe)
         cpipe(null, binding, "init")
