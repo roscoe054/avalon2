@@ -324,7 +324,7 @@ avalon.mix(avalon.effect, {
     },
     remove: function (el, parent, after, opts) {
         return applyEffect(el, 0, function () {
-            parent.removeChild(el)
+            if(el.parentNode === parent) parent.removeChild(el)
         }, after, opts)
     }
 })

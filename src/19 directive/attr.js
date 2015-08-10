@@ -47,6 +47,7 @@ var attrDir = avalon.directive("attr", {
             binding.end = DOC.createComment("ms-include-end")
             if (outer) {
                 binding.element = binding.end
+                binding._element = elem
                 elem.parentNode.insertBefore(binding.end, elem)
                 elem.parentNode.insertBefore(binding.start, binding.end)
             } else {
