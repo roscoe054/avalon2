@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.9
+ avalon.js 1.5 built in 2015.8.10
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1100,6 +1100,8 @@ function addOldEventMethod(vm) {
         }
     }
 }
+
+
 //avalon最核心的方法的两个方法之一（另一个是avalon.scan），返回一个ViewModel(VM)
 var VMODELS = avalon.vmodels = {} //所有vmodel都储存在这里
 avalon.define = function (id, factory) {
@@ -3075,32 +3077,141 @@ function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
     scanNodeArray(nodes, vmodels)
 }
-
+var renderedCallbacks = []
 function scanNodeArray(nodes, vmodels) {
-    for (var i = 0, node; node = nodes[i++];) {
+    for (var i = 0, node; node = nodes[i++]; ) {
         switch (node.nodeType) {
-        case 1:
-            scanTag(node, vmodels) //扫描元素节点
-            if (node.msCallback) {
-                node.msCallback()
-                node.msCallback = void 0
-            }
-            break
-        case 3:
-            if (rexpr.test(node.nodeValue)) {
-                scanText(node, vmodels, i) //扫描文本节点
-            }
-            break
+            case 1:
+                scanTag(node, vmodels) //扫描元素节点
+                if (renderedCallbacks.length) {
+                    while (fn = renderedCallbacks.pop()) {
+                        fn.call(node)
+                    }
+                }
+                
+                var elem = node
+                if (elem.parentNode && elem.parentNode.nodeType === 1) {
+                    var uiName = isWidget(elem)
+                    if (uiName && avalon.libraries[uiName]) {
+                        var widgetName = elem.localName ? elem.localName.replace(uiName + ":", "") : elem.nodeName
+                        var name = uiName + ":" + camelize(widgetName)
+                        // elem.parentNode.repalceChild(placeholder, elem)
+                        componentQueue.push({
+                            name: name,
+                            element: elem,
+                            widget: widgetName,
+                            vmodels: vmodels
+                        })
+                        if (avalon.components[name]) {
+                            avalon.clearHTML(elem)
+                            avalon.component(name)
+                        }
+                    }
+                }
+                break
+            case 3:
+                if (rexpr.test(node.nodeValue)) {
+                    scanText(node, vmodels, i) //扫描文本节点
+                }
+                break
         }
     }
-    
+
 }
+
+avalon.component = function (name, opts) {
+    if (opts) {
+        avalon.components[name] = avalon.mix(opts, {
+            defaults: {},
+            constructOption: function () {
+            
+                return avalon.mix.apply(null, arguments)
+            },
+            init: noop,
+            dispose: noop
+        })
+    }
+    for (var i = 0, obj; obj = componentQueue[i];i++ ) {
+        if (name === obj.name) {
+            componentQueue.splice(i, 1)
+            i--
+           
+            var widget = obj.widget
+            var elemOpts = avalon.getWidgetData(obj.element, widget)
+            var vmOpts = getOptionsFromVM(obj.vmodels, obj.element.getAttribute("options") || widget)
+            var parentDefinition
+            if (obj.parentClass) {
+                var parentClass = avalon.components[obj.parentClass]
+                if (parentClass) {
+                    parentDefinition = parentClass.constructOption(obj.defaults, vmOpts, elemOpts)
+                }
+            }
+            var componentDefinition = avalon.components[name].constructOption(parentDefinition || obj.defaults,
+                    vmOpts, elemOpts)
+            //   componentDefinition.     
+                    //  $skipArray: [ "template", "widgetElement", "rootElement"],
+                    componentDefinition.$id = generateID(widget)
+            var vm = avalon.define(componentDefinition)
+            console.log(vm)
+            // opts.
+
+        }
+    }
+}
+
+
+function getOptionsFromVM(vmodels, pre) {
+    if (pre) {
+        for (var i = 0, v; v = vmodels[i++]; ) {
+            if (v.hasOwnProperty(pre) && typeof v[pre] === "object") {
+                var vmOptions = v[pre]
+                return vmOptions.$model || vmOptions
+                break
+            }
+        }
+    }
+    return {}
+}
+
+
+var componentQueue = []
+avalon.libraries = []
+avalon.components = {}
+
+avalon.library = function (name, opts) {
+    if (DOC.namespaces) {
+        DOC.namespaces.add(name, 'http://www.w3.org/1999/xlink');
+    }
+    avalon.libraries[name] = avalon.mix(opts, {
+        init: noop,
+        dispose: noop
+    })
+}
+
+
+
+function isWidget(el) { //如果为自定义标签,返回UI库的名字
+    return el.scopeName ? el.scopeName : el.localName.split(":")[0]
+}
+// 处理所有在ready过程中的 元素
+// 全局init
+// 获取模板
+// 获取配置对象
+// init回调
+// 创建VM
+// 渲染
+// 遇到子组件挂起 +1
+// 子组件渲染完  -1
+// 渲染完毕   调用ready回调
+// fire avalon.component.watch 
+// 移除  调用dispose回调
+
 
 function scanTag(elem, vmodels, node) {
     //扫描顺序  ms-skip(0) --> ms-important(1) --> ms-controller(2) --> ms-if(10) --> ms-repeat(100)
     //--> ms-if-loop(110) --> ms-attr(970) ...--> ms-each(1400)-->ms-with(1500)--〉ms-duplex(2000)垫后
     var a = elem.getAttribute("ms-skip")
-        //#360 在旧式IE中 Object标签在引入Flash等资源时,可能出现没有getAttributeNode,innerHTML的情形
+    //#360 在旧式IE中 Object标签在引入Flash等资源时,可能出现没有getAttributeNode,innerHTML的情形
     if (!elem.getAttributeNode) {
         return log("warning " + elem.tagName + " no getAttributeNode method")
     }
@@ -3120,8 +3231,11 @@ function scanTag(elem, vmodels, node) {
         avalon(elem).removeClass(name)
         createSignalTower(elem, newVmodel)
     }
+   
     scanAttr(elem, vmodels) //扫描特性节点
 }
+
+
 
 var rhasHtml = /\|\s*html(?:\b|$)/,
     r11a = /\|\|/g,
@@ -3508,7 +3622,7 @@ var duplexBinding = avalon.directive("duplex", {
     init: function (binding, hasCast) {
         var elem = binding.element
         var vmodels = binding.vmodels
-        binding.changed = getBindingCallback(elem, "binding-duplex-changed", vmodels) || noop
+        binding.changed = getBindingCallback(elem, "data-duplex-changed", vmodels) || noop
         var params = []
         var casting = oneObject("string,number,boolean,checked")
         if (elem.type === "radio" && binding.param === "") {
@@ -3555,7 +3669,7 @@ var duplexBinding = avalon.directive("duplex", {
         }
         for (var i in avalon.vmodels) {
             var v = avalon.vmodels[i]
-            //  v.$fire("avalon-ms-duplex-init", binding)
+            v.$fire("avalon-ms-duplex-init", binding)
         }
         var cpipe = binding.pipe || (binding.pipe = pipe)
         cpipe(null, binding, "init")
@@ -3877,6 +3991,7 @@ duplexBinding.SELECT = function(element, evaluator, binding) {
         binding.changed.call(element, evaluator(), binding)
     }
 }
+
 avalon.directive("effect", {
     priority: 5,
     init: function (binding) {
@@ -4615,7 +4730,7 @@ avalon.directive("repeat", {
                 this.cache[keyOrId] = proxy
                 var node = proxy.$anchor || (proxy.$anchor = elem.cloneNode(false))
                 node.nodeValue = this.signature
-                shimController(binding, transation, proxy, fragments,init && !binding.effectDriver)
+                shimController(binding, transation, proxy, fragments, init && !binding.effectDriver)
                 decorateProxy(proxy, binding, xtype)
             } else {
                 fragments.push({})
@@ -4639,7 +4754,7 @@ avalon.directive("repeat", {
             proxies.push(proxy)
         }
         this.proxies = proxies
-        
+
         if (init && !binding.effectDriver) {
 
             parent.insertBefore(transation, elem)
@@ -4703,18 +4818,30 @@ avalon.directive("repeat", {
             }
 
         }
-        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-            avalon(parent).val(parent.oldValue.split(","))
-        }
-        var callback = binding.renderedCallback || noop
-        this.enterCount -= 1
-        if (kernel.newWatch) {
-            callback.apply(parent, arguments)
-        } else {//兼容早期的传参方式
-            callback.call(parent, action)
-        }
+//        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
+//            avalon(parent).val(parent.oldValue.split(","))
+//        }
 
-        avalon.log("耗时 ", new Date() - now)
+//repeat --> duplex
+        var callback = binding.renderedCallback
+        if (callback) {
+            (function (fn, args) {
+               // console.log("+++++")
+                renderedCallbacks.push(function() {
+                    fn.call(parent, args)
+                    avalon.log("耗时 ", new Date() - now)
+                     console.log(parent.oldValue+"!!!!")
+                    if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
+                       
+                        avalon(parent).val(parent.oldValue.split(","))
+                    }
+                })//兼容早期的传参方式
+            })(callback, kernel.newWatch ? arguments : action)
+
+        }
+        this.enterCount -= 1
+
+        //  avalon.log("耗时 ", new Date() - now)
 
     }
 
@@ -4730,7 +4857,7 @@ avalon.directive("repeat", {
 function animateRepeat(nodes, isEnter, binding) {
     for (var i = 0, node; node = nodes[i++]; ) {
         if (node.className === binding.effectClass) {
-           avalon.effect.apply(node, isEnter, noop, noop, binding) 
+            avalon.effect.apply(node, isEnter, noop, noop, binding)
         }
     }
 }
