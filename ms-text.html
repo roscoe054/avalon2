@@ -11,7 +11,7 @@
             .contain{
                 border: 1px solid red;
                 position:relative;
-              //  width:90%;
+                width: 300px;
                 top:0px;
                 height:340px;
             }
@@ -31,6 +31,18 @@
             .bounceOutLeft{
                 position: absolute;
                 width:100%;
+            }
+            .zoomEffect {
+                position: relative;
+            }
+            .zoomInDown, .zoomOutUp {
+                width: 100%;
+                height: 100%;
+                top: 50%;
+                margin-left: -150px;
+                margin-top: -170px;
+                left: 50%;
+                position: absolute;
             }
         </style>
         <script>
@@ -53,14 +65,18 @@
  
         </script>
     </head>
-    <body ms-controller="test">
+    <body ms-controller="test" style="padding-bottom: 1000px;">
         <h1>需要处理与data-include-replace, data-include-cache一起使用的情况 </h1>
+        <h5>没有动画</h5>
+        <div ms-include-src="'include2'+aaa"  data-include-cache="true"></div>
+        <h5>data-include-repalce="false"</h5>
         <div class='contain' style='overflow: hidden'>
-        <div ms-include-src="'include2'+aaa"  class=" animated" ms-effect="xxx" data-include-cache="true"></div>
+            <div ms-include-src="'include2'+aaa"  class=" animated" ms-effect="xxx" data-include-cache="true"></div>
         </div>
-         <button type="button" ms-click="change">change</button>
-        <div class='contain' style='overflow: hidden'>
-        <div ms-include-src="'include2'+aaa" class="contain animated" ms-effect="yyy" data-include-replace="true && 0" data-include-cache="true"></div>
+        <button type="button" ms-click="change">change</button>
+        <h5>data-include-replace="true"</h5>
+        <div class='contain zoomEffect' style='overflow: hidden'>
+            <div ms-include-src="'include2'+aaa" class="contain animated" ms-effect="yyy" data-include-replace="true" data-include-cache="true">哈哈哈</div>
         </div>
     </body>
 </html>
