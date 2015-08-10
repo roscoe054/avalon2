@@ -106,7 +106,7 @@ avalon.directive("repeat", {
                 this.cache[keyOrId] = proxy
                 var node = proxy.$anchor || (proxy.$anchor = elem.cloneNode(false))
                 node.nodeValue = this.signature
-                shimController(binding, transation, proxy, fragments,init && !binding.effectDriver)
+                shimController(binding, transation, proxy, fragments, init && !binding.effectDriver)
                 decorateProxy(proxy, binding, xtype)
             } else {
                 fragments.push({})
@@ -130,7 +130,7 @@ avalon.directive("repeat", {
             proxies.push(proxy)
         }
         this.proxies = proxies
-        
+
         if (init && !binding.effectDriver) {
 
             parent.insertBefore(transation, elem)
@@ -194,18 +194,30 @@ avalon.directive("repeat", {
             }
 
         }
-        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-            avalon(parent).val(parent.oldValue.split(","))
-        }
-        var callback = binding.renderedCallback || noop
-        this.enterCount -= 1
-        if (kernel.newWatch) {
-            callback.apply(parent, arguments)
-        } else {//兼容早期的传参方式
-            callback.call(parent, action)
-        }
+//        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
+//            avalon(parent).val(parent.oldValue.split(","))
+//        }
 
-        avalon.log("耗时 ", new Date() - now)
+//repeat --> duplex
+        var callback = binding.renderedCallback
+        if (callback) {
+            (function (fn, args) {
+               // console.log("+++++")
+                renderedCallbacks.push(function() {
+                    fn.call(parent, args)
+                    avalon.log("耗时 ", new Date() - now)
+                     console.log(parent.oldValue+"!!!!")
+                    if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
+                       
+                        avalon(parent).val(parent.oldValue.split(","))
+                    }
+                })//兼容早期的传参方式
+            })(callback, kernel.newWatch ? arguments : action)
+
+        }
+        this.enterCount -= 1
+
+        //  avalon.log("耗时 ", new Date() - now)
 
     }
 
@@ -221,7 +233,7 @@ avalon.directive("repeat", {
 function animateRepeat(nodes, isEnter, binding) {
     for (var i = 0, node; node = nodes[i++]; ) {
         if (node.className === binding.effectClass) {
-           avalon.effect.apply(node, isEnter, noop, noop, binding) 
+            avalon.effect.apply(node, isEnter, noop, noop, binding)
         }
     }
 }
