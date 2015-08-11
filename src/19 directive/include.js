@@ -20,6 +20,13 @@ function getTemplateContainer(binding, id, text) {
     return avalon.parseHTML(text)
 
 }
+function nodesToFrag(nodes) {
+    var frag = DOC.createDocumentFragment()
+    for(var i = 0, len = nodes.length; i < len; i++) {
+        frag.appendChild(nodes[i])
+    }
+    return frag
+}
 avalon.directive("include", {
     init: directives.attr.init,
     update: function (val) {
@@ -27,12 +34,18 @@ avalon.directive("include", {
         var elem = this.element
         var vmodels = binding.vmodels
         var rendered = binding.includeRendered
+        var effectClass = binding.effectName && binding.effectClass // 是否开启动画
+        var templateCache = binding.templateCache // 是否data-include-cache
+        var outer = binding.includeReplace // 是否data-include-replace
         var loaded = binding.includeLoaded
-        var outer = binding.includeReplace
         var target = outer ? elem.parentNode : elem
-        var _ele = binding._element
-        if(_ele && _ele.parentNode && outer) _ele.parentNode.removeChild(_ele)
+        var _ele = binding._element // data-include-replace binding.element === binding.end
+
+        binding.recoverNodes = binding.recoverNodes || avalon.noop
+
+        var tpl = outer && _ele.cloneNode()
         var scanTemplate = function (text) {
+            var _stamp = binding._stamp = +(new Date()) // 过滤掉频繁操作
             if (loaded) {
                 var newText = loaded.apply(target, [text].concat(vmodels))
                 if (typeof newText === "string")
@@ -46,49 +59,72 @@ avalon.directive("include", {
             var lastID = binding.includeLastID || "_default" // 默认
 
             binding.includeLastID = val
-            var leaveEl = binding.templateCache && binding.templateCache[lastID] || DOC.createElement(elem.tagName || binding._element.tagName)
+            var leaveEl = templateCache && templateCache[lastID] || DOC.createElement(elem.tagName || binding._element.tagName) // 创建一个离场元素
 
-            if (binding.effectName) {
-                leaveEl.className = binding.effectClass
-                target.insertBefore(leaveEl, binding.end)
+            if (effectClass) {
+                leaveEl.className = effectClass
+                target.insertBefore(leaveEl, binding.start) // 插入到start之前，防止被错误的移动
             }
 
-            while (true) {
-                var node = binding.start.nextSibling
-                if (node && node !== leaveEl) {
-                    leaveEl.appendChild(node)
-
-                } else {
-                    break
+            // cache or animate，移动节点
+            if(effectClass || templateCache) {
+                templateCache[lastID] = leaveEl
+                var fragOnDom = binding.recoverNodes() // 恢复动画中的节点
+                if(fragOnDom) {
+                    target.insertBefore(fragOnDom, binding.end)
+                }
+                while (true) {
+                    var node = binding.start.nextSibling
+                    if (node && node !== leaveEl && node !== binding.end) {
+                        leaveEl.appendChild(node)
+                    } else {
+                        break
+                    }
                 }
             }
-
-            avalon.effect.remove(leaveEl, target, function () {// 新添加元素的动画 
-                 if (binding.templateCache) {
-                    ifGroup.appendChild(leaveEl)
+            // 元素退场
+            avalon.effect.remove(leaveEl, target, function () {
+                if (templateCache) { // write cache
+                    if(_stamp === binding._stamp) ifGroup.appendChild(leaveEl)
                     leaveEl.setAttribute("sb", lastID)
-                    binding.templateCache[lastID] = leaveEl
                 }
             }, binding)
 
 
             var enterEl = target,
+                before = avalon.noop,
                 after = avalon.noop
-            // if(outer && binding.effectName) {
-            //     enterEl = DOC.createElement(leaveEl.tagName)
-            //     enterEl.className = binding.effectClass
-            //     target.insertBefore(enterEl, binding.end)
-            //     after = function() {
-            //         if(enterEl != target && enterEl.parentNode) enterEl.parentNode.removeChild(enterEl) 
-            //     }
-            // } else {
-            var before = function () {// 新添加元素的动画 
+
+            var fragment = getTemplateContainer(binding, val, text)
+            var nodes = avalon.slice(fragment.childNodes)
+
+            if(outer && effectClass) {
+                enterEl = _ele
+                enterEl.innerHTML = "" // 清空
+                enterEl.setAttribute("ms-skip", "true")
+                target.insertBefore(enterEl, binding.end.nextSibling) // 插入到bingding.end之后避免被错误的移动
+                before = function() {
+                    enterEl.insertBefore(fragment, null) // 插入节点
+                }
+                after = function() {
+                    binding.recoverNodes = avalon.noop
+                    if(_stamp === binding._stamp) {
+                        fragment = nodesToFrag(nodes)
+                        target.insertBefore(fragment, binding.end) // 插入真实element
+                        scanNodeArray(nodes, vmodels)
+                    }
+                    if(enterEl.parentNode === target) target.removeChild(enterEl) // 移除入场动画元素
+                }
+                binding.recoverNodes = function() {
+                    binding.recoverNodes = avalon.noop
+                    return nodesToFrag(nodes)
+                }
+            } else {
+                before = function () {// 新添加元素的动画 
                     target.insertBefore(fragment, binding.end)
                     scanNodeArray(nodes, vmodels)
                 }
-            // }
-            var fragment = getTemplateContainer(binding, val, text)
-            var nodes = avalon.slice(fragment.childNodes)
+            }
 
             avalon.effect.apply(enterEl, "enter", before, after)
 
