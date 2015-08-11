@@ -4,9 +4,6 @@ function scanNodeList(parent, vmodels) {
 }
 var renderedCallbacks = []
 
-function check(elem){
-   return !elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1
-}
 function scanNodeArray(nodes, vmodels) {
     for (var i = 0, node; node = nodes[i++]; ) {
         switch (node.nodeType) {
@@ -14,11 +11,11 @@ function scanNodeArray(nodes, vmodels) {
                 scanTag(node, vmodels) //扫描元素节点
 
                 var elem = node
-         
+
                 if (!elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1) {
-                   
+
                     var library = isWidget(elem)
-                    
+
                     if (library && avalon.libraries[library]) {
                         var widget = elem.localName ? elem.localName.replace(library + ":", "") : elem.nodeName
                         var fullName = library + ":" + camelize(widget)
@@ -83,8 +80,8 @@ avalon.component = function (name, opts) {
                 var elemOpts = avalon.getWidgetData(elem, widget)
                 var vmOpts = getOptionsFromVM(host.vmodels, elem.getAttribute("options") || widget)
                 var parentDefinition
-                if (host.$parentWidget) {
-                    var parentClass = avalon.components[host.$parentWidget]
+                if (host.$extends) {
+                    var parentClass = avalon.components[host.$extends]
                     if (parentClass) {
                         parentDefinition = parentClass.$construct(defaults, elemOpts)
                     }
@@ -96,23 +93,26 @@ avalon.component = function (name, opts) {
                 //==========构建VM=========
                 var vm = avalon.define(componentDefinition) || {}
                 elem.msResolved = 1
-                global.$init(vm)
-                elem = componentDefinition.$init(vm) || elem
-             //   var child = avalon.parseHTML(componentDefinition.$$template())
-              //  avalon.clearHTML(elem).appendChild(child)
+
+                elem = componentDefinition.$init(vm, host) || elem
+                global.$init(vm, host)
+                //   var child = avalon.parseHTML(componentDefinition.$$template())
+                //  avalon.clearHTML(elem).appendChild(child)
                 elem.innerHTML = componentDefinition.$$template()
-              
+
                 var child = elem.firstChild
                 if (componentDefinition.$replace) {
                     child = elem.firstChild
                     elem.parentNode.replaceChild(child, elem)
                     child.msResolved = 1
-                    elem = child
+                    elem = host.element = child
                 }
 
-
                 avalon.scan(elem, [vm].concat(host.vmodels))
-                avalon.vmodels[elem.$id] = vm
+
+                avalon.vmodels[vm.$id] = vm
+
+
                 avalon.fireDom(elem.parentNode, "datasetchanged", {dependency: 1, library: library})
                 var removeFn = avalon.bind(elem, "datasetchanged", function (e) {
                     if (isFinite(e.dependency) && e.library === library) {
@@ -121,23 +121,24 @@ avalon.component = function (name, opts) {
                     }
 
                     if (host.dependency === 0) {
-                        global.$ready(vm)
-                        componentDefinition.$ready(vm)
+
+                        componentDefinition.$ready(vm, host)
+                        global.$ready(vm, host)
                         avalon.unbind(elem, "datasetchanged", removeFn)
                         //==================
 
                         host.rollback = function () {
                             try {
-                                global.$dispose(vm)
-                                componentDefinition.$dispose(vm)
 
+                                componentDefinition.$dispose(vm)
+                                global.$dispose(vm)
                             } catch (e) {
                             }
 
                             delete avalon.vmodels[vm.$id]
                         }
-                       
-                        
+
+
                         injectDisposeQueue(host, widgetList)
                         if (window.chrome) {
                             elem.addEventListener("DOMNodeRemovedFromDocument", function () {
@@ -197,7 +198,7 @@ avalon.library = function (name, opts) {
     if (DOC.namespaces) {
         DOC.namespaces.add(name, 'http://www.w3.org/1999/xlink');
     }
-    avalon.libraries[name] = avalon.mix( {
+    avalon.libraries[name] = avalon.mix({
         $init: noop,
         $ready: noop,
         $dispose: noop
@@ -207,25 +208,16 @@ avalon.library = function (name, opts) {
 avalon.library("ms")
 
 function isWidget(el) { //如果为自定义标签,返回UI库的名字
-    if(el.scopeName){
+    if (el.scopeName) {
         return el.scopeName
     }
     var fullName = el.localName
-    var index = fullName && fullName.indexOf(":") 
-    if(index > 0){
+    var index = fullName && fullName.indexOf(":")
+    if (index > 0) {
         return fullName.slice(0, index)
     }
 }
-// 处理所有在ready过程中的 元素
-// 全局init
-// 获取模板
-// 获取配置对象
-// init回调
-// 创建VM
-// 渲染
-// 遇到子组件挂起 +1
-// 子组件渲染完  -1
-// 渲染完毕   调用ready回调
-// fire avalon.component.watch 
-// 移除  调用dispose回调
+//各种MVVM框架在大型表格下的性能测试
+// https://github.com/RubyLouvre/avalon/issues/859
+
 
