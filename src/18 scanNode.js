@@ -25,10 +25,11 @@ function scanNodeArray(nodes, vmodels) {
                         componentQueue.push({
                             library: library,
                             element: elem,
-                            name: fullName,
+                            fullName: fullName,
                             widget: widget,
                             vmodels: vmodels,
-                            dependency: 1
+                            dependency: 1,
+                            name: "widget"
                         })
                         if (avalon.components[fullName]) {
                             avalon.clearHTML(elem)
@@ -64,13 +65,14 @@ var defaults = {
         return this.$template
     }
 }
+
 avalon.components = {}
 avalon.component = function (name, opts) {
     if (opts) {
         avalon.components[name] = avalon.mix({}, defaults, opts || {})
     }
     for (var i = 0, obj; obj = componentQueue[i]; i++) {
-        if (name === obj.name) {
+        if (name === obj.fullName) {
             componentQueue.splice(i, 1)
             i--;
 
@@ -81,8 +83,8 @@ avalon.component = function (name, opts) {
                 var elemOpts = avalon.getWidgetData(elem, widget)
                 var vmOpts = getOptionsFromVM(host.vmodels, elem.getAttribute("options") || widget)
                 var parentDefinition
-                if (host.parentClass) {
-                    var parentClass = avalon.components[host.parentClass]
+                if (host.$parentWidget) {
+                    var parentClass = avalon.components[host.$parentWidget]
                     if (parentClass) {
                         parentDefinition = parentClass.$construct(defaults, elemOpts)
                     }
@@ -92,12 +94,15 @@ avalon.component = function (name, opts) {
 
                 componentDefinition.$id = generateID(widget)
                 //==========构建VM=========
-                var vm = avalon.define(componentDefinition)
+                var vm = avalon.define(componentDefinition) || {}
                 elem.msResolved = 1
                 global.$init(vm)
                 elem = componentDefinition.$init(vm) || elem
-                var child = avalon.parseHTML(componentDefinition.$$template())
-                avalon.clearHTML(elem).appendChild(child)
+             //   var child = avalon.parseHTML(componentDefinition.$$template())
+              //  avalon.clearHTML(elem).appendChild(child)
+                elem.innerHTML = componentDefinition.$$template()
+              
+                var child = elem.firstChild
                 if (componentDefinition.$replace) {
                     child = elem.firstChild
                     elem.parentNode.replaceChild(child, elem)
@@ -107,6 +112,7 @@ avalon.component = function (name, opts) {
 
 
                 avalon.scan(elem, [vm].concat(host.vmodels))
+                avalon.vmodels[elem.$id] = vm
                 avalon.fireDom(elem.parentNode, "datasetchanged", {dependency: 1, library: library})
                 var removeFn = avalon.bind(elem, "datasetchanged", function (e) {
                     if (isFinite(e.dependency) && e.library === library) {
@@ -122,7 +128,6 @@ avalon.component = function (name, opts) {
 
                         host.rollback = function () {
                             try {
-
                                 global.$dispose(vm)
                                 componentDefinition.$dispose(vm)
 
@@ -131,15 +136,14 @@ avalon.component = function (name, opts) {
 
                             delete avalon.vmodels[vm.$id]
                         }
+                       
+                        
                         injectDisposeQueue(host, widgetList)
                         if (window.chrome) {
                             elem.addEventListener("DOMNodeRemovedFromDocument", function () {
                                 setTimeout(rejectDisposeQueue)
                             })
                         }
-
-
-
 
                     }
                 })
@@ -154,8 +158,6 @@ avalon.component = function (name, opts) {
 
             })(obj, avalon.components[name], obj.element, obj.widget)
 
-
-            // opts.
 
         }
     }
