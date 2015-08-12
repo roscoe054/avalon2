@@ -180,7 +180,7 @@ function observeArray(array, old) {
         if (W3C) {
             Object.defineProperty(array, "$model", $modelDescriptor)
         } else {
-            array.$model = []
+            array.$model = toJson(array)
         }
 
         for (var j = 0, n = array.length; j < n; j++) {

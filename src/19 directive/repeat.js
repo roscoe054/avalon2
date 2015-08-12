@@ -91,8 +91,8 @@ avalon.directive("repeat", {
             var keyOrId = track[i] //array为随机数, object 为keyName
             var proxy = retain[keyOrId]
             if (!proxy) {
-
                 proxy = getProxyVM(this)
+           
                 if (xtype === "array") {
                     action = "add"
                     proxy.$id = keyOrId
@@ -113,7 +113,6 @@ avalon.directive("repeat", {
                 retain[keyOrId] = true
             }
             //重写proxy
-
             if (this.enterCount === 1) {// 防止多次进入,导致位置不对
                 proxy.$active = false
                 proxy.$oldIndex = proxy.$index
@@ -373,6 +372,7 @@ function withProxyFactory() {
         $key: "",
         $val: NaN,
         $index: 0,
+        $oldIndex: 0,
         $outer: {},
         $anchor: null
     }, {
