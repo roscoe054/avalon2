@@ -4769,7 +4769,10 @@ avalon.directive("repeat", {
             }
         }
         var elem = binding.element
+        console.log(binding.element.nodeType, binding.uuid)
         if (elem.nodeType === 1) {
+            console.log(elem.getAttribute("ms-with"),binding.name )
+            
             elem.removeAttribute(binding.name)
             effectBinding(elem, binding)
             binding.param = binding.param || "el"
@@ -4777,7 +4780,7 @@ avalon.directive("repeat", {
             binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
             var signature = generateID(type)
             var start = DOC.createComment(signature + ":start")
-            var end = DOC.createComment(signature + ":end")
+            var end = binding.element = DOC.createComment(signature + ":end")
             binding.signature = signature
             binding.start = start
             binding.template = avalonFragment.cloneNode(false)
@@ -4863,6 +4866,7 @@ avalon.directive("repeat", {
                 fragments.push({})
                 retain[keyOrId] = true
             }
+         
             //重写proxy
             if (this.enterCount === 1) {// 防止多次进入,导致位置不对
                 proxy.$active = false
@@ -4880,9 +4884,7 @@ avalon.directive("repeat", {
             proxies.push(proxy)
         }
         this.proxies = proxies
-
         if (init && !binding.effectDriver) {
-
             parent.insertBefore(transation, elem)
             fragments.forEach(function (fragment) {
                 scanNodeArray(fragment.nodes || [], fragment.vmodels)
@@ -4956,7 +4958,6 @@ avalon.directive("repeat", {
                 renderedCallbacks.push(function() {
                     fn.call(parent, args)
                     avalon.log("耗时 ", new Date() - now)
-                     console.log(parent.oldValue+"!!!!")
                     if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
                        
                         avalon(parent).val(parent.oldValue.split(","))
@@ -4966,7 +4967,6 @@ avalon.directive("repeat", {
 
         }
         this.enterCount -= 1
-
         //  avalon.log("耗时 ", new Date() - now)
 
     }

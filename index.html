@@ -24,38 +24,61 @@
                 return fn.toString().replace(/^[^\/]+\/\*!?\s?/, '').replace(/\*\/[^\/]+$/, '')
             }
             avalon.config.async = false
+            var vm = avalon.define({
+                $id: "test",
+                object: {
+                    a: 1,
+                    b: 1,
+                    c: 1,
+                    d: 1
+                },
+                text: "初始状态"
+            })
             var body = document.body
             var div = document.createElement("div")
             div.innerHTML = heredoc(function () {
                 /*
-                 <div ms-repeat="$array">{{el}},{{$first}},{{$last}},{{$index}}</div>
-                 <hr/>
-                 <div ms-repeat="$object">{{$key}}--{{$val}}</div>
+                <ul>
+<!--                <li ms-repeat="object">{{$key}}:<strong>{{$val}}</strong></li>-->
+                 </ul>
+                 <ol ms-with="object">
+                 <li>{{$key}}:<strong>{{$val}}</strong></li>
+                 </ol>
                  */
             })
             body.appendChild(div)
-            var vm = avalon.define({
-                $id: "$array",
-                $array: [4, 5, 6, 7],
-                $object: {
-                    a: 22,
-                    b: 33,
-                    c: 44
-                }
-            });
             avalon.scan(div, vm)
-            setTimeout(function () {
-                var s = div.getElementsByTagName("div")
-                expect(s.length).to.be(7)
-                expect(s[0].innerHTML).to.be("4,true,false,0")
-                expect(s[1].innerHTML).to.be("5,false,false,1")
-                expect(s[2].innerHTML).to.be("6,false,false,2")
-                expect(s[3].innerHTML).to.be("7,false,true,3")
-                expect(s[4].innerHTML).to.be("a--22")
-                expect(s[5].innerHTML).to.be("b--33")
-                expect(s[6].innerHTML).to.be("c--44")
-               // clearTest(vm, div, done)
-            }, 150)
+            var prop = "innerText" in div ? "innerText" : "textContent"
+//            setTimeout(function () {
+//                vm.object = {
+//                    x: 2,
+//                    y: 2,
+//                    z: 2,
+//                    h: 2
+//                }
+//            }, 300)
+//            setTimeout(function () {
+//                vm.object = {
+//                    a: 4,
+//                    b: 2,
+//                    c: 2,
+//                    h: 3
+//                }
+//                setTimeout(function () {
+//                    var lis = div.getElementsByTagName("li")
+//                    expect(lis.length).to.be(8)
+//                    expect(lis[0][prop]).to.be("a:4")
+//                    expect(lis[1][prop]).to.be("b:2")
+//                    expect(lis[2][prop]).to.be("c:2")
+//                    expect(lis[3][prop]).to.be("h:3")
+//                    expect(lis[4][prop]).to.be("a:4")
+//                    expect(lis[5][prop]).to.be("b:2")
+//                    expect(lis[6][prop]).to.be("c:2")
+//                    expect(lis[7][prop]).to.be("h:3")
+//                 //   clearTest(vm, div, done)
+//                }, 200)
+//            }, 600)
+     
         </script>
 
 
