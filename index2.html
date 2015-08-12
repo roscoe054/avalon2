@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>虚拟DOM测试</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+        <script>
+
+            var vm = avalon.define({
+                $id: "test",
+                array: ["a", "b", "c", "d"],
+                arr: ["a", "c"],
+                duplexCallback: function () {
+                    console.log("duplexCallback")
+                },
+                refresh: function () {
+                    vm.array = ["c", "d", "k", "a", "b"]
+                },
+                reverse: function () {
+                    vm.array.reverse()
+                },
+                repeatCallback: function () {
+                    console.log(this.innerHTML)
+                    console.log("repeatCallback")
+                }
+
+            })
+            setTimeout(function () {
+                vm.arr = ["a", "b", "c"]
+            }, 3000)
+            setTimeout(function () {
+                console.log("xxxxx")
+                vm.array = ["d", "e", "a", "5", "b", "c"]
+            }, 6000)
+        </script>
+    </head>
+    <body ms-controller="test">
+        <select  multiple="multiple" ms-duplex="arr" data-duplex-changed="duplexCallback">
+            <option ms-repeat="array" data-repeat-rendered="repeatCallback">{{el}}</option>
+        </select>
+        <div><button type="button" ms-click="refresh">refresh</button></div>
+        <div><button type="button" ms-click="reverse">reverse</button></div>
+    </body>
+</html>
