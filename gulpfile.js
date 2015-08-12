@@ -45,7 +45,40 @@ gulp.task('combo', function () {
                 .pipe(jshint.reporter('default'))
                 .pipe(gulp.dest('../avalon.test/src/'))
 
+        var modernFiles = compatibleFiles.filter(function (el) {
+            return !/shim/.test(el)
+        })
 
+        replaceUrls(modernFiles, {
+            "01 variable": "01 variable.modern",
+            "02 core": "02 core.modern",
+            "05 dom.polyfill": "05 dom.polyfill.modern",
+            "07 EventBus": "07 EventBus.modern",
+            "08 modelFactory": "08 modelFactory.modern",
+            "15 HTML": "15 HTML.modern",
+            "16 dom": "16 dom.modern",
+            "17 parser": "17 parser.modern",
+            "18 scanAttr": "18 scanAttr.modern",
+            "18 scanTag": "18 scanTag.modern",
+            "21 loader": "21 loader.modern",
+            "text": "text.modern",
+            "duplex.2": "duplex.2.modern",
+            "22 domReady": "22 domReady.modern"
+        })
+
+        gulp.src(modernFiles)
+                .pipe(concat('avalon.modern.js'))
+                .pipe(replace(/version:\s+([\d\.]+)/, function (a, b) {
+                    return "version: " + version
+                }))
+                .pipe(replace(/!!/, function (a, b) {
+                    return  "avalon.modern.js " + version + " built in " + date + "\n support IE10+ and other browsers"
+                }))
+                .pipe(gulp.dest('./dist/'))
+                .pipe(gulp.dest('../avalon.test/src/'))
+                .pipe(uglify())
+                .pipe(rename('avalon.modern.min.js'))
+                .pipe(gulp.dest('./dist/'))
      
     })
 
