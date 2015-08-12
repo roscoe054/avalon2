@@ -5,6 +5,7 @@ function scanAttr(elem, vmodels, match) {
         var bindings = []
         var fixAttrs = []
         var msData = {}
+        var uniq = {}
         for (var i = 0, attr; attr = attributes[i++];) {
             if (attr.specified) {
                 if (match = attr.name.match(rmsAttr)) {
@@ -13,6 +14,11 @@ function scanAttr(elem, vmodels, match) {
                     var param = match[2] || ""
                     var value = attr.value
                     var name = attr.name
+                    if( uniq[name] ){//IE8下ms-repeat,ms-with BUG
+                        continue
+                    }
+                    uniq[name] = 1
+                    
                     if (events[type]) {
                         param = type
                         type = "on"

@@ -18,10 +18,7 @@ avalon.directive("repeat", {
             }
         }
         var elem = binding.element
-        console.log(binding.element.nodeType, binding.uuid)
-        if (elem.nodeType === 1) {
-            console.log(elem.getAttribute("ms-with"),binding.name )
-            
+        if (elem.nodeType === 1) {            
             elem.removeAttribute(binding.name)
             effectBinding(elem, binding)
             binding.param = binding.param || "el"
