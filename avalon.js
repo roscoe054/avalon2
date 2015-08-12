@@ -2930,6 +2930,7 @@ function scanAttr(elem, vmodels, match) {
         var bindings = []
         var fixAttrs = []
         var msData = {}
+        var uniq = {}
         for (var i = 0, attr; attr = attributes[i++];) {
             if (attr.specified) {
                 if (match = attr.name.match(rmsAttr)) {
@@ -2938,6 +2939,11 @@ function scanAttr(elem, vmodels, match) {
                     var param = match[2] || ""
                     var value = attr.value
                     var name = attr.name
+                    if( uniq[name] ){
+                        continue
+                    }
+                    uniq[name] = 1
+                    
                     if (events[type]) {
                         param = type
                         type = "on"
@@ -4769,10 +4775,7 @@ avalon.directive("repeat", {
             }
         }
         var elem = binding.element
-        console.log(binding.element.nodeType, binding.uuid)
-        if (elem.nodeType === 1) {
-            console.log(elem.getAttribute("ms-with"),binding.name )
-            
+        if (elem.nodeType === 1) {            
             elem.removeAttribute(binding.name)
             effectBinding(elem, binding)
             binding.param = binding.param || "el"
