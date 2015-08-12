@@ -1125,9 +1125,9 @@ avalon.define = function (id, factory) {
         factory(model)
         stopRepeatAssign = false
     }
-    if (kernel.newWatch) {
-        model.$watch = $watch
-    }
+ //   if (kernel.newWatch) {
+        model.$$watch = $watch
+ //   }
     model.$id = $id
     return VMODELS[$id] = model
 }
@@ -2719,6 +2719,7 @@ function parseExpr(code, scopes, data) {
             assigns.push.apply(assigns, addAssign(vars, scopes[i], name, data))
         }
     }
+    console.log(assigns)
     if (!assigns.length && dataType === "duplex") {
         return
     }
@@ -2744,6 +2745,7 @@ function parseExpr(code, scopes, data) {
                             return _
                         }
                     }
+                    console.log(_)
                     assigns.push(name + " = " + _)
                     return name
                 } else {
@@ -2765,6 +2767,10 @@ function parseExpr(code, scopes, data) {
     if (prefix) {
         prefix = "var " + prefix
     }
+    
+   // code = code.replace()
+    
+    
     if (/\S/.test(filters)) { //文本绑定，双工绑定才有过滤器
         if (!/text|html/.test(data.type)) {
             throw Error("ms-" + data.type + "不支持过滤器")
@@ -2801,6 +2807,7 @@ function parseExpr(code, scopes, data) {
         code = "\nreturn " + code + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     try {
+        console.log(prefix + code)
         fn = Function.apply(noop, names.concat("'use strict';\n" + prefix + code))
         data.evaluator = evaluatorPool.put(exprId, fn)
     } catch (e) {
@@ -4777,7 +4784,7 @@ avalon.directive("repeat", {
             }
         }
         var elem = binding.element
-        if (elem.nodeType === 1) {            
+        if (elem.nodeType === 1) {
             elem.removeAttribute(binding.name)
             effectBinding(elem, binding)
             binding.param = binding.param || "el"
@@ -4851,7 +4858,7 @@ avalon.directive("repeat", {
             var proxy = retain[keyOrId]
             if (!proxy) {
                 proxy = getProxyVM(this)
-           
+
                 if (xtype === "array") {
                     action = "add"
                     proxy.$id = keyOrId
@@ -4871,7 +4878,7 @@ avalon.directive("repeat", {
                 fragments.push({})
                 retain[keyOrId] = true
             }
-         
+
             //重写proxy
             if (this.enterCount === 1) {// 防止多次进入,导致位置不对
                 proxy.$active = false
@@ -4959,15 +4966,19 @@ avalon.directive("repeat", {
         var callback = binding.renderedCallback
         if (callback) {
             (function (fn, args) {
-               // console.log("+++++")
-                renderedCallbacks.push(function() {
+                // console.log("+++++")
+                renderedCallbacks.push(function () {
                     fn.call(parent, args)
                     avalon.log("耗时 ", new Date() - now)
                     if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-                       
+
                         avalon(parent).val(parent.oldValue.split(","))
                     }
+
                 })//兼容早期的传参方式
+                if (!(init && !binding.effectDriver) && renderedCallbacks.length) {
+                    renderedCallbacks.pop().call(parent)
+                }
             })(callback, kernel.newWatch ? arguments : action)
 
         }

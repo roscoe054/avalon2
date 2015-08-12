@@ -21,9 +21,9 @@ avalon.define = function (id, factory) {
         factory(model)
         stopRepeatAssign = false
     }
-    if (kernel.newWatch) {
-        model.$watch = $watch
-    }
+ //   if (kernel.newWatch) {
+        model.$$watch = $watch
+ //   }
     model.$id = $id
     return VMODELS[$id] = model
 }
