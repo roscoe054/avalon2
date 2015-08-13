@@ -110,6 +110,7 @@ function parseExpr(code, scopes, data) {
             assigns.push.apply(assigns, addAssign(vars, scopes[i], name, data))
         }
     }
+    console.log(assigns)
     if (!assigns.length && dataType === "duplex") {
         return
     }
@@ -135,6 +136,7 @@ function parseExpr(code, scopes, data) {
                             return _
                         }
                     }
+                  
                     assigns.push(name + " = " + _)
                     return name
                 } else {
@@ -156,6 +158,10 @@ function parseExpr(code, scopes, data) {
     if (prefix) {
         prefix = "var " + prefix
     }
+    
+   // code = code.replace()
+    
+    
     if (/\S/.test(filters)) { //文本绑定，双工绑定才有过滤器
         if (!/text|html/.test(data.type)) {
             throw Error("ms-" + data.type + "不支持过滤器")
@@ -192,6 +198,7 @@ function parseExpr(code, scopes, data) {
         code = "\nreturn " + code + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     try {
+        console.log(prefix + code)
         fn = Function.apply(noop, names.concat("'use strict';\n" + prefix + code))
         data.evaluator = evaluatorPool.put(exprId, fn)
     } catch (e) {
