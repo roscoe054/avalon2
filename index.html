@@ -14,10 +14,11 @@
 
 //不能出现正则，不能出现注释
 
-          var input = "yxxk[aaa], xxx.a, dd, 111,'21f'"
-          //能出yxxk[aaa], 得到 一个对象
-          //{ words:["yxxk", "aaa","xxx","a"], groups:["yxxk.aaa", "xxx.a"]}
-         //words里面为变量,单词
+            var input = "yxxk[aaa], xxx.**, dd,111,'21f'"
+            //var input = "xxx.a,dd"
+            //能出yxxk[aaa], 得到 一个对象
+            //{ words:["yxxk", "aaa","xxx","a","dd"], groups:["yxxk.aaa", "xxx.a"]}
+            //words里面为变量,单词
             var i = 0
             var word = ""
             var words = []
@@ -26,9 +27,13 @@
             var group = ""
             var groups = []
             var rbracket = /\[(['"]?)([^'"]+)\1\]/
-
+            var addGroup = false
 
             var isSkip = false
+            var append = function () {
+                word += cw
+                group += cw
+            }
             var isIdentifierStart = function (ch) {
                 return (ch === 36) || (ch === 95) || // `$` and `_`
                         (ch >= 65 && ch <= 90) || // A...Z
@@ -39,9 +44,8 @@
                 "unknown": function () {
                     if (isIdentifierStart(ch)) {
                         state = "word"
-                        word += cw
-                        group += cw
-                       
+                        append()
+
                     } else if (ch === 34 || ch === 39) {
                         state = "string"
                         endString = ch
@@ -49,46 +53,40 @@
                 },
                 "word": function () {
                     if (/\B/.test(cw)) {//如果遇到~!#^&*(){}[]<>/空白
-                       // console.log("B  ",cw)
                         state = "unknown"
                         if (word !== "") {
-                          
+                            addGroup = true
                             words.push(word)
                             word = ""
                         }
                         if (ch === 46) {//如果遇到 .
                             state = "dot"
                             group += "."
-                            console.log("+++", group)
+                            addGroup = false
                         } else if (ch === 91) {//如果遇到[
                             group += "."
-                            input = input.slice(0, i) + 
+                            addGroup = false
+                            input = input.slice(0, i) +
                                     input.slice(i).replace(rbracket, function ($1, $2, $3) {
-                                       
                                 return  "." + $3.trim()
                             })
-                            state = "unknown"
-                       
-                        }else{
+
+                        }
+                        if (addGroup) {
+                            addGroup = false
                             groups.push(group)
                             group = ""
                         }
                     } else {
-                      
-                        word += cw
-                        group += cw
-                      
+                        append()
                     }
                 },
                 "dot": function () {
                     state = "unknown"
-                    if (ch >= 48 && ch <= 57) {//0-9 
-                        
+                    //如果是0-9, *, 或是标识符
+                    if (ch >= 48 && ch <= 57 || ch === 42 || isIdentifierStart(ch)) {//0-9 
                         state = "word"
-                        word += cw
-                    } else if (ch === 42) {//*只能出现一次
-                        state = "word"
-                        words.push("*")
+                        append()
                     }
                 },
                 "string": function () {
