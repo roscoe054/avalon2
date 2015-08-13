@@ -5,82 +5,125 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
-        <style>
-            .my-repeat-animation {
-                background:red;
-                -webkit-animation-duration:  1s;
-                animation-duration: 1s;
-            }
 
-
-            .my-repeat-animation.ng-enter {
-               
-                -webkit-animation-name: enter_animation;
-                animation-name:enter_animation;
-            }
-
-            .my-repeat-animation.ng-leave {
-                -webkit-animation-name:leave_animation ;
-                animation-name:leave_animation;
-            }
-
-            @keyframes enter_animation {
-                0% { opacity:0; }
-                100% { opacity:1; }
-            }
-
-            @keyframes leave_animation {
-                from { opacity:1; }
-                to { opacity:0; }
-            }
-
-            @-webkit-keyframes enter_animation {
-                from { opacity:0; }
-                to { opacity:1; }
-            }
-
-            @-webkit-keyframes leave_animation {
-                from { opacity:1; }
-                to { opacity:0; }
-            }
-        </style>
-        <script>
-            avalon.effect("my-repeat-animation", {
-                enterClass: "ng-enter",
-                leaveClass: "ng-leave"
-            })
-            var vm = avalon.define({
-                $id: "test",
-                array: [9],
-                add: function () {
-                    vm.array.push(vm.array.length + 1)
-                    vm.array.push(vm.array.length + 1)
-                    vm.array.push(vm.array.length + 1)
-                    vm.array.push(vm.array.length + 1)
-                    vm.array.push(vm.array.length + 1)
-                    vm.array.push(vm.array.length + 1)
-                },
-                value: ""
-            })
-            vm.$watch("value", function(a){
-                console.log(typeof a,  a)
-                if(a){
-                    vm.array.removeAll(function(el){
-                        console.log(el)
-                       return  el !== a
-                    })
-                }else{
-                    vm.add()
-                }
-            })
-
-        </script>
     </head>
-    <body ms-controller="test">
-        <button ms-click="add">Add</button>
-        <input placeholder="只保留" ms-duplex-number="value" /> 
-        <div ms-repeat-item="array" class="my-repeat-animation" data-effect-stagger="100" ms-effect="my-repeat-animation">
-            {{item}}
-        </div>
+    <body >
+
+
+        <script>
+
+//不能出现正则，不能出现注释
+
+          var input = "yxxk[aaa]"
+       //     var input = 'b,"dddd"'
+         //   input = 'bbb["aaa"]'
+            var i = 0
+//将里面的单词分解出来
+            var word = ""
+            var words = []
+            var variables = []
+            var endString = ""
+            var group = ""
+            var groups = []
+            var reg2 = /\[(['"]?)([^'"]+)\1\]/
+
+
+            var isSkip = false
+            var isIdentifierStart = function (ch) {
+                return (ch === 36) || (ch === 95) || // `$` and `_`
+                        (ch >= 65 && ch <= 90) || // A...Z
+                        (ch >= 97 && ch <= 122); // a...z
+            }
+            var state = "unknown"
+            var states = {
+                "unknown": function () {
+                    if (isIdentifierStart(ch)) {
+                        state = "word"
+                        word += cw
+                        group += cw
+                       
+                    } else if (ch === 34 || ch === 39) {
+                        state = "string"
+                        endString = ch
+                    }
+                },
+                "word": function () {
+                    if (/\B/.test(cw)) {//如果遇到~!#^&*(){}[]<>/空白
+                       // console.log("B  ",cw)
+                        state = "unknown"
+                        if (word !== "") {
+                          
+                            words.push(word)
+                            word = ""
+                        }
+                        if (ch === 46) {//如果遇到 .
+                            state = "dot"
+                            group += "."
+                            console.log("+++", group)
+                        } else if (ch === 91) {//如果遇到[
+                            group += "."
+                            input = input.slice(0, i) + 
+                                    input.slice(i).replace(reg2, function ($1, $2, $3) {
+                                       
+                                return  "." + $3.trim()
+                            })
+                            state = "unknown"
+                       
+                        }else{
+                            console.log("+++++")
+                            groups.push(group)
+                            group = ""
+                        }
+                    } else {
+                      
+                        word += cw
+                        group += cw
+                      
+                    }
+                },
+                "dot": function () {
+                    state = "unknown"
+                    if (ch >= 48 && ch <= 57) {//0-9 
+                        
+                        state = "word"
+                        word += cw
+                    } else if (ch === 42) {//*只能出现一次
+                        state = "word"
+                        words.push("*")
+                    }
+                },
+                "string": function () {
+                    if (isSkip) {
+                        isSkip = false //跳过当前字符的检测
+                    } else {
+                        if (ch === 92) {//如果遇到\\
+                            isSkip = true
+                        }
+                        if (ch === endString) {//如果遇到 " '
+                            state = "unknown"
+                        }
+                    }
+                }
+            };
+            do {
+                var ch = input.charCodeAt(i)
+                if (ch !== ch) { //void 0 --> NaN
+                    if (word !== "") {//收集最后一个单词
+                        words.push(word)
+                        word = ""
+                    }
+                    break
+                }
+                var cw = input.charAt(i)
+                states[state]()
+                i++
+            } while (true);
+
+            console.log(words)
+            console.log(groups)
+        </script>
+
+
     </body>
+
 </html>

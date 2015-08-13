@@ -2843,6 +2843,8 @@ function parseExprProxy(code, scopes, data) {
 }
 avalon.parseExprProxy = parseExprProxy
 
+
+
 /*********************************************************************
  *                           扫描系统                                 *
  **********************************************************************/
@@ -4071,7 +4073,7 @@ duplexBinding.SELECT = function (element, evaluator, binding) {
             }
         }
     }
-    binding.changeOnce = binding.changed
+    var changeOnce = binding.changed
     binding.handler = function () {
         var val = evaluator()
         if (Array.isArray(val)) {
@@ -4085,9 +4087,9 @@ duplexBinding.SELECT = function (element, evaluator, binding) {
         }
         //必须变成字符串后才能比较
         $elem.val(val)
-        if (binding.changeOnce) {
-            binding.changeOnce.call(element, val, binding.oldValue)
-            delete binding.changeOnce
+        if (changeOnce) {
+            changeOnce.call(element, val, binding.oldValue)
+            changeOnce = null
         }
     }
 
@@ -4965,17 +4967,17 @@ avalon.directive("repeat", {
 
 
         var callback = binding.renderedCallback
-       
+
         if (callback) {
             (function (fn, args) {
                 renderedCallbacks.push(function () {
                     fn.call(parent, args)
                     avalon.log("耗时 ", new Date() - now)
-                    if( parent.tagName === "SELECT" || parent.tagName === "OPTGROUP"){
+                    if (parent.tagName === "SELECT" || parent.tagName === "OPTGROUP") {
                         //fix #503 repeat与duplex之间的联动
                         avalon.fireDom(parent, "datasetchanged", {fireDuplex: 1})
                     }
-                   
+
                 })
                 //以后不会跑到 scanNodes的渲染循环中,需要自己取出来跑一次
                 if (!(init && !binding.effectDriver) && renderedCallbacks.length) {
@@ -4985,7 +4987,7 @@ avalon.directive("repeat", {
 
         }
         this.enterCount -= 1
-      
+
     }
 
 })

@@ -195,17 +195,17 @@ avalon.directive("repeat", {
 
 
         var callback = binding.renderedCallback
-       
+
         if (callback) {
             (function (fn, args) {
                 renderedCallbacks.push(function () {
                     fn.call(parent, args)
                     avalon.log("耗时 ", new Date() - now)
-                    if( parent.tagName === "SELECT" || parent.tagName === "OPTGROUP"){
+                    if (parent.tagName === "SELECT" || parent.tagName === "OPTGROUP") {
                         //fix #503 repeat与duplex之间的联动
                         avalon.fireDom(parent, "datasetchanged", {fireDuplex: 1})
                     }
-                   
+
                 })
                 //以后不会跑到 scanNodes的渲染循环中,需要自己取出来跑一次
                 if (!(init && !binding.effectDriver) && renderedCallbacks.length) {
@@ -215,7 +215,7 @@ avalon.directive("repeat", {
 
         }
         this.enterCount -= 1
-      
+
     }
 
 })

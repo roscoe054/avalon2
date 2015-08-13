@@ -18,7 +18,7 @@ duplexBinding.SELECT = function (element, evaluator, binding) {
             }
         }
     }
-    binding.changeOnce = binding.changed
+    var changeOnce = binding.changed
     binding.handler = function () {
         var val = evaluator()
         if (Array.isArray(val)) {
@@ -32,9 +32,9 @@ duplexBinding.SELECT = function (element, evaluator, binding) {
         }
         //必须变成字符串后才能比较
         $elem.val(val)
-        if (binding.changeOnce) {
-            binding.changeOnce.call(element, val, binding.oldValue)
-            delete binding.changeOnce
+        if (changeOnce) {
+            changeOnce.call(element, val, binding.oldValue)
+            changeOnce = null
         }
     }
 
