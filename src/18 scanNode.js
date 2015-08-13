@@ -157,7 +157,7 @@ avalon.component = function (name, opts) {
                 }
 
 
-            })(obj, avalon.components[name], obj.element, obj.widget)
+            })(obj, avalon.components[name], obj.element, obj.widget)// jshint ignore:line
 
 
         }

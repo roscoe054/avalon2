@@ -11,12 +11,14 @@ duplexBinding.SELECT = function (element, evaluator, binding) {
             } else {
                 val = binding.pipe(val, binding, "get")
             }
-            if (val + "" !== element.oldValue) {
+
+            if (quote(val) !== quote(binding.oldValue)) {
                 evaluator(val)
+                binding.changed.call(element, val, binding.oldValue)
             }
-            binding.changed.call(element, val, binding)
         }
     }
+    binding.changeOnce = binding.changed
     binding.handler = function () {
         var val = evaluator()
         if (Array.isArray(val)) {
@@ -29,17 +31,20 @@ duplexBinding.SELECT = function (element, evaluator, binding) {
             }
         }
         //必须变成字符串后才能比较
-        val = Array.isArray(val) ? val.map(String) : val + ""
-        if (val + "" !== element.oldValue) {
-            $elem.val(val)
-            element.oldValue = val + ""
+        $elem.val(val)
+        if (binding.changeOnce) {
+            binding.changeOnce.call(element, val, binding.oldValue)
+            delete binding.changeOnce
         }
     }
-    var val = evaluator()
-    element.oldValue = Array.isArray(val) ? val.map(String) : val + ""
-    binding.bound("change", updateVModel)
-    renderedCallbacks.push(function () {
-        binding.handler()
-        binding.changed.call(element, evaluator(), binding)
+
+    avalon.bind(element, "datasetchanged", function (e) {
+        if (e.fireDuplex) {
+            e.stopPropagation()
+            binding.handler()
+        }
     })
+
+    binding.bound("change", updateVModel)
+
 }

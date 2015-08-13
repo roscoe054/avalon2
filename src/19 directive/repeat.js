@@ -192,33 +192,30 @@ avalon.directive("repeat", {
             }
 
         }
-//        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-//            avalon(parent).val(parent.oldValue.split(","))
-//        }
 
-//repeat --> duplex
+
         var callback = binding.renderedCallback
+       
         if (callback) {
             (function (fn, args) {
-                // console.log("+++++")
                 renderedCallbacks.push(function () {
                     fn.call(parent, args)
                     avalon.log("耗时 ", new Date() - now)
-                    if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-
-                        avalon(parent).val(parent.oldValue.split(","))
+                    if( parent.tagName === "SELECT" || parent.tagName === "OPTGROUP"){
+                        //fix #503 repeat与duplex之间的联动
+                        avalon.fireDom(parent, "datasetchanged", {fireDuplex: 1})
                     }
-
-                })//兼容早期的传参方式
+                   
+                })
+                //以后不会跑到 scanNodes的渲染循环中,需要自己取出来跑一次
                 if (!(init && !binding.effectDriver) && renderedCallbacks.length) {
                     renderedCallbacks.pop().call(parent)
                 }
-            })(callback, kernel.newWatch ? arguments : action)
+            })(callback, kernel.newWatch ? arguments : action)//兼容早期的传参方式
 
         }
         this.enterCount -= 1
-        //  avalon.log("耗时 ", new Date() - now)
-
+      
     }
 
 })

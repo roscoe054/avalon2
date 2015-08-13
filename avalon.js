@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.12
+ avalon.js 1.5 built in 2015.8.13
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -2719,7 +2719,7 @@ function parseExpr(code, scopes, data) {
             assigns.push.apply(assigns, addAssign(vars, scopes[i], name, data))
         }
     }
-    console.log(assigns)
+ 
     if (!assigns.length && dataType === "duplex") {
         return
     }
@@ -2745,7 +2745,7 @@ function parseExpr(code, scopes, data) {
                             return _
                         }
                     }
-                    console.log(_)
+                  
                     assigns.push(name + " = " + _)
                     return name
                 } else {
@@ -2807,7 +2807,6 @@ function parseExpr(code, scopes, data) {
         code = "\nreturn " + code + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     try {
-        console.log(prefix + code)
         fn = Function.apply(noop, names.concat("'use strict';\n" + prefix + code))
         data.evaluator = evaluatorPool.put(exprId, fn)
     } catch (e) {
@@ -3246,7 +3245,7 @@ avalon.component = function (name, opts) {
                 }
 
 
-            })(obj, avalon.components[name], obj.element, obj.widget)
+            })(obj, avalon.components[name], obj.element, obj.widget)// jshint ignore:line
 
 
         }
@@ -4065,12 +4064,14 @@ duplexBinding.SELECT = function (element, evaluator, binding) {
             } else {
                 val = binding.pipe(val, binding, "get")
             }
-            if (val + "" !== element.oldValue) {
+
+            if (quote(val) !== quote(binding.oldValue)) {
                 evaluator(val)
+                binding.changed.call(element, val, binding.oldValue)
             }
-            binding.changed.call(element, val, binding)
         }
     }
+    binding.changeOnce = binding.changed
     binding.handler = function () {
         var val = evaluator()
         if (Array.isArray(val)) {
@@ -4083,19 +4084,22 @@ duplexBinding.SELECT = function (element, evaluator, binding) {
             }
         }
         //必须变成字符串后才能比较
-        val = Array.isArray(val) ? val.map(String) : val + ""
-        if (val + "" !== element.oldValue) {
-            $elem.val(val)
-            element.oldValue = val + ""
+        $elem.val(val)
+        if (binding.changeOnce) {
+            binding.changeOnce.call(element, val, binding.oldValue)
+            delete binding.changeOnce
         }
     }
-    var val = evaluator()
-    element.oldValue = Array.isArray(val) ? val.map(String) : val + ""
-    binding.bound("change", updateVModel)
-    renderedCallbacks.push(function () {
-        binding.handler()
-        binding.changed.call(element, evaluator(), binding)
+
+    avalon.bind(element, "datasetchanged", function (e) {
+        if (e.fireDuplex) {
+            e.stopPropagation()
+            binding.handler()
+        }
     })
+
+    binding.bound("change", updateVModel)
+
 }
 
 avalon.directive("effect", {
@@ -4958,33 +4962,30 @@ avalon.directive("repeat", {
             }
 
         }
-//        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-//            avalon(parent).val(parent.oldValue.split(","))
-//        }
 
-//repeat --> duplex
+
         var callback = binding.renderedCallback
+       
         if (callback) {
             (function (fn, args) {
-                // console.log("+++++")
                 renderedCallbacks.push(function () {
                     fn.call(parent, args)
                     avalon.log("耗时 ", new Date() - now)
-                    if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-
-                        avalon(parent).val(parent.oldValue.split(","))
+                    if( parent.tagName === "SELECT" || parent.tagName === "OPTGROUP"){
+                        //fix #503 repeat与duplex之间的联动
+                        avalon.fireDom(parent, "datasetchanged", {fireDuplex: 1})
                     }
-
-                })//兼容早期的传参方式
+                   
+                })
+                //以后不会跑到 scanNodes的渲染循环中,需要自己取出来跑一次
                 if (!(init && !binding.effectDriver) && renderedCallbacks.length) {
                     renderedCallbacks.pop().call(parent)
                 }
-            })(callback, kernel.newWatch ? arguments : action)
+            })(callback, kernel.newWatch ? arguments : action)//兼容早期的传参方式
 
         }
         this.enterCount -= 1
-        //  avalon.log("耗时 ", new Date() - now)
-
+      
     }
 
 })
