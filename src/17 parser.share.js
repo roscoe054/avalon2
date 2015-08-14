@@ -158,10 +158,8 @@ function parseExpr(code, scopes, data) {
     if (prefix) {
         prefix = "var " + prefix
     }
-    
-   // code = code.replace()
-    
-    
+
+
     if (/\S/.test(filters)) { //文本绑定，双工绑定才有过滤器
         if (!/text|html/.test(data.type)) {
             throw Error("ms-" + data.type + "不支持过滤器")
@@ -195,6 +193,7 @@ function parseExpr(code, scopes, data) {
         var footer = code.slice(lastIndex)
         code = header + "\n" + footer
     } else { //其他绑定
+        code = data.type === "userWatcher" ? fixNumber(code) :code
         code = "\nreturn " + code + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     try {
@@ -234,3 +233,27 @@ function parseExprProxy(code, scopes, data) {
     }
 }
 avalon.parseExprProxy = parseExprProxy
+
+var rnumberchild  = /(\w+)("?]?)(\.)([\w\-]+)/
+function fixNumber(str) {
+    do {
+        var newStr = str.replace(rnumberchild, function (a, b, c, d, e) {
+            if ((e >>> 0) === parseFloat(e)) {
+                return b + c + "[" + e + "]"
+            } else if (/^\d|\-/.test(e)) {
+                return b + c + "[" + quote(e) + "]"
+            }else {
+                return a
+            }
+
+        })// jshint ignore:line
+        if (newStr === str) {
+            break
+        } else {
+            str = newStr
+        }
+
+    } while (true);
+    
+    return newStr
+}

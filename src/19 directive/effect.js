@@ -194,22 +194,27 @@ Effect.prototype = {
             //5.document.hide不能为true, 6transtion必须延迟一下才修改样式
 
             me.update = function () {
-                var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
-                el.addEventListener(eventName, function fn() {
-                    el.removeEventListener(eventName, fn)
-                    if (me.driver === "a") {
+                setTimeout(function () {
+                    var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
+                    el.addEventListener(eventName, function fn() {
+                        el.removeEventListener(eventName, fn)
+                        if (me.driver === "a") {
+                            avalon(el).removeClass(curEnterClass)
+                        }
+                        callEffectHook(me, "afterEnter")
+                        after && after(el)
+                        me.dispose()
+                    })
+                    if (me.driver === "t") {//transtion延迟触发
                         avalon(el).removeClass(curEnterClass)
+                        console.log(new Date - 0)
                     }
-                    callEffectHook(me, "afterEnter")
-                    after && after(el)
-                    me.dispose()
-                })
-                if (me.driver === "t") {//transtion延迟触发
-                    avalon(el).removeClass(curEnterClass)
-                }
-            }
+                },16)
 
+            }
+            console.log(new Date - 0, curEnterClass)
             avalon(el).addClass(curEnterClass)//animation会立即触发
+            console.log(el.offsetWidth)
             buffer.render(true)
             buffer.queue.push(me)
 
@@ -228,7 +233,6 @@ Effect.prototype = {
 
         var me = this
         var el = me.el
-
         callEffectHook(me, "beforeLeave")
         if (me.useCss) {
             var curLeaveClass = me.leaveClass()
@@ -324,7 +328,8 @@ avalon.mix(avalon.effect, {
     },
     remove: function (el, parent, after, opts) {
         return applyEffect(el, 0, function () {
-            if(el.parentNode === parent) parent.removeChild(el)
+            if (el.parentNode === parent)
+                parent.removeChild(el)
         }, after, opts)
     }
 })
