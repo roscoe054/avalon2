@@ -1125,9 +1125,9 @@ avalon.define = function (id, factory) {
         factory(model)
         stopRepeatAssign = false
     }
- //   if (kernel.newWatch) {
-        model.$$watch = $watch
- //   }
+    //   if (kernel.newWatch) {
+    model.$$watch = $watch
+    //   }
     model.$id = $id
     return VMODELS[$id] = model
 }
@@ -1426,7 +1426,7 @@ var $modelDescriptor = {
 var $watch = function (expr, callback, option) {
     var watcher = {
         handler: callback,
-        type: "text",
+        type: "userWatcher",
         element: root
     }
     parseExpr(expr, [this], watcher)
@@ -1744,7 +1744,7 @@ avalon.injectBinding = function (binding) {
             })
 
             var valueFn = roneval.test(binding.type) ? returnRandom : binding.evaluator
-            console.log(valueFn+"")
+            //console.log(valueFn+"")
             var value = valueFn.apply(0, binding.args)
           
 
@@ -2712,7 +2712,6 @@ function parseExpr(code, scopes, data) {
             prefix = ""
     //args 是一个对象数组， names 是将要生成的求值函数的参数
     scopes = uniqSet(scopes)
-    console.log("====")
     data.vars = []
     for (var i = 0, sn = scopes.length; i < sn; i++) {
         if (vars.length) {
@@ -2771,8 +2770,6 @@ function parseExpr(code, scopes, data) {
         prefix = "var " + prefix
     }
 
-    // code = code.replace()
-
 
     if (/\S/.test(filters)) { //文本绑定，双工绑定才有过滤器
         if (!/text|html/.test(data.type)) {
@@ -2807,8 +2804,7 @@ function parseExpr(code, scopes, data) {
         var footer = code.slice(lastIndex)
         code = header + "\n" + footer
     } else { //其他绑定
-        code = fixNumber(code)
-        console.log(code)
+        code = data.type === "userWatcher" ? fixNumber(code) :code
         code = "\nreturn " + code + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     try {
@@ -2848,26 +2844,19 @@ function parseExprProxy(code, scopes, data) {
 }
 avalon.parseExprProxy = parseExprProxy
 
-var rnumberchild  = /(\w+)("?]?)(\.)([\w\-\*]+)/
+var rnumberchild  = /(\w+)("?]?)(\.)([\w\-]+)/
 function fixNumber(str) {
-    var wildcard = false
     do {
         var newStr = str.replace(rnumberchild, function (a, b, c, d, e) {
-
-            if ((e >>> 0) == e) {
+            if ((e >>> 0) === parseFloat(e)) {
                 return b + c + "[" + e + "]"
             } else if (/^\d|\-/.test(e)) {
-                //  console.log("")
                 return b + c + "[" + quote(e) + "]"
-            }else if(e == "*"){
-                wildcard = true
-                return b + c + ".map(function(r444){ return r444"
-                
-            } else {
+            }else {
                 return a
             }
 
-        })
+        })// jshint ignore:line
         if (newStr === str) {
             break
         } else {
@@ -2876,11 +2865,9 @@ function fixNumber(str) {
 
     } while (true);
     
-    if(wildcard){
-          newStr += "}).join('+') "
-    }
     return newStr
 }
+
 /*********************************************************************
  *                           扫描系统                                 *
  **********************************************************************/
@@ -4336,22 +4323,27 @@ Effect.prototype = {
             //5.document.hide不能为true, 6transtion必须延迟一下才修改样式
 
             me.update = function () {
-                var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
-                el.addEventListener(eventName, function fn() {
-                    el.removeEventListener(eventName, fn)
-                    if (me.driver === "a") {
+                setTimeout(function () {
+                    var eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
+                    el.addEventListener(eventName, function fn() {
+                        el.removeEventListener(eventName, fn)
+                        if (me.driver === "a") {
+                            avalon(el).removeClass(curEnterClass)
+                        }
+                        callEffectHook(me, "afterEnter")
+                        after && after(el)
+                        me.dispose()
+                    })
+                    if (me.driver === "t") {//transtion延迟触发
                         avalon(el).removeClass(curEnterClass)
+                        console.log(new Date - 0)
                     }
-                    callEffectHook(me, "afterEnter")
-                    after && after(el)
-                    me.dispose()
-                })
-                if (me.driver === "t") {//transtion延迟触发
-                    avalon(el).removeClass(curEnterClass)
-                }
-            }
+                },16)
 
+            }
+            console.log(new Date - 0, curEnterClass)
             avalon(el).addClass(curEnterClass)//animation会立即触发
+            console.log(el.offsetWidth)
             buffer.render(true)
             buffer.queue.push(me)
 
@@ -4370,7 +4362,6 @@ Effect.prototype = {
 
         var me = this
         var el = me.el
-
         callEffectHook(me, "beforeLeave")
         if (me.useCss) {
             var curLeaveClass = me.leaveClass()
@@ -4466,7 +4457,8 @@ avalon.mix(avalon.effect, {
     },
     remove: function (el, parent, after, opts) {
         return applyEffect(el, 0, function () {
-            if(el.parentNode === parent) parent.removeChild(el)
+            if (el.parentNode === parent)
+                parent.removeChild(el)
         }, after, opts)
     }
 })
@@ -5261,10 +5253,14 @@ avalon.directive("visible", {
     update: function (val) {
         var elem = this.element
         if (val) {
-            avalon.effect.apply(elem, 1, function () {
-                elem.style.display = ""
-                if (avalon(elem).css("display") === "none") {
-                    elem.style.display = parseDisplay(elem.nodeName)
+            avalon.effect.apply(elem, 1, function (aaa) {
+                
+                if (!(aaa && elem["data-effect-driver"] === "j")) {
+                     console.log(elem.className+"!~~")
+                    elem.style.display = ""//这里jQuery会自动处理
+                    if (avalon(elem).css("display") === "none") {
+                        elem.style.display = parseDisplay(elem.nodeName)
+                    }
                 }
             })
         } else {

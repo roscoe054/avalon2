@@ -21,9 +21,9 @@ avalon.define = function (id, factory) {
         factory(model)
         stopRepeatAssign = false
     }
- //   if (kernel.newWatch) {
-        model.$$watch = $watch
- //   }
+    //   if (kernel.newWatch) {
+    model.$$watch = $watch
+    //   }
     model.$id = $id
     return VMODELS[$id] = model
 }
@@ -322,7 +322,7 @@ var $modelDescriptor = {
 var $watch = function (expr, callback, option) {
     var watcher = {
         handler: callback,
-        type: "text",
+        type: "userWatcher",
         element: root
     }
     parseExpr(expr, [this], watcher)

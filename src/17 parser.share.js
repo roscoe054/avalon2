@@ -101,7 +101,6 @@ function parseExpr(code, scopes, data) {
             prefix = ""
     //args 是一个对象数组， names 是将要生成的求值函数的参数
     scopes = uniqSet(scopes)
-    console.log("====")
     data.vars = []
     for (var i = 0, sn = scopes.length; i < sn; i++) {
         if (vars.length) {
@@ -160,8 +159,6 @@ function parseExpr(code, scopes, data) {
         prefix = "var " + prefix
     }
 
-    // code = code.replace()
-
 
     if (/\S/.test(filters)) { //文本绑定，双工绑定才有过滤器
         if (!/text|html/.test(data.type)) {
@@ -196,8 +193,7 @@ function parseExpr(code, scopes, data) {
         var footer = code.slice(lastIndex)
         code = header + "\n" + footer
     } else { //其他绑定
-        code = fixNumber(code)
-        console.log(code)
+        code = data.type === "userWatcher" ? fixNumber(code) :code
         code = "\nreturn " + code + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     try {
@@ -237,26 +233,19 @@ function parseExprProxy(code, scopes, data) {
 }
 avalon.parseExprProxy = parseExprProxy
 
-var rnumberchild  = /(\w+)("?]?)(\.)([\w\-\*]+)/
+var rnumberchild  = /(\w+)("?]?)(\.)([\w\-]+)/
 function fixNumber(str) {
-    var wildcard = false
     do {
         var newStr = str.replace(rnumberchild, function (a, b, c, d, e) {
-
-            if ((e >>> 0) == e) {
+            if ((e >>> 0) === parseFloat(e)) {
                 return b + c + "[" + e + "]"
             } else if (/^\d|\-/.test(e)) {
-                //  console.log("")
                 return b + c + "[" + quote(e) + "]"
-            }else if(e == "*"){
-                wildcard = true
-                return b + c + ".map(function(r444){ return r444"
-                
-            } else {
+            }else {
                 return a
             }
 
-        })
+        })// jshint ignore:line
         if (newStr === str) {
             break
         } else {
@@ -265,8 +254,5 @@ function fixNumber(str) {
 
     } while (true);
     
-    if(wildcard){
-          newStr += "}).join('+') "
-    }
     return newStr
 }
