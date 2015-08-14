@@ -4,26 +4,24 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
+        <script src="jquery.js"></script>
         <style>
             .box{
                 width:200px;
                 height:200px;
                 background: red;
             }
-            .toggle{
-                transition: all 0.5s ease;
-            }
-            .toggle-enter{
-                width:0px;
-                height:0px;
-            }
-            .toggle-leave{
-                width:0px;
-                height:0px;
-            }
         </style>
         <script>
+            avalon.effect("toggle", {
+                enter: function (elem) {
+                    $(elem).show(500)
+                },
+                leave: function (elem) {
+                    $(elem).hide(500)
+                }
 
+            })
             var vm = avalon.define({
                 $id: "test",
                 bool: true,
@@ -35,8 +33,7 @@
         </script>
     </head>
     <body ms-controller="test">
-        <div ms-effect="toggle" ms-visible="bool" class="box toggle"></div>
-         <div ms-effect="toggle" ms-visible="!bool" class="box toggle"></div>
+        <div ms-effect="toggle" ms-visible="bool" class="box"></div>
         <p><button ms-click="click" type="button">button</button></p>
 
     </body>
