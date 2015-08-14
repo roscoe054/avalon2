@@ -45,7 +45,9 @@ avalon.injectBinding = function (binding) {
             })
 
             var valueFn = roneval.test(binding.type) ? returnRandom : binding.evaluator
+            //console.log(valueFn+"")
             var value = valueFn.apply(0, binding.args)
+          
 
             if (binding.type === "duplex") {
                 value() //ms-duplex进行依赖收集

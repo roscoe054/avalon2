@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+
+
+    </head>
+    <body>
+        <div>TODO write content</div>
+        <script>
+            
+var vm = avalon.define({
+    $id: "test",
+    arr: [1,2,3,4]
+})
+vm.$$watch("arr.*", function(a,b){
+    console.log(a,b)
+})
+
+setTimeout(function(){
+   vm.arr.set(1,"9")
+},2000)
+        </script>
+        
+    </body>
+</html>
