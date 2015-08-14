@@ -14,13 +14,18 @@
         </style>
         <script>
             avalon.effect("toggle", {
-                enter: function (elem) {
-                    $(elem).show(500)
+                enter: function (elem, done) {
+                    $(elem).show(500, done)
                 },
-                leave: function (elem) {
-                    $(elem).hide(500)
+                leave: function (elem, done) {
+                    $(elem).hide(500, done)
+                },
+                afterEnter: function (el) {
+                    console.log("enter")
+                },
+                afterLeave: function (el) {
+                    console.log("leave")
                 }
-
             })
             var vm = avalon.define({
                 $id: "test",
@@ -33,7 +38,7 @@
         </script>
     </head>
     <body ms-controller="test">
-        <div ms-effect="toggle" ms-visible="bool" class="box"></div>
+        <div ms-effect="toggle" ms-if="bool" class="box"></div>
         <p><button ms-click="click" type="button">button</button></p>
 
     </body>
