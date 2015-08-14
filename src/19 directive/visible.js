@@ -21,11 +21,11 @@ avalon.directive("visible", {
     update: function (val) {
         var elem = this.element
         if (val) {
-            avalon.effect.apply(elem, 1, function (aaa) {
-                
-                if (!(aaa && elem["data-effect-driver"] === "j")) {
-                     console.log(elem.className+"!~~")
-                    elem.style.display = ""//这里jQuery会自动处理
+            avalon.effect.apply(elem, 1, function () {
+                var data = elem.getAttribute("data-effect-driver") || "a"
+                if (/^[atn]/.test(data)) {
+                  
+                 //   elem.style.display = ""//这里jQuery会自动处理
                     if (avalon(elem).css("display") === "none") {
                         elem.style.display = parseDisplay(elem.nodeName)
                     }
