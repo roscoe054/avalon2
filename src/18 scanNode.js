@@ -25,7 +25,6 @@ function scanNodeArray(nodes, vmodels) {
                             fullName: fullName,
                             widget: widget,
                             vmodels: vmodels,
-                            dependency: 1,
                             name: "widget"
                         })
                         if (avalon.components[fullName]) {
@@ -51,13 +50,14 @@ function scanNodeArray(nodes, vmodels) {
 }
 
 var componentQueue = []
-var defaults = {
+var componentMethods = {
     $construct: function () {
         return avalon.mix.apply(null, arguments)
     },
     $ready: noop,
     $init: noop,
     $dispose: noop,
+    $childReady: noop,
     $$template: function () {
         return this.$template
     }
@@ -66,7 +66,7 @@ var defaults = {
 avalon.components = {}
 avalon.component = function (name, opts) {
     if (opts) {
-        avalon.components[name] = avalon.mix({}, defaults, opts || {})
+        avalon.components[name] = avalon.mix({}, componentMethods, opts)
     }
     for (var i = 0, obj; obj = componentQueue[i]; i++) {
         if (name === obj.fullName) {
@@ -74,32 +74,34 @@ avalon.component = function (name, opts) {
             i--;
 
             (function (host, defaults, elem, widget) {
+                var dependencies = 1
                 var library = host.library
                 var global = avalon.libraries[library]
                 //===========收集各种配置=======
+                //从vmodels中得到业务数据
+                var vmOpts = getOptionsFromVM(host.vmodels, elem.getAttribute("configs") || host.fullName)
+                //从element的data-pager-xxx辅助指令中得到该组件的专有数据
                 var elemOpts = avalon.getWidgetData(elem, widget)
-                var vmOpts = getOptionsFromVM(host.vmodels, elem.getAttribute("options") || widget)
                 var parentDefinition
                 if (host.$extends) {
                     var parentClass = avalon.components[host.$extends]
                     if (parentClass) {
-                        parentDefinition = parentClass.$construct(defaults, elemOpts)
+                        parentDefinition = parentClass.$construct(defaults, vmOpts)
                     }
                 }
-                var componentDefinition = avalon.components[name].$construct(parentDefinition || defaults,
-                        vmOpts, elemOpts)
+                var componentDefinition = avalon.components[name].$construct(
+                        parentDefinition || defaults, vmOpts, elemOpts)
 
-                componentDefinition.$id = generateID(widget)
+                componentDefinition.$refs = {}
+                componentDefinition.$id = elem.getAttribute("identifier") || generateID(widget)
                 //==========构建VM=========
                 var vm = avalon.define(componentDefinition) || {}
                 elem.msResolved = 1
 
-                elem = componentDefinition.$init(vm, host) || elem
-                global.$init(vm, host)
-                //   var child = avalon.parseHTML(componentDefinition.$$template())
-                //  avalon.clearHTML(elem).appendChild(child)
+                elem = componentDefinition.$init(vm) || elem
+                global.$init(vm)
+              
                 elem.innerHTML = componentDefinition.$$template()
-
                 var child = elem.firstChild
                 if (componentDefinition.$replace) {
                     child = elem.firstChild
@@ -107,38 +109,30 @@ avalon.component = function (name, opts) {
                     child.msResolved = 1
                     elem = host.element = child
                 }
-
-                avalon.scan(elem, [vm].concat(host.vmodels))
-
-                avalon.vmodels[vm.$id] = vm
-
-
-                avalon.fireDom(elem.parentNode, "datasetchanged", {dependency: 1, library: library})
+                avalon.fireDom(elem.parentNode, "datasetchanged", {dependency: 1, library: library, vm: vm})
                 var removeFn = avalon.bind(elem, "datasetchanged", function (e) {
                     if (isFinite(e.dependency) && e.library === library) {
-                        host.dependency += e.dependency
-                        e.stopPropagation()
+                        dependencies += e.dependency
+                        if (vm !== e.vm) {
+                            componentDefinition.$childReady(vm, e)
+                            global.$childReady(vm, e)
+                            e.stopPropagation()
+                        }
                     }
 
-                    if (host.dependency === 0) {
-
-                        componentDefinition.$ready(vm, host)
+                    if (dependencies === 0) {
+                        componentDefinition.$ready(vm)
                         global.$ready(vm, host)
                         avalon.unbind(elem, "datasetchanged", removeFn)
                         //==================
-
                         host.rollback = function () {
                             try {
-
                                 componentDefinition.$dispose(vm)
                                 global.$dispose(vm)
                             } catch (e) {
                             }
-
                             delete avalon.vmodels[vm.$id]
                         }
-
-
                         injectDisposeQueue(host, widgetList)
                         if (window.chrome) {
                             elem.addEventListener("DOMNodeRemovedFromDocument", function () {
@@ -148,16 +142,20 @@ avalon.component = function (name, opts) {
 
                     }
                 })
+                avalon.scan(elem, [vm].concat(host.vmodels))
+
+                avalon.vmodels[vm.$id] = vm
+
                 if (!elem.childNodes.length) {
-                    avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library})
+                    avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vm})
                 } else {
                     renderedCallbacks.push(function () {
-                        avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library})
+                        avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vm})
                     })
                 }
 
 
-            })(obj, avalon.components[name], obj.element, obj.widget)// jshint ignore:line
+            })(obj, avalon.mix(true, {}, avalon.components[name]), obj.element, obj.widget)// jshint ignore:line
 
 
         }
@@ -200,6 +198,7 @@ avalon.library = function (name, opts) {
     }
     avalon.libraries[name] = avalon.mix({
         $init: noop,
+        $childReady: noop,
         $ready: noop,
         $dispose: noop
     }, opts || {})

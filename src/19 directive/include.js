@@ -68,7 +68,7 @@ avalon.directive("include", {
 
             // cache or animate，移动节点
             if(effectClass || templateCache) {
-                templateCache[lastID] = leaveEl
+                (templateCache || {})[lastID] = leaveEl
                 var fragOnDom = binding.recoverNodes() // 恢复动画中的节点
                 if(fragOnDom) {
                     target.insertBefore(fragOnDom, binding.end)
@@ -125,8 +125,9 @@ avalon.directive("include", {
                     scanNodeArray(nodes, vmodels)
                 }
             }
-
+           
             avalon.effect.apply(enterEl, "enter", before, after)
+            
 
 
         }
@@ -167,7 +168,7 @@ avalon.directive("include", {
             if (el) {
                 if (el.tagName === "NOSCRIPT" && !(el.innerHTML || el.fixIE78)) { //IE7-8 innerText,innerHTML都无法取得其内容，IE6能取得其innerHTML
                     xhr = getXHR() //IE9-11与chrome的innerHTML会得到转义的内容，它们的innerText可以
-                    xhr.open("GET", location, false) //谢谢Nodejs 乱炖群 深圳-纯属虚构
+                    xhr.open("GET", location, false) 
                     xhr.send(null)
                     //http://bbs.csdn.net/topics/390349046?page=1#post-393492653
                     var noscripts = DOC.getElementsByTagName("noscript")

@@ -151,6 +151,7 @@ function effectFactory(el, opts) {
     instance.driver = driver
     instance.useCss = driver !== "j"
     if (instance.useCss) {
+        opts && avalon(el).addClass(opts.effectClass)
         instance.cssEvent = driver === "t" ? transitionEndEvent : animationEndEvent
     }
     instance.name = name

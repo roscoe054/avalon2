@@ -1,45 +1,47 @@
+
+
 <!DOCTYPE html>
 <html>
     <head>
+        <title>ms-repeat</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
-        <script src="jquery.js"></script>
-        <style>
-            .box{
-                width:200px;
-                height:200px;
-                background: red;
-            }
-        </style>
+        <link rel="stylesheet" href="animate.css" type="text/css">
+
         <script>
-            avalon.effect("toggle", {
-                enter: function (elem, done) {
-                    $(elem).show(500, done)
-                },
-                leave: function (elem, done) {
-                    $(elem).hide(500, done)
-                },
-                afterEnter: function (el) {
-                    console.log("enter")
-                },
-                afterLeave: function (el) {
-                    console.log("leave")
-                }
+            function heredoc(fn) {
+                return fn.toString().replace(/^[^\/]+\/\*!?\s?/, '').replace(/\*\/[^\/]+$/, '')
+            }
+
+            avalon.component("ms:auto", {
+                $template: heredoc(function () {
+                    /*
+                     <template>
+                     <div id="child-element">In local DOM!</div>
+                     <div class="content-wrapper"><content></content></div>
+                     </template>
+                     */
+                })
             })
             var vm = avalon.define({
                 $id: "test",
-                bool: true,
-                click: function () {
-                    vm.bool = !vm.bool
+                $skipArray: "tabs",
+                tabs: {
                 }
             })
 
         </script>
+        <style>
+            .box{
+                width:250px;
+                height:250px;
+                background:#f35626;
+            }
+        </style>
     </head>
     <body ms-controller="test">
-        <div ms-effect="toggle" ms-if="bool" class="box"></div>
-        <p><button ms-click="click" type="button">button</button></p>
-
-    </body>
+    <ms:auto>xxxx</ms:auto>
+        
+</body>
 </html>

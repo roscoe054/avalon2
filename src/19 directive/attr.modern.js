@@ -33,6 +33,7 @@ var attrDir = avalon.directive("attr", {
         binding.expr = stringifyExpr(binding.expr.trim())
         if (binding.type === "include") {
             var elem = binding.element
+            effectBinding(elem, binding)
             binding.includeRendered = getBindingCallback(elem, "data-include-rendered", binding.vmodels)
             binding.includeLoaded = getBindingCallback(elem, "data-include-loaded", binding.vmodels)
             var outer = binding.includeReplace = !!avalon(elem).binding("includeReplace")
@@ -44,7 +45,7 @@ var attrDir = avalon.directive("attr", {
             if (outer) {
                 binding.element = binding.end
                 elem.parentNode.insertBefore(binding.end, elem)
-                elem.parentNode.insertBefore(binding.start, end)
+                elem.parentNode.insertBefore(binding.start, binding.end)
             } else {
                 elem.insertBefore(binding.start, elem.firstChild)
                 elem.appendChild(binding.end)
