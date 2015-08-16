@@ -178,6 +178,61 @@ Effect.prototype = {
     leaveClass: function () {
         return getEffectClass(this, "leave")
     },
+    actionFun: function(name, before, after) {
+        if (document.hidden) {
+            return
+        }
+        var me = this
+        var el = me.el
+        callEffectHook(me, "beforeEnter")
+        before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
+
+        if (me.useCss) {
+            var curEnterClass = me.curEnterClass = me.enterClass()
+            me.eventName = me.driver === "t" ? transitionEndEvent : animationEndEvent
+            if (me.leaveCallback) {
+                el.removeEventListener(me.eventName, me.leaveCallback)
+                avalon(el).removeClass(me.curLeaveClass)
+                me.leaveCallback = null
+            }
+
+            //注意,css动画的发生有几个必要条件
+            //1.定义了时长,2.有要改变的样式,3.必须插入DOM树 4.display不能等于none
+            //5.document.hide不能为true, 6transtion必须延迟一下才修改样式
+
+            me.enterCallback = function () {
+                el.removeEventListener(me.eventName, me.enterCallback)
+                if (me.driver === "a") {
+                    avalon(el).removeClass(curEnterClass)
+                }
+                callEffectHook(me, "afterEnter")
+                after && after(el)
+                me.dispose()
+            }
+
+
+            me.update = function () {
+                el.addEventListener(me.eventName, me.enterCallback)
+                if (me.driver === "t") {//transtion延迟触发
+                    avalon(el).removeClass(curEnterClass)
+                    console.log(new Date - 0)
+                }
+
+            }
+            avalon(el).addClass(curEnterClass)//animation会立即触发
+            console.log(new Date - 0, el.className)
+
+            effectBuffer.render(true)
+            effectBuffer.queue.push(me)
+
+        } else {
+            callEffectHook(this, "enter", function () {
+                callEffectHook(me, "afterEnter")
+                after && after(el)
+                me.dispose()
+            })
+        }
+    },
     enter: function (before, after) {
         if (document.hidden) {
             return

@@ -19,8 +19,10 @@ avalon.parseDisplay = parseDisplay
 
 avalon.directive("visible", {
     update: function (val) {
-        var elem = this.element
+        var elem = this.element,
+            init = typeof arguments[1] === "undefined"
         if (val) {
+            elem.style.display = "none"
             avalon.effect.apply(elem, 1, function () {
                 var data = elem.getAttribute("data-effect-driver") || "a"
                 if (/^[atn]/.test(data)) {
