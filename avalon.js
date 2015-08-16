@@ -121,7 +121,6 @@ avalon.profile = function () {
 avalon.nextTick = new function () {// jshint ignore:line
     var tickImmediate = window.setImmediate
     var tickObserver = window.MutationObserver
-    var tickPost = W3C && window.postMessage
     if (tickImmediate) {
         return tickImmediate.bind(window)
     }
@@ -138,10 +137,11 @@ avalon.nextTick = new function () {// jshint ignore:line
     if (tickObserver) {
         var node = document.createTextNode("avalon")
         new tickObserver(callback).observe(node, {characterData: true})// jshint ignore:line
-        var vv = 0
+        var bool = false
         return function (fn) {
             queue.push(fn)
-            node.data = vv++
+            bool = !bool
+            node.data = bool
         }
     }
 

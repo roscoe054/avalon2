@@ -115,9 +115,17 @@
                 states[state]()
                 i++
             } while (true);
+var node = document.createTextNode("3")
 
-            console.log(words)
-            console.log(groups)
+           function change(){
+               node.data = String((~~node.data) /2 )
+               console.log(node.data)
+           }
+           
+           change()
+           change()
+            change()
+           change()
         </script>
 
 
