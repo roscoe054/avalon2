@@ -2745,7 +2745,7 @@ function parseExpr(code, scopes, data) {
                             return _
                         }
                     }
-                    console.log(_)
+                  
                     assigns.push(name + " = " + _)
                     return name
                 } else {
@@ -2802,6 +2802,7 @@ function parseExpr(code, scopes, data) {
         var footer = code.slice(lastIndex)
         code = header + "\n" + footer
     } else { //其他绑定
+        code = data.type === "userWatcher" ? fixNumber(code) :code
         code = "\nreturn " + code + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     try {
@@ -3161,7 +3162,7 @@ function scanNodeArray(nodes, vmodels) {
 }
 
 var componentQueue = []
-var componentHooks = {
+var componentMethods = {
     $construct: function () {
         return avalon.mix.apply(null, arguments)
     },
@@ -3169,25 +3170,22 @@ var componentHooks = {
     $init: noop,
     $dispose: noop,
     $childReady: noop,
-    $container: null,
-    $replace: false,
-    $extends: null,
-    $$template: function (str) {
-        return str
+    $$template: function () {
+        return this.$template
     }
 }
 
 avalon.components = {}
 avalon.component = function (name, opts) {
     if (opts) {
-        avalon.components[name] = avalon.mix({}, componentHooks, opts)
+        avalon.components[name] = avalon.mix({}, componentMethods, opts)
     }
     for (var i = 0, obj; obj = componentQueue[i]; i++) {
         if (name === obj.fullName) {
             componentQueue.splice(i, 1)
             i--;
 
-            (function (host, hooks, elem, widget) {
+            (function (host, defaults, elem, widget) {
                 var dependencies = 1
                 var library = host.library
                 var global = avalon.libraries[library]
@@ -3197,59 +3195,55 @@ avalon.component = function (name, opts) {
                 //从element的data-pager-xxx辅助指令中得到该组件的专有数据
                 var elemOpts = avalon.getWidgetData(elem, widget)
                 var parentDefinition
-                if (hooks.$extends) {
-                    var parentHooks = avalon.components[hooks.$extends]
-                    if (parentHooks) {
-                        parentDefinition = parentHooks.$construct({}, hooks, vmOpts)
+                if (host.$extends) {
+                    var parentClass = avalon.components[host.$extends]
+                    if (parentClass) {
+                        parentDefinition = parentClass.$construct(defaults, vmOpts)
                     }
                 }
-                var componentDefinition = avalon.components[name].$construct({},
-                        parentDefinition || hooks, vmOpts, elemOpts)
+                var componentDefinition = avalon.components[name].$construct(
+                        parentDefinition || defaults, vmOpts, elemOpts)
 
                 componentDefinition.$refs = {}
                 componentDefinition.$id = elem.getAttribute("identifier") || generateID(widget)
-
-
                 //==========构建VM=========
-                var vmodel = avalon.define(componentDefinition) || {}
+                var vm = avalon.define(componentDefinition) || {}
                 elem.msResolved = 1
 
-                vmodel.$init(vmodel)
-                global.$init(vmodel)
-                elem.innerHTML = vmodel.$$template(vmodel.$template)
+                elem = componentDefinition.$init(vm) || elem
+                global.$init(vm)
+              
+                elem.innerHTML = componentDefinition.$$template()
                 var child = elem.firstChild
-                if (vmodel.$replace) {
+                if (componentDefinition.$replace) {
                     child = elem.firstChild
                     elem.parentNode.replaceChild(child, elem)
                     child.msResolved = 1
                     elem = host.element = child
                 }
-                if (vmodel.$container) {
-                    vmodel.$container.appendChild(elem)
-                }
-                avalon.fireDom(elem.parentNode, "datasetchanged", {dependency: 1, library: library, vm: vmodel})
+                avalon.fireDom(elem.parentNode, "datasetchanged", {dependency: 1, library: library, vm: vm})
                 var removeFn = avalon.bind(elem, "datasetchanged", function (e) {
                     if (isFinite(e.dependency) && e.library === library) {
                         dependencies += e.dependency
-                        if (vmodel !== e.vm) {
-                            vmodel.$childReady(vmodel, e)
-                            global.$childReady(vmodel, e)
+                        if (vm !== e.vm) {
+                            componentDefinition.$childReady(vm, e)
+                            global.$childReady(vm, e)
                             e.stopPropagation()
                         }
                     }
 
                     if (dependencies === 0) {
-                        vmodel.$ready(vmodel)
-                        global.$ready(vmodel)
+                        componentDefinition.$ready(vm)
+                        global.$ready(vm, host)
                         avalon.unbind(elem, "datasetchanged", removeFn)
                         //==================
                         host.rollback = function () {
                             try {
-                                vmodel.$dispose(vmodel)
-                                global.$dispose(vmodel)
+                                componentDefinition.$dispose(vm)
+                                global.$dispose(vm)
                             } catch (e) {
                             }
-                            delete avalon.vmodels[vmodel.$id]
+                            delete avalon.vmodels[vm.$id]
                         }
                         injectDisposeQueue(host, widgetList)
                         if (window.chrome) {
@@ -3260,20 +3254,20 @@ avalon.component = function (name, opts) {
 
                     }
                 })
-                avalon.scan(elem, [vmodel].concat(host.vmodels))
+                avalon.scan(elem, [vm].concat(host.vmodels))
 
-                avalon.vmodels[vmodel.$id] = vmodel
+                avalon.vmodels[vm.$id] = vm
 
                 if (!elem.childNodes.length) {
-                    avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
+                    avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vm})
                 } else {
                     renderedCallbacks.push(function () {
-                        avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
+                        avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vm})
                     })
                 }
 
 
-            })(obj, avalon.components[name], obj.element, obj.widget)// jshint ignore:line
+            })(obj, avalon.mix(true, {}, avalon.components[name]), obj.element, obj.widget)// jshint ignore:line
 
 
         }
@@ -4278,6 +4272,9 @@ function effectBinding(elem, binding) {
     binding.effectEnterStagger = +elem.getAttribute("data-effect-enter-stagger") || stagger
     binding.effectClass = elem.className || NaN
 }
+function upperFirstChar(str) {
+    return str.replace(/^[\S]/g, function(m) {return m.toUpperCase()})
+}
 var effectBuffer = new Buffer()
 function Effect() {
 }// 动画实例,做成类的形式,是为了共用所有原型方法
@@ -4290,23 +4287,31 @@ Effect.prototype = {
     leaveClass: function () {
         return getEffectClass(this, "leave")
     },
-    enter: function (before, after) {
+    // 共享一个函数
+    actionFun: function(name, before, after) {
         if (document.hidden) {
             return
         }
-
         var me = this
         var el = me.el
-        callEffectHook(me, "abortLeave")
-        callEffectHook(me, "beforeEnter")
-        before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
+        var isLeave = name === "leave"
+        name = isLeave ? "leave" : "enter"
+        var oppositeName = isLeave ? "enter" : "leave"
+        callEffectHook(me, "abort" + upperFirstChar(oppositeName))
+        callEffectHook(me, "before" + upperFirstChar(name))
+        if(!isLeave) before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
         var cssCallback = function (cancel) {
             el.removeEventListener(me.cssEvent, me.cssCallback)
-            if (me.driver === "a") {
+            if(isLeave) {
+                before(el) //这里可能做移出DOM树操作,因此必须位于动画之后
                 avalon(el).removeClass(me.cssClass)
+            } else {
+                if (me.driver === "a") {
+                    avalon(el).removeClass(me.cssClass)
+                }
             }
             if (cancel !== true) {
-                callEffectHook(me, "afterEnter")
+                callEffectHook(me, "after" + upperFirstChar(name))
                 after && after(el)
             }
             me.dispose()
@@ -4316,12 +4321,12 @@ Effect.prototype = {
                 me.cssCallback(true)
             }
 
-            me.cssClass = getEffectClass(me, "enter")
+            me.cssClass = getEffectClass(me, name)
             me.cssCallback = cssCallback
 
             me.update = function () {
                 el.addEventListener(me.cssEvent, me.cssCallback)
-                if (me.driver === "t") {//transtion延迟触发
+                if (!isLeave && me.driver === "t") {//transtion延迟触发
                     avalon(el).removeClass(me.cssClass)
                 }
             }
@@ -4331,47 +4336,94 @@ Effect.prototype = {
             effectBuffer.queue.push(me)
 
         } else {
-            callEffectHook(me, "enter", cssCallback)
+            callEffectHook(me, name, cssCallback)
 
         }
     },
+    enter: function (before, after) {
+        this.actionFun.apply(this, ["enter"].concat(avalon.slice(arguments)))
+        // if (document.hidden) {
+        //     return
+        // }
+
+        // var me = this
+        // var el = me.el
+        // callEffectHook(me, "abortLeave")
+        // callEffectHook(me, "beforeEnter")
+        // before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
+        // var cssCallback = function (cancel) {
+        //     el.removeEventListener(me.cssEvent, me.cssCallback)
+        //     if (me.driver === "a") {
+        //         avalon(el).removeClass(me.cssClass)
+        //     }
+        //     if (cancel !== true) {
+        //         callEffectHook(me, "afterEnter")
+        //         after && after(el)
+        //     }
+        //     me.dispose()
+        // }
+        // if (me.useCss) {
+        //     if (me.cssCallback) { //如果leave动画还没有完成,立即完成
+        //         me.cssCallback(true)
+        //     }
+
+        //     me.cssClass = getEffectClass(me, "enter")
+        //     me.cssCallback = cssCallback
+
+        //     me.update = function () {
+        //         el.addEventListener(me.cssEvent, me.cssCallback)
+        //         if (me.driver === "t") {//transtion延迟触发
+        //             avalon(el).removeClass(me.cssClass)
+        //         }
+        //     }
+        //     avalon(el).addClass(me.cssClass)//animation会立即触发
+
+        //     effectBuffer.render(true)
+        //     effectBuffer.queue.push(me)
+
+        // } else {
+        //     callEffectHook(me, "enter", cssCallback)
+
+        // }
+    },
     leave: function (before, after) {
-        if (document.hidden) {
-            return
-        }
-        var me = this
-        var el = me.el
-        callEffectHook(me, "abortEnter")
-        callEffectHook(me, "beforeLeave")
-        var cssCallback = function (cancel) {
-            el.removeEventListener(me.cssEvent, me.cssCallback)
-            before(el) //这里可能做移出DOM树操作,因此必须位于动画之后
-            avalon(el).removeClass(me.cssClass)
-            if (cancel !== true) {
-                callEffectHook(me, "afterLeave")
-                after && after(el)
-            }
-            me.dispose()
-        }
-        if (me.useCss) {
-            if (me.cssCallback) { //如果leave动画还没有完成,立即完成
-                me.cssCallback(true)
-            }
+        this.actionFun.apply(this, ["leave"].concat(avalon.slice(arguments)))
+        // if (document.hidden) {
+        //     return
+        // }
+        // var me = this
+        // var el = me.el
+        // callEffectHook(me, "abortEnter")
+        // callEffectHook(me, "beforeLeave")
+        // var cssCallback = function (cancel) {
+        //     el.removeEventListener(me.cssEvent, me.cssCallback)
+        //     before(el) //这里可能做移出DOM树操作,因此必须位于动画之后
+        //     avalon(el).removeClass(me.cssClass)
+        //     if (cancel !== true) {
+        //         callEffectHook(me, "afterLeave")
+        //         after && after(el)
+        //     }
+        //     me.dispose()
+        // }
+        // if (me.useCss) {
+        //     if (me.cssCallback) { //如果leave动画还没有完成,立即完成
+        //         me.cssCallback(true)
+        //     }
 
-            me.cssClass = getEffectClass(me, "leave")
-            me.cssCallback = cssCallback
+        //     me.cssClass = getEffectClass(me, "leave")
+        //     me.cssCallback = cssCallback
 
-            me.update = function () {
-                el.addEventListener(me.cssEvent, me.cssCallback)
-            }
+        //     me.update = function () {
+        //         el.addEventListener(me.cssEvent, me.cssCallback)
+        //     }
 
-            avalon(el).addClass(me.cssClass)//animation立即触发
-            effectBuffer.render(true)
-            effectBuffer.queue.push(me)
+        //     avalon(el).addClass(me.cssClass)//animation立即触发
+        //     effectBuffer.render(true)
+        //     effectBuffer.queue.push(me)
 
-        } else {
-            callEffectHook(me, "leave", cssCallback)
-        }
+        // } else {
+        //     callEffectHook(me, "leave", cssCallback)
+        // }
 
     },
     dispose: function () {//销毁与回收到池子中
@@ -5236,8 +5288,10 @@ avalon.parseDisplay = parseDisplay
 
 avalon.directive("visible", {
     update: function (val) {
-        var elem = this.element
+        var elem = this.element,
+            init = typeof arguments[1] === "undefined"
         if (val) {
+            elem.style.display = "none"
             avalon.effect.apply(elem, 1, function () {
                 var data = elem.getAttribute("data-effect-driver") || "a"
                 if (/^[atn]/.test(data)) {
