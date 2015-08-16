@@ -4345,89 +4345,11 @@ Effect.prototype = {
     },
     enter: function (before, after) {
         this.actionFun.apply(this, ["enter"].concat(avalon.slice(arguments)))
-        // if (document.hidden) {
-        //     return
-        // }
-
-        // var me = this
-        // var el = me.el
-        // callEffectHook(me, "abortLeave")
-        // callEffectHook(me, "beforeEnter")
-        // before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
-        // var cssCallback = function (cancel) {
-        //     el.removeEventListener(me.cssEvent, me.cssCallback)
-        //     if (me.driver === "a") {
-        //         avalon(el).removeClass(me.cssClass)
-        //     }
-        //     if (cancel !== true) {
-        //         callEffectHook(me, "afterEnter")
-        //         after && after(el)
-        //     }
-        //     me.dispose()
-        // }
-        // if (me.useCss) {
-        //     if (me.cssCallback) { //如果leave动画还没有完成,立即完成
-        //         me.cssCallback(true)
-        //     }
-
-        //     me.cssClass = getEffectClass(me, "enter")
-        //     me.cssCallback = cssCallback
-
-        //     me.update = function () {
-        //         el.addEventListener(me.cssEvent, me.cssCallback)
-        //         if (me.driver === "t") {//transtion延迟触发
-        //             avalon(el).removeClass(me.cssClass)
-        //         }
-        //     }
-        //     avalon(el).addClass(me.cssClass)//animation会立即触发
-
-        //     effectBuffer.render(true)
-        //     effectBuffer.queue.push(me)
-
-        // } else {
-        //     callEffectHook(me, "enter", cssCallback)
-
-        // }
+       
     },
     leave: function (before, after) {
         this.actionFun.apply(this, ["leave"].concat(avalon.slice(arguments)))
-        // if (document.hidden) {
-        //     return
-        // }
-        // var me = this
-        // var el = me.el
-        // callEffectHook(me, "abortEnter")
-        // callEffectHook(me, "beforeLeave")
-        // var cssCallback = function (cancel) {
-        //     el.removeEventListener(me.cssEvent, me.cssCallback)
-        //     before(el) //这里可能做移出DOM树操作,因此必须位于动画之后
-        //     avalon(el).removeClass(me.cssClass)
-        //     if (cancel !== true) {
-        //         callEffectHook(me, "afterLeave")
-        //         after && after(el)
-        //     }
-        //     me.dispose()
-        // }
-        // if (me.useCss) {
-        //     if (me.cssCallback) { //如果leave动画还没有完成,立即完成
-        //         me.cssCallback(true)
-        //     }
-
-        //     me.cssClass = getEffectClass(me, "leave")
-        //     me.cssCallback = cssCallback
-
-        //     me.update = function () {
-        //         el.addEventListener(me.cssEvent, me.cssCallback)
-        //     }
-
-        //     avalon(el).addClass(me.cssClass)//animation立即触发
-        //     effectBuffer.render(true)
-        //     effectBuffer.queue.push(me)
-
-        // } else {
-        //     callEffectHook(me, "leave", cssCallback)
-        // }
-
+       
     },
     dispose: function () {//销毁与回收到池子中
         this.update = this.cssCallback = null
