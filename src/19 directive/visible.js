@@ -26,7 +26,6 @@ avalon.directive("visible", {
             avalon.effect.apply(elem, 1, function () {
                 var data = elem.getAttribute("data-effect-driver") || "a"
                 if (/^[atn]/.test(data)) {
-                  
                  //   elem.style.display = ""//这里jQuery会自动处理
                     if (avalon(elem).css("display") === "none") {
                         elem.style.display = parseDisplay(elem.nodeName)

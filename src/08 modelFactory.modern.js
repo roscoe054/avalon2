@@ -42,7 +42,7 @@ function modelFactory(source, $special) {
 //监听对象属性值的变化(注意,数组元素不是数组的属性),通过对劫持当前对象的访问器实现
 //监听对象或数组的结构变化, 对对象的键值对进行增删重排, 或对数组的进行增删重排,都属于这范畴
 //   通过比较前后代理VM顺序实现
-
+function Component(){}
 function observeObject(source, $special, old) {
     if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
         return source
@@ -50,7 +50,7 @@ function observeObject(source, $special, old) {
     var $skipArray = Array.isArray(source.$skipArray) ? source.$skipArray : []
     $special = $special || nullObject
     var oldAccessors = old ? old.$accessors : nullObject
-    var $vmodel = {} //要返回的对象, 它在IE6-8下可能被偷龙转凤
+    var $vmodel = new Component() //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
     $$skipArray.forEach(function (name) {
         delete source[name]
@@ -111,9 +111,7 @@ function observeObject(source, $special, old) {
     accessors["$model"] = $modelDescriptor
     $vmodel = Object.defineProperties($vmodel, accessors)
     /* jshint ignore:start */
-
     hideProperty($vmodel, "hasOwnProperty", trackBy)
-
     /* jshint ignore:end */
 
     skip.forEach(function (name) {

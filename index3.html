@@ -23,7 +23,14 @@
             }
         </style>
         <script>
-
+            avalon.effect("toggle", {
+                afterEnter: function (el) {
+                    console.log("enter")
+                },
+                afterLeave: function (el) {
+                    console.log("leave")
+                }
+            })
             var vm = avalon.define({
                 $id: "test",
                 bool: true,
@@ -35,9 +42,7 @@
         </script>
     </head>
     <body ms-controller="test">
-        <div ms-effect="toggle" ms-visible="bool" class="box toggle"></div>
-         <div ms-effect="toggle" ms-visible="!bool" class="box toggle"></div>
+        <div ms-effect="toggle" ms-if="bool" class="box toggle"></div>
         <p><button ms-click="click" type="button">button</button></p>
-
     </body>
 </html>
