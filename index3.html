@@ -42,7 +42,8 @@
         </script>
     </head>
     <body ms-controller="test">
-        <div ms-effect="toggle" ms-if="bool" class="box toggle"></div>
         <p><button ms-click="click" type="button">button</button></p>
+        <div ms-effect="toggle" ms-if="bool" class="box toggle"></div>
+        <div ms-effect="toggle" ms-if="!bool" class="box toggle"></div>
     </body>
 </html>
