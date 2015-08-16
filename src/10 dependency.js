@@ -38,6 +38,7 @@ avalon.injectBinding = function (binding) {
             parseExpr(binding.expr, binding.vmodels, binding)
         }
         try {
+
             dependencyDetection.begin({
                 callback: function (array) {
                     injectDependency(array, binding)
@@ -45,15 +46,14 @@ avalon.injectBinding = function (binding) {
             })
 
             var valueFn = roneval.test(binding.type) ? returnRandom : binding.evaluator
-            //console.log(valueFn+"")
             var value = valueFn.apply(0, binding.args)
-          
 
             if (binding.type === "duplex") {
                 value() //ms-duplex进行依赖收集
             }
 
             dependencyDetection.end()
+
             if (binding.signature) {
                 var xtype = avalon.type(value)
                 if (xtype !== "array" && xtype !== "object") {

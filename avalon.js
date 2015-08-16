@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.16
+ avalon.js 1.5 built in 2015.8.17
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -135,29 +135,16 @@ avalon.nextTick = new function () {// jshint ignore:line
         queue = queue.slice(n)
     }
 
-//    if (tickObserver) {
-//        var node = document.createTextNode("avalon")
-//        new tickObserver(callback).observe(node, {characterData: true})// jshint ignore:line
-//        return function (fn) {
-//            queue.push(fn)
-//            node.data = Math.random()
-//        }
-//    }
-
-    if (tickPost) {
-        window.addEventListener("message", function (e) {
-            var source = e.source
-            if ((source === window || source === null) && e.data === "process-tick") {
-                e.stopPropagation()
-                callback()
-            }
-        })
-
+    if (tickObserver) {
+        var node = document.createTextNode("avalon")
+        new tickObserver(callback).observe(node, {characterData: true})// jshint ignore:line
+        var vv = 0
         return function (fn) {
             queue.push(fn)
-            window.postMessage('process-tick', '*')
+            node.data = vv++
         }
     }
+
 
     return function (fn) {
         setTimeout(fn, 0)
@@ -1086,7 +1073,15 @@ var EventBus = {
                     callback.apply(this, arguments)
             }
         }
+    },
+    $fire: function (type) {
+        var callbacks = this.$events[type] || []
+        for (var i = 0 ,callback; callback = callbacks[i++]; ) {
+            if (isFunction(callback))
+                callback.apply(this, arguments)
+        }
     }
+
 }
 
 function addOldEventMethod(vm) {
@@ -1133,7 +1128,7 @@ avalon.define = function (id, factory) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = String("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$track,$accessors").match(rword)
+var $$skipArray = oneObject("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$track,$accessors")
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -1154,83 +1149,87 @@ function modelFactory(source, $special) {
 //监听对象属性值的变化(注意,数组元素不是数组的属性),通过对劫持当前对象的访问器实现
 //监听对象或数组的结构变化, 对对象的键值对进行增删重排, 或对数组的进行增删重排,都属于这范畴
 //   通过比较前后代理VM顺序实现
-function Component(){}
+function Component() {
+}
 function observeObject(source, $special, old) {
     if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
         return source
     }
-    var $skipArray = Array.isArray(source.$skipArray) ? source.$skipArray : []
+
     $special = $special || nullObject
+
+    var $skipArray = {}
+    if (source.$skipArray) {
+        $skipArray = oneObject(source.$skipArray)
+        delete source.$skipArray
+    }
+
+
     var oldAccessors = old ? old.$accessors : nullObject
     var $vmodel = new Component() //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
-    $$skipArray.forEach(function (name) {
-        delete source[name]
-    })
-    var names = Object.keys(source)
-    var computed = []
+    var hasOwn = {}
     var skip = []
     var simple = []
     var $events = {}
-    /* jshint ignore:start */
-    names.forEach(function (name) {
-        var val = source[name]
 
-        if (isObservable(name, val, $skipArray, $special)) {
-            $events[name] = []
-            var valueType = avalon.type(val)
-            if (valueType === "object" && isFunction(val.get) && Object.keys(val).length <= 2) {
-                computed.push(name)
-
-                new function (key) {
-                    var old
-                    accessors[key] = {
-                        get: function () {
-                            return old = val.get.call(this)
-                        },
-                        set: function (x) {
-                            if (!stopRepeatAssign && typeof val.set === "function") {
-                                var older = old
-                                val.set.call(this, x)
-                                var newer = this[key]
-                                if (this.$fire && (newer !== older)) {
-                                    this.$fire(key, newer, older)
-                                }
+    //处理计算属性
+    var computed = source.$computed
+    if (computed) {
+        delete source.$computed
+        for (var name in computed) {
+            hasOwn[name] = true;
+            (function (key, value) {
+                var old
+                accessors[key] = {
+                    get: function () {
+                        return old = value.get.call(this)
+                    },
+                    set: function (x) {
+                        if (!stopRepeatAssign && typeof value.set === "function") {
+                            var older = old
+                            value.set.call(this, x)
+                            var newer = this[key]
+                            if (this.$fire && (newer !== older)) {
+                                this.$fire(key, newer, older)
                             }
-                        },
-                        enumerable: true,
-                        configurable: true
-                    }
-                }(name)
-
-            } else {
-                simple.push(name)
-                if (oldAccessors[name]) {
-
-                    $events[name] = old.$events[name]
-                    accessors[name] = oldAccessors[name]
-
-                } else {
-                    accessors[name] = makeGetSet(name, val, $events[name])
+                        }
+                    },
+                    enumerable: true,
+                    configurable: true
                 }
-            }
-        } else {
-            skip.push(name)
+            })(name, computed[name])
         }
-    })
+    }
+
+
+    for (name in source) {
+        var value = source[name]
+        if(!$$skipArray[name] )
+            hasOwn[name] = true
+        if (!$special[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
+                typeof value === "function" || (value && value.nodeType))) {
+            skip.push(name)
+        } else {
+            simple.push(name)
+            if (oldAccessors[name]) {
+                $events[name] = old.$events[name]
+                accessors[name] = oldAccessors[name]
+            } else {
+                $events[name] = []
+                accessors[name] = makeGetSet(name, value, $events[name])
+            }
+        }
+    }
+
     /* jshint ignore:end */
 
     accessors["$model"] = $modelDescriptor
     $vmodel = defineProperties($vmodel, accessors, source)
-    /* jshint ignore:start */
-    if (!W3C) {
-        $vmodel.hasOwnProperty = function (name) {
-            return names.indexOf(name) !== -1
-        }
-    } else {
-        hideProperty($vmodel, "hasOwnProperty", trackBy)
+    function trackBy(name) {
+        return hasOwn[name] === true
     }
-    /* jshint ignore:end */
+
 
     skip.forEach(function (name) {
         $vmodel[name] = source[name]
@@ -1239,10 +1238,12 @@ function observeObject(source, $special, old) {
     if (old) {
         old.$events = {}
     }
-
+    /* jshint ignore:start */
+    hideProperty($vmodel, "hasOwnProperty", trackBy)
+    /* jshint ignore:end */
     hideProperty($vmodel, "$active", true)
     hideProperty($vmodel, "$events", $events)
-    hideProperty($vmodel, "$track", names)
+    hideProperty($vmodel, "$track", Object.keys(hasOwn))
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "$id", "anonymous")
     addOldEventMethod($vmodel)
@@ -1251,9 +1252,9 @@ function observeObject(source, $special, old) {
     simple.forEach(function (name) {
         $vmodel[name] = source[name]
     })
-    computed.forEach(function (name, hack) {
-        hack = $vmodel[name]
-    })
+    for (name in computed) {
+        value = $vmodel[name]
+    }
 
     return $vmodel
 }
@@ -1296,26 +1297,24 @@ function observeArray(array, old) {
 }
 
 function observe(obj, old, hasReturn) {
-    if (Object(obj) === obj) {//判定是否复杂数据类型
-        if (Array.isArray(obj)) {
-            return observeArray(obj, old)
-        } else if (avalon.isPlainObject(obj)) {
-            if (old) {
-                var keys = Object.keys(obj)
-                var keys2 = Object.keys(old)
-                if (keys.join(";") === keys2.join(";")) {
-                    for (var i in obj) {
-                        if (obj.hasOwnProperty(i)) {
-                            old[i] = obj[i]
-                        }
+    if (Array.isArray(obj)) {
+        return observeArray(obj, old)
+    } else if (avalon.isPlainObject(obj)) {
+        if (old) {
+            var keys = Object.keys(obj)
+            var keys2 = Object.keys(old)
+            if (keys.join(";") === keys2.join(";")) {
+                for (var i in obj) {
+                    if (obj.hasOwnProperty(i)) {
+                        old[i] = obj[i]
                     }
-                    return old
                 }
-                old.$active = false
-
+                return old
             }
-            return observeObject(obj, null, old)
+            old.$active = false
+
         }
+        return observeObject(obj, null, old)
     }
     if (hasReturn) {
         return obj
@@ -1338,7 +1337,8 @@ function makeGetSet(key, value, list) {
         set: function (newVal) {
             if (value === newVal || stopRepeatAssign)
                 return
-            var oldValue = toJson(value)
+            var _value = value
+            //var oldValue = toJson(value)
             var newVm = observe(newVal, value)
 
             if (newVm) {
@@ -1351,7 +1351,7 @@ function makeGetSet(key, value, list) {
             }
             if (this.$fire) {
                 notifySubscribers(this.$events[key], key, this)
-                this.$fire(key, value, oldValue)
+                this.$fire(key, value, toJson(_value))
             }
 
         },
@@ -1372,11 +1372,6 @@ function isObservable(name, value, $skipArray, $special) {
         return false
     }
     return true
-}
-
-//让IE8+及所有标准浏览器的VM共用trackBy, toJson,$modelDescriptor...
-function trackBy(name) {
-    return this.$track.indexOf(name) !== -1
 }
 
 function hideProperty(host, name, value) {
@@ -1737,6 +1732,7 @@ avalon.injectBinding = function (binding) {
             parseExpr(binding.expr, binding.vmodels, binding)
         }
         try {
+
             dependencyDetection.begin({
                 callback: function (array) {
                     injectDependency(array, binding)
@@ -1744,15 +1740,14 @@ avalon.injectBinding = function (binding) {
             })
 
             var valueFn = roneval.test(binding.type) ? returnRandom : binding.evaluator
-            //console.log(valueFn+"")
             var value = valueFn.apply(0, binding.args)
-          
 
             if (binding.type === "duplex") {
                 value() //ms-duplex进行依赖收集
             }
 
             dependencyDetection.end()
+
             if (binding.signature) {
                 var xtype = avalon.type(value)
                 if (xtype !== "array" && xtype !== "object") {
@@ -1847,6 +1842,7 @@ function injectDisposeQueue(data, list) {
 }
 
 function rejectDisposeQueue(data) {
+    
     var i = disposeQueue.length
     var n = i
     var allTypes = []

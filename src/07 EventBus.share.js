@@ -107,7 +107,15 @@ var EventBus = {
                     callback.apply(this, arguments)
             }
         }
+    },
+    $fire: function (type) {
+        var callbacks = this.$events[type] || []
+        for (var i = 0 ,callback; callback = callbacks[i++]; ) {
+            if (isFunction(callback))
+                callback.apply(this, arguments)
+        }
     }
+
 }
 
 function addOldEventMethod(vm) {

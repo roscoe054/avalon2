@@ -84,29 +84,16 @@ avalon.nextTick = new function () {// jshint ignore:line
         queue = queue.slice(n)
     }
 
-//    if (tickObserver) {
-//        var node = document.createTextNode("avalon")
-//        new tickObserver(callback).observe(node, {characterData: true})// jshint ignore:line
-//        return function (fn) {
-//            queue.push(fn)
-//            node.data = Math.random()
-//        }
-//    }
-
-    if (tickPost) {
-        window.addEventListener("message", function (e) {
-            var source = e.source
-            if ((source === window || source === null) && e.data === "process-tick") {
-                e.stopPropagation()
-                callback()
-            }
-        })
-
+    if (tickObserver) {
+        var node = document.createTextNode("avalon")
+        new tickObserver(callback).observe(node, {characterData: true})// jshint ignore:line
+        var vv = 0
         return function (fn) {
             queue.push(fn)
-            window.postMessage('process-tick', '*')
+            node.data = vv++
         }
     }
+
 
     return function (fn) {
         setTimeout(fn, 0)
