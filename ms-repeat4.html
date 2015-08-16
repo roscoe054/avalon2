@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+        <style>
+            .my-repeat-animation {
+                background:red;
+                -webkit-animation-duration:  1s;
+                animation-duration: 1s;
+            }
+
+
+            .my-repeat-animation.ng-enter {
+               
+                -webkit-animation-name: enter_animation;
+                animation-name:enter_animation;
+            }
+
+            .my-repeat-animation.ng-leave {
+                -webkit-animation-name:leave_animation ;
+                animation-name:leave_animation;
+            }
+
+            @keyframes enter_animation {
+                0% { opacity:0; }
+                100% { opacity:1; }
+            }
+
+            @keyframes leave_animation {
+                from { opacity:1; }
+                to { opacity:0; }
+            }
+
+            @-webkit-keyframes enter_animation {
+                from { opacity:0; }
+                to { opacity:1; }
+            }
+
+            @-webkit-keyframes leave_animation {
+                from { opacity:1; }
+                to { opacity:0; }
+            }
+        </style>
+        <script>
+            avalon.effect("my-repeat-animation", {
+                enterClass: "ng-enter",
+                leaveClass: "ng-leave"
+            })
+            var vm = avalon.define({
+                $id: "test",
+                array: [9],
+                add: function () {
+                    vm.array.push(vm.array.length + 1)
+                    vm.array.push(vm.array.length + 1)
+                    vm.array.push(vm.array.length + 1)
+                    vm.array.push(vm.array.length + 1)
+                    vm.array.push(vm.array.length + 1)
+                    vm.array.push(vm.array.length + 1)
+                },
+                value: ""
+            })
+            vm.$watch("value", function(a){
+                console.log(typeof a,  a)
+                if(a){
+                    vm.array.removeAll(function(el){
+                        console.log(el)
+                       return  el !== a
+                    })
+                }else{
+                    vm.add()
+                }
+            })
+
+        </script>
+    </head>
+    <body ms-controller="test">
+        <button ms-click="add">Add</button>
+        <input placeholder="只保留" ms-duplex-number="value" /> 
+        <div ms-repeat-item="array" class="my-repeat-animation" data-effect-stagger="100" ms-effect="my-repeat-animation">
+            {{item}}
+        </div>
+    </body>
+</html>
