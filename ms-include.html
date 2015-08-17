@@ -1,0 +1,82 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>duplexHooks</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=8" />
+        <script src="avalon.js"></script>
+         <link rel="stylesheet" href="animate.css" type="text/css">
+        
+        <style>
+           
+            .contain{
+                border: 1px solid red;
+                position:relative;
+                width: 300px;
+                top:0px;
+                height:340px;
+            }
+            .aaa {
+                background: #a9ea00;
+                
+                height:300px;
+            }
+            .bbb {
+                background: #e0f2be;
+                height:300px;
+            }
+            .bounceInLeft{
+                position: absolute;
+                width:100%;
+            }
+            .bounceOutLeft{
+                position: absolute;
+                width:100%;
+            }
+            .zoomEffect {
+                position: relative;
+            }
+            .zoomInDown, .zoomOutUp {
+                width: 100%;
+                height: 100%;
+                top: 50%;
+                margin-left: -150px;
+                margin-top: -170px;
+                left: 50%;
+                position: absolute;
+            }
+        </style>
+        <script>
+            avalon.effect("xxx", {
+                leaveClass: "bounceOutLeft",
+                enterClass: "bounceInLeft"
+
+            })
+            avalon.effect("yyy", {
+                enterClass: "zoomInDown",
+                leaveClass: "zoomOutUp"
+            })
+            var a = avalon.define({
+                $id: "test",
+                aaa: "aaa.html",
+                change: function() {
+                    a.aaa = a.aaa === "aaa.html" ? "bbb.html" : "aaa.html"
+                }
+            })
+ 
+        </script>
+    </head>
+    <body ms-controller="test" style="padding-bottom: 1000px;">
+        <h1>需要处理与data-include-replace, data-include-cache一起使用的情况 </h1>
+        <h5>没有动画</h5>
+        <div ms-include-src="'include2'+aaa"  data-include-cache="true"></div>
+        <h5>data-include-repalce="false"</h5>
+        <div class='contain' style='overflow: hidden'>
+            <div ms-include-src="'include2'+aaa"  class=" animated" ms-effect="xxx" data-include-cache="true"></div>
+        </div>
+        <button type="button" ms-click="change">change</button>
+        <h5>data-include-replace="true"</h5>
+        <div class='contain zoomEffect' style='overflow: hidden'>
+            <div ms-include-src="'include2'+aaa" class="contain animated" ms-effect="yyy" data-include-replace="true" data-include-cache="true">哈哈哈</div>
+        </div>
+    </body>
+</html>
