@@ -96,6 +96,6 @@ avalon.nextTick = new function () {// jshint ignore:line
 
 
     return function (fn) {
-        setTimeout(fn, 0)
+        setTimeout(fn, 4)
     }
 }// jshint ignore:line

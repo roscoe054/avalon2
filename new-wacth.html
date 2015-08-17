@@ -1,0 +1,40 @@
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;meta charset="UTF-8"&gt;
+        &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+        &lt;script src="avalon.js"&gt;&lt;/script&gt;
+        &lt;script src="jquery.js"&gt;&lt;/script&gt;
+        &lt;style&gt;
+            .box{
+                width:200px;
+                height:200px;
+                background: red;
+            }
+        &lt;/style&gt;
+        &lt;script&gt;
+            avalon.effect("toggle", {
+                enter: function (elem) {
+                    $(elem).show(500)
+                },
+                leave: function (elem) {
+                    $(elem).hide(500)
+                }
+
+            })
+            var vm = avalon.define({
+                $id: "test",
+                bool: true,
+                click: function () {
+                    vm.bool = !vm.bool
+                }
+            })
+
+        &lt;/script&gt;
+    &lt;/head&gt;
+    &lt;body ms-controller="test"&gt;
+        &lt;div ms-effect="toggle" ms-visible="bool" class="box"&gt;&lt;/div&gt;
+        &lt;p&gt;&lt;button ms-click="click" type="button"&gt;button&lt;/button&gt;&lt;/p&gt;
+
+    &lt;/body&gt;
+&lt;/html&gt;

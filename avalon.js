@@ -147,7 +147,7 @@ avalon.nextTick = new function () {// jshint ignore:line
 
 
     return function (fn) {
-        setTimeout(fn, 0)
+        setTimeout(fn, 4)
     }
 }// jshint ignore:line
 /*********************************************************************
@@ -1205,7 +1205,7 @@ function observeObject(source, $special, old) {
 
     for (name in source) {
         var value = source[name]
-        if(!$$skipArray[name] )
+        if (!$$skipArray[name])
             hasOwn[name] = true
         if (!$special[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
                 typeof value === "function" || (value && value.nodeType))) {
@@ -1223,7 +1223,6 @@ function observeObject(source, $special, old) {
     }
 
     /* jshint ignore:end */
-
     accessors["$model"] = $modelDescriptor
     $vmodel = defineProperties($vmodel, accessors, source)
     function trackBy(name) {
@@ -1257,7 +1256,8 @@ function observeObject(source, $special, old) {
     }
 
     return $vmodel
-}
+} 
+
 function observeArray(array, old) {
     if (old) {
         var args = [0, old.length].concat(array)
@@ -1301,18 +1301,40 @@ function observe(obj, old, hasReturn) {
         return observeArray(obj, old)
     } else if (avalon.isPlainObject(obj)) {
         if (old) {
-            var keys = Object.keys(obj)
-            var keys2 = Object.keys(old)
-            if (keys.join(";") === keys2.join(";")) {
-                for (var i in obj) {
-                    if (obj.hasOwnProperty(i)) {
-                        old[i] = obj[i]
+//            if (canHideOwn) {
+//                var $events = old.$events
+//                var accessors = old.$accessors
+//                for (var name in obj) {
+//                    if (old.hasOwnProperty(i)) {
+//                        old[name] = obj[name]
+//                    } else {//如果添加了新属性
+//                        $events[name] = []
+//                        accessors[name] = makeGetSet(name, obj[name], $events[name])
+//                        Object.defineProperty(name, accessors[name])
+//                    }
+//                }
+//                for (name in old) {
+//                    if (!obj.hasOwnProperty(name)) {
+//                        delete $events[name]
+//                        delete accessors[name]
+//                        delete old[name]
+//                    }
+//                }
+//                return old
+//            } else {
+                var keys = Object.keys(obj)
+                var keys2 = Object.keys(old)
+                if (keys.join(";") === keys2.join(";")) {
+                    for (var i in obj) {
+                        if (obj.hasOwnProperty(i)) {
+                            //0.6 版本   var hack = old[i]
+                            old[i] = obj[i]
+                        }
                     }
+                    return old
                 }
-                return old
-            }
-            old.$active = false
-
+                old.$active = false
+//            }
         }
         return observeObject(obj, null, old)
     }
@@ -1320,7 +1342,6 @@ function observe(obj, old, hasReturn) {
         return obj
     }
 }
-
 function makeGetSet(key, value, list) {
     var childVm = observe(value)//转换为VM
     if (childVm) {
