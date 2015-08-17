@@ -110,9 +110,10 @@ var EventBus = {
     },
     $fire: function (type) {
         var callbacks = this.$events[type] || []
+        var args = aslice.call(arguments, 1)
         for (var i = 0 ,callback; callback = callbacks[i++]; ) {
             if (isFunction(callback))
-                callback.apply(this, arguments)
+                callback.apply(this, args)
         }
     }
 
