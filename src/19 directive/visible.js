@@ -20,10 +20,13 @@ avalon.parseDisplay = parseDisplay
 avalon.directive("visible", {
     update: function (val) {
         var elem = this.element,
-            init = typeof arguments[1] === "undefined"
+            binding = this,
+            init = typeof arguments[1] === "undefined",
+            stamp = binding.stamp = + new Date()
         if (val) {
             elem.style.display = "none"
             avalon.effect.apply(elem, 1, function () {
+                if(stamp !== binding.stamp) return
                 var data = elem.getAttribute("data-effect-driver") || "a"
                 if (/^[atn]/.test(data)) {
                  //   elem.style.display = ""//这里jQuery会自动处理
@@ -34,6 +37,7 @@ avalon.directive("visible", {
             })
         } else {
             avalon.effect.apply(elem, 0, function () {
+                if(stamp !== binding.stamp) return
                 elem.style.display = "none"
             })
 

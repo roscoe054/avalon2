@@ -4489,9 +4489,16 @@ avalon.directive("if", {
     update: function (val) {
         var binding = this
         var elem = this.element
+        var stamp = binding.stamp = + new Date()
+        var par
+        var after = function() {
+            if(stamp !== binding.stamp) return
+            binding.recoverNode = null
+        }
+        if(binding.recoverNode) binding.recoverNode() // 还原现场，有移动节点的都需要还原现场
         try {
-            if (!elem.parentNode)
-                return
+            if (!elem.parentNode) return
+            par = elem.parentNode
         } catch (e) {
             return
         }
@@ -4504,19 +4511,31 @@ avalon.directive("if", {
                 binding.rollback = null
             }
             if (elem.nodeType === 8) {
-                var hasEffect = avalon.effect.apply(binding.keep, 1, function () {
-                    elem.parentNode.replaceChild(binding.keep, elem)
-                    elem = binding.element = binding.keep //这时可能为null
+                var keep = binding.keep
+                var hasEffect = avalon.effect.apply(keep, 1, function () {
+                    if(stamp !== binding.stamp) return
+                    elem.parentNode.replaceChild(keep, elem)
+                    elem = binding.element = keep //这时可能为null
                     alway()
-                })
+                }, after)
                 hasEffect = hasEffect === false
             }
             if (!hasEffect)
                 alway()
         } else { //移出DOM树，并用注释节点占据原位置
             if (elem.nodeType === 1) {
-                var node = binding.element = DOC.createComment("ms-if")
+                var node = binding.element = DOC.createComment("ms-if"),
+                    pos = elem.nextSibling
+                binding.recoverNode = function() {
+                    binding.recoverNode = null
+                    if(node.parentNode !== par) {
+                        par.insertBefore(node, pos)
+                        binding.keep = elem
+                    }
+                }
                 avalon.effect.apply(elem, 0, function () {
+                    binding.recoverNode = null
+                    if(stamp !== binding.stamp) return
                     elem.parentNode.replaceChild(node, elem)
                     binding.keep = elem //元素节点
                     ifGroup.appendChild(elem)
@@ -4525,7 +4544,7 @@ avalon.directive("if", {
                             ifGroup.removeChild(elem)
                         }
                     }
-                })
+                }, after)
             }
         }
     }
@@ -5227,10 +5246,13 @@ avalon.parseDisplay = parseDisplay
 avalon.directive("visible", {
     update: function (val) {
         var elem = this.element,
-            init = typeof arguments[1] === "undefined"
+            binding = this,
+            init = typeof arguments[1] === "undefined",
+            stamp = binding.stamp = + new Date()
         if (val) {
             elem.style.display = "none"
             avalon.effect.apply(elem, 1, function () {
+                if(stamp !== binding.stamp) return
                 var data = elem.getAttribute("data-effect-driver") || "a"
                 if (/^[atn]/.test(data)) {
                  //   elem.style.display = ""//这里jQuery会自动处理
@@ -5241,6 +5263,7 @@ avalon.directive("visible", {
             })
         } else {
             avalon.effect.apply(elem, 0, function () {
+                if(stamp !== binding.stamp) return
                 elem.style.display = "none"
             })
 
