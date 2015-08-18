@@ -222,7 +222,6 @@ function addAssign(vars, vmodel, name, binding){
 }
 function parseExpr(expr, vmodels, binding) {
    var vars =  parser(expr)
-   console.log("++++++++++++++")
    var expose = new Date -0
    var assigns = []
    var names = []

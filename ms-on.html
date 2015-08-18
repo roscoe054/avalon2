@@ -10,13 +10,20 @@
             var vm = avalon.define({
                 $id: "test",
                 aaa: {
-                    bbb:111
+                    bbb: 111
                 }
             });
-            
-            setTimeout(function(){
+
+            setTimeout(function () {
                 vm.aaa.bbb = 444
-            },2000)
+            }, 2000)
+            setTimeout(function () {
+                console.log("====")
+                vm.aaa = {
+                    bbb: 555
+                }
+            }, 4000)
+
         </script>
     </head>
     <body>

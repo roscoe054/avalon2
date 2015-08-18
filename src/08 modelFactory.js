@@ -29,7 +29,7 @@ avalon.define = function (id, factory) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = oneObject("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$track,$accessors")
+var $$skipArray = oneObject("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$pathname,$parent,$track,$accessors")
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -120,10 +120,10 @@ function observeObject(source, $special, old) {
         } else {
             simple.push(name)
             if (oldAccessors[name]) {
-              //  $events[name] = old.$events[name]
+                //  $events[name] = old.$events[name]
                 accessors[name] = oldAccessors[name]
             } else {
-               // $events[name] = []
+                // $events[name] = []
                 accessors[name] = makeGetSet(name, value, $events[name])
             }
         }
@@ -161,7 +161,6 @@ function observeObject(source, $special, old) {
     for (name in computed) {
         value = $vmodel[name]
     }
-    console.log("-----")
     return $vmodel
 }
 
@@ -174,7 +173,7 @@ function observeArray(array, old) {
         for (var i in newProto) {
             array[i] = newProto[i]
         }
-
+        hideProperty(array, "$pathname", "")
         hideProperty(array, "$events", {})
         hideProperty(array, "$active", true)
         hideProperty(array, "$track", createTrack(array.length))
@@ -231,12 +230,13 @@ function makeGetSet(key, value, list) {
     var childVm = observe(value)//转换为VM
     if (childVm) {
         value = childVm
-      //  value.$events[subscribers] = list
+    } else {
+        childVm = void 0
     }
     return {
         get: function () {
             if (this.$active) {
-              //  collectDependency(this.$events[key])
+                //  collectDependency(this.$events[key])
             }
             return value
         },
@@ -244,22 +244,22 @@ function makeGetSet(key, value, list) {
             if (value === newVal || stopRepeatAssign)
                 return
             var _value = value
-            if(typeof value === "object"){
-                value.$parent = this
-            }
-            //var oldValue = toJson(value)
-            var newVm = observe(newVal, value)
 
-            if (newVm) {
-                newVm.$parent = this
-                value = newVm
-                //testVM.$events.a === testVM.a.$events[avalon.subscribers]
-             //   value.$events[subscribers] = list
+            childVm = observe(newVal, value)
+            if (childVm) {
+                value = childVm
             } else {
+                childVm = void 0
                 value = newVal
             }
+            if (Object(childVm) == childVm) {
+                childVm.$pathname = key
+                childVm.$parent = this
+            }
+
+
             if (this.$active) {
-                emit(key, value, toJson(_value), this)
+                emit(key, this)
             }
             // if (this.$fire) {
             //   notifySubscribers(this.$events[key], key, this)
@@ -271,18 +271,23 @@ function makeGetSet(key, value, list) {
         configurable: true
     }
 }
-function emit(key, value, oldValue, target) {
+function emit(key, target) {
     var event = target.$events
-    if(event && event[key]){
-        console.log(key)
-         notifySubscribers(event[key])
-    }else{
-        console.log(target)
-        console.log(key, "cur")
+    if (event && event[key]) {
+        console.log(key, "----")
+        notifySubscribers(event[key])
+    } else {
+
+        var parent = target.$parent
+
+        if (parent) {
+            emit(target.$pathname + "." + key, parent)
+            emit(target.$pathname + ".*", parent)
+        }
     }
-  //  console.log(key)
-   // notifySubscribers(target.$events[key])
-   // console.log(key, value, oldValue)
+    //  console.log(key)
+    // notifySubscribers(target.$events[key])
+    // console.log(key, value, oldValue)
 }
 function isObservable(name, value, $skipArray, $special) {
 
@@ -351,8 +356,8 @@ var $watch = function (expr, binding) {
         binding.add.forEach(function (a) {
             a.v.$watch(a.p, binding)
         })
-    }else{
-        avalon.Array.ensure(queue,binding )
+    } else {
+        avalon.Array.ensure(queue, binding)
     }
 
 
