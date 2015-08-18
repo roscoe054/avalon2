@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.17
+ avalon.js 1.5 built in 2015.8.19
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1144,11 +1144,12 @@ try {
 }
 
 function modelFactory(source, $special) {
-    var vm =  observeObject(source, $special, true)
+    var vm = observeObject(source, $special, true)
     console.log(vm)
     vm.$watch = $watch
     vm.$events = {}
-    vm.$emit = function(){}
+    vm.$emit = function () {
+    }
     return vm
 }
 
@@ -1219,10 +1220,10 @@ function observeObject(source, $special, old) {
         } else {
             simple.push(name)
             if (oldAccessors[name]) {
-                $events[name] = old.$events[name]
+              //  $events[name] = old.$events[name]
                 accessors[name] = oldAccessors[name]
             } else {
-                $events[name] = []
+               // $events[name] = []
                 accessors[name] = makeGetSet(name, value, $events[name])
             }
         }
@@ -1260,7 +1261,7 @@ function observeObject(source, $special, old) {
     for (name in computed) {
         value = $vmodel[name]
     }
-console.log("-----")
+    console.log("-----")
     return $vmodel
 }
 
@@ -1330,12 +1331,12 @@ function makeGetSet(key, value, list) {
     var childVm = observe(value)//转换为VM
     if (childVm) {
         value = childVm
-        value.$events[subscribers] = list
+      //  value.$events[subscribers] = list
     }
     return {
         get: function () {
             if (this.$active) {
-                collectDependency(this.$events[key])
+              //  collectDependency(this.$events[key])
             }
             return value
         },
@@ -1343,33 +1344,45 @@ function makeGetSet(key, value, list) {
             if (value === newVal || stopRepeatAssign)
                 return
             var _value = value
+            if(typeof value === "object"){
+                value.$parent = this
+            }
             //var oldValue = toJson(value)
             var newVm = observe(newVal, value)
 
             if (newVm) {
-
+                newVm.$parent = this
                 value = newVm
                 //testVM.$events.a === testVM.a.$events[avalon.subscribers]
-                value.$events[subscribers] = list
+             //   value.$events[subscribers] = list
             } else {
                 value = newVal
             }
             if (this.$active) {
-                console.log(value)
-            emit(key, value, toJson(_value), this )
-        }
-           // if (this.$fire) {
-              //   notifySubscribers(this.$events[key], key, this)
-               // this.$fire(key, value, toJson(_value))
-           // }
+                emit(key, value, toJson(_value), this)
+            }
+            // if (this.$fire) {
+            //   notifySubscribers(this.$events[key], key, this)
+            // this.$fire(key, value, toJson(_value))
+            // }
 
         },
         enumerable: true,
         configurable: true
     }
 }
-function emit(key, value, oldValue, target){
-    
+function emit(key, value, oldValue, target) {
+    var event = target.$events
+    if(event && event[key]){
+        console.log(key)
+         notifySubscribers(event[key])
+    }else{
+        console.log(target)
+        console.log(key, "cur")
+    }
+  //  console.log(key)
+   // notifySubscribers(target.$events[key])
+   // console.log(key, value, oldValue)
 }
 function isObservable(name, value, $skipArray, $special) {
 
@@ -1429,17 +1442,31 @@ var $modelDescriptor = {
     configurable: true
 }
 
-var $watch = function (expr, callback, option) {
-    var watcher = {
-        handler: callback,
-        type: "userWatcher",
-        element: root
+var $watch = function (expr, binding) {
+    this.$events = {}
+    var queue = this.$events[expr] = this.$events[expr] || []
+
+    if (!binding.evaluator) {
+        binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
+        binding.add.forEach(function (a) {
+            a.v.$watch(a.p, binding)
+        })
+    }else{
+        avalon.Array.ensure(queue,binding )
     }
-    parseExpr(expr, [this], watcher)
-    avalon.injectBinding(watcher)
-    return function () {
-        watcher.element = null
-    }
+
+
+
+//    var watcher = {
+//        handler: callback,
+//        type: "userWatcher",
+//        element: root
+//    }
+//    parseExpr(expr, [this], watcher)
+//    avalon.injectBinding(watcher)
+//    return function () {
+//        watcher.element = null
+//    }
 }
 //===================修复浏览器对Object.defineProperties的支持=================
 if (!canHideOwn) {
@@ -1734,65 +1761,88 @@ function returnRandom() {
     return new Date() - 0
 }
 
+//avalon.injectBinding = function (binding) {
+//
+//    binding.handler = binding.handler || directives[binding.type].update || noop
+//    binding.update = function () {
+//
+//        if (!binding.evaluator) {
+//            parseExpr(binding.expr, binding.vmodels, binding)
+//        }
+//        try {
+//
+//            dependencyDetection.begin({
+//                callback: function (array) {
+//                    injectDependency(array, binding)
+//                }
+//            })
+//
+//            var valueFn = roneval.test(binding.type) ? returnRandom : binding.evaluator
+//            var value = valueFn.apply(0, binding.args)
+//
+//            if (binding.type === "duplex") {
+//                value() //ms-duplex进行依赖收集
+//            }
+//
+//            dependencyDetection.end()
+//
+//            if (binding.signature) {
+//                var xtype = avalon.type(value)
+//                if (xtype !== "array" && xtype !== "object") {
+//                    throw Error("warning:" + binding.expr + "只能是对象或数组")
+//                }
+//                binding.xtype = xtype
+//                // 让非监数组与对象也能渲染到页面上
+//                var vtrack = getProxyIds(binding.proxies || [], xtype)
+//                var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
+//                        Object.keys(value))
+//
+//                binding.track = mtrack
+//                if (vtrack !== mtrack.join(";")) {
+//                    binding.handler.call(binding, value, binding.oldValue)
+//                    binding.oldValue = 1
+//                }
+//            } else {
+//                if (binding.oldValue !== value) {
+//                    binding.handler.call(binding, value, binding.oldValue)
+//                    binding.oldValue = value
+//                }
+//            }
+//        } catch (e) {
+//            delete binding.evaluator
+//            log("warning:exception throwed in [avalon.injectBinding] ", e)
+//            var node = binding.element
+//            if (node && node.nodeType === 3) {
+//                node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
+//            }
+//        }
+//
+//    }
+//    binding.update()
+//
+//}
+
 avalon.injectBinding = function (binding) {
 
     binding.handler = binding.handler || directives[binding.type].update || noop
     binding.update = function () {
-
         if (!binding.evaluator) {
-            parseExpr(binding.expr, binding.vmodels, binding)
+             binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
+             binding.tarray.forEach(function(a){
+                 a.v.$watch(a.p, binding)
+             })
+             delete binding.tarray
+             
+             
         }
-        try {
-
-            dependencyDetection.begin({
-                callback: function (array) {
-                    injectDependency(array, binding)
-                }
-            })
-
-            var valueFn = roneval.test(binding.type) ? returnRandom : binding.evaluator
-            var value = valueFn.apply(0, binding.args)
-
-            if (binding.type === "duplex") {
-                value() //ms-duplex进行依赖收集
-            }
-
-            dependencyDetection.end()
-
-            if (binding.signature) {
-                var xtype = avalon.type(value)
-                if (xtype !== "array" && xtype !== "object") {
-                    throw Error("warning:" + binding.expr + "只能是对象或数组")
-                }
-                binding.xtype = xtype
-                // 让非监数组与对象也能渲染到页面上
-                var vtrack = getProxyIds(binding.proxies || [], xtype)
-                var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
-                        Object.keys(value))
-
-                binding.track = mtrack
-                if (vtrack !== mtrack.join(";")) {
-                    binding.handler.call(binding, value, binding.oldValue)
-                    binding.oldValue = 1
-                }
-            } else {
-                if (binding.oldValue !== value) {
-                    binding.handler.call(binding, value, binding.oldValue)
-                    binding.oldValue = value
-                }
-            }
-        } catch (e) {
-            delete binding.evaluator
-            log("warning:exception throwed in [avalon.injectBinding] ", e)
-            var node = binding.element
-            if (node && node.nodeType === 3) {
-                node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
-            }
+        var value = binding.evaluator.apply(0, binding.args)
+        if (value !== binding.oldValue) {
+            console.log("!!!", value)
+            binding.handler(value, binding.oldValue)
+            binding.oldValue = value
         }
-
     }
     binding.update()
-
 }
 
 
@@ -2618,264 +2668,250 @@ var quote = window.JSON && JSON.stringify || function(str) {
                 '\\u' + ('0000' + a.charCodeAt(0).toString(16)).slice(-4);
     }) + '"'
 }
-var keywords = [
-    "break,case,catch,continue,debugger,default,delete,do,else,false",
+var keyMap = {}
+var keys = ["break,case,catch,continue,debugger,default,delete,do,else,false",
     "finally,for,function,if,in,instanceof,new,null,return,switch,this",
     "throw,true,try,typeof,var,void,while,with", /* 关键字*/
     "abstract,boolean,byte,char,class,const,double,enum,export,extends",
     "final,float,goto,implements,import,int,interface,long,native",
     "package,private,protected,public,short,static,super,synchronized",
     "throws,transient,volatile", /*保留字*/
-    "arguments,let,yield,undefined" /* ECMA 5 - use strict*/
-].join(",")
-var rrexpstr = /\/\*[\w\W]*?\*\/|\/\/[^\n]*\n|\/\/[^\n]*$|"(?:[^"\\]|\\[\w\W])*"|'(?:[^'\\]|\\[\w\W])*'|[\s\t\n]*\.[\s\t\n]*[$\w\.]+/g
-var rsplit = /[^\w$]+/g
-var rkeywords = new RegExp(["\\b" + keywords.replace(/,/g, '\\b|\\b') + "\\b"].join('|'), 'g')
-var rnumber = /\b\d[^,]*/g
-var rcomma = /^,+|,+$/g
-var variablePool = new Cache(512)
-var getVariables = function (code) {
-        var key = "," + code.trim()
-        var ret = variablePool.get(key)
-        if (ret) {
-            return ret
-        }
-        var match = code
-            .replace(rrexpstr, "")
-            .replace(rsplit, ",")
-            .replace(rkeywords, "")
-            .replace(rnumber, "")
-            .replace(rcomma, "")
-            .split(/^$|,+/)
-        return variablePool.put(key, uniqSet(match))
-    }
-    /*添加赋值语句*/
+    "arguments,let,yield,undefined"].join(",")
+keys.replace(/\w+/g, function (a) {
+    keyMap[a] = true
+})
+var rbracket = /\[(['"]?)([^'"]+)\1\]/
+var isIdentifierStart = function (ch) {
+    return (ch === 36) || (ch === 95) || // `$` and `_`
+            (ch >= 65 && ch <= 90) || // A...Z
+            (ch >= 97 && ch <= 122); // a...z
+}
+function replaceText(str, start, $1, $2) {
+    return str.slice(0, start) + "." + str.slice(start).replace("[" + $1 + "]", $2)
+}
+function parser(input) {
+    //静态依赖分析器
+    var i = 0
+    var wordStart = 0
+    var words = {}
+    var endString = ""
 
-function addAssign(vars, scope, name, data) {
-    var ret = [],
-        prefix = " = " + name + "."
-    for (var i = vars.length, prop; prop = vars[--i];) {
-        if (scope.hasOwnProperty(prop)) {
-            ret.push(prop + prefix + prop)
-            data.vars.push(prop)
-            if (data.type === "duplex") {
-                vars.get = name + "." + prop
+    var bracketIndex = []
+    var isSkip = false
+
+
+    var getWordContent = function (isWildcard) {
+        if (wordStart < 0)
+            return
+        var wordEnd = i
+        var content = input.slice(wordStart, wordEnd)
+        var key = wordStart + "-" + (wordEnd - 1)
+        words[key] = content
+        if (keyMap[content] && input.charAt(wordStart - 1) !== ".") {
+            delete  words[key]
+        }
+
+        if (isWildcard) {
+            words[wordStart] = "*"
+        }
+        wordStart = -1
+    }
+
+
+    var getBracketContent = function (sub) {
+        var bracketStart = bracketIndex.pop()
+        var bracketEnd = sub ? i - 1 : i
+        var content = input.slice(bracketStart, bracketEnd)
+
+        try {
+            var evalText = Function("return " + content)()
+            evalText += ''
+            input = replaceText(input, bracketStart - 1, content, evalText)
+            i = bracketStart + evalText.length - 1
+            //这个是字符串,不应该放上去
+            words[bracketStart + "-" + i] = evalText
+
+            state = "word"
+            wordStart = -1
+        } catch (e) {
+            input = replaceText(input, bracketStart - 1, content, "*")
+            i = bracketStart
+            words[bracketStart] = "*"
+
+            state = "word"
+            wordStart = -1
+        }
+    }
+    var state = "unknown"//初始状态
+    var states = {
+        "unknown": function () {
+            if (isIdentifierStart(ch)) {
+                state = "word"
+                wordStart = i
+            } else if (ch === 34 || ch === 39) {//如果遇到 ' "
+                state = "string"
+                endString = ch
+
+            } else if (ch === 93) {// 遇到]
+                getBracketContent()
             }
-            vars.splice(i, 1)
+        },
+        "word": function () {
+            if (/\B/.test(cw)) {
+                state = "unknown"
+                //去掉.与[两边的空白
+                input = input.slice(0, i) +
+                        input.slice(i).replace(/\s*(\.|\[)\s*/, function (a, b) {
+                    return b
+                })
+                cw = input.charAt(i)
+                if (ch === 46) {//如果遇到 .
+                    state = "dot"
+                    getWordContent()
+                    words[i] = "."
+                } else if (ch === 91) {// 如果遇到[
+                    words[i] = "."
+                    getWordContent()
+                    bracketIndex.push(i + 1)//先进后出
+                } else if (ch === 93) {// 如果遇到]
+                    if (wordStart > 0) {
+                        getWordContent(true)
+                    } else {
+                        getBracketContent(true)
+                    }
+                } else {//如果遇到~!#^&*(){}<>/空白
+                    getWordContent()
+                }
+
+            }
+        },
+        "dot": function () {
+            state = "unknown"
+            //如果是0-9, *, 或是标识符
+            if (ch >= 48 && ch <= 57 || ch === 42 || isIdentifierStart(ch)) {//0-9 
+                state = "word"
+                wordStart = i
+            }
+        },
+        "string": function () {
+            if (isSkip) {
+                isSkip = false //跳过当前字符的检测
+            } else {
+                if (ch === 92) {//如果遇到\\
+                    isSkip = true
+                }
+                if (ch === endString) {//如果遇到 " '
+                    state = "unknown"
+                }
+            }
         }
+    };
+    do {
+        var ch = input.charCodeAt(i)
+        if (ch !== ch) { //void 0 --> NaN
+            getWordContent()
+            break
+        }
+        var cw = input.charAt(i)
+
+        states[state]()
+        i++
+    } while (true);
+
+    var sorted = []
+    for (var i in words) {
+        var value = words[i]
+        var arr = i.split("-")
+
+        sorted.push({
+            first: ~~arr[0],
+            last: ~~arr[1] || ~~arr[0],
+            text: value
+        })
+    }
+    sorted.sort(function (a, b) {
+        return a.first - b.first
+    })
+
+
+    var map = {}
+    //   map[cur.last + 1] = cur.text
+    do {
+        var next = sorted.shift()
+        if (!next) {
+            // result.push(curText)
+            break
+        }
+        var ok = true
+        loop:
+                for (var i in map) {
+            var arr = i.split("-")
+            if (Number(arr[1]) + 1 === next.first) {
+
+                map[arr[0] + "-" + next.last] = map[i] + next.text
+                delete map[i]
+                ok = false
+                break loop
+            }
+        }
+        if (ok) {
+            map[next.first + "-" + next.last] = next.text
+        }
+
+    } while (1);
+    var result = []
+    var uniq = {}
+    for (var i in map) {
+        var v = map[i]
+        if (!uniq[v]) {
+            uniq[v] = true
+            result.push(v)
+        }
+    }
+    return result
+}
+function addAssign(vars, vmodel, name, binding){
+     var ret = [],
+        prefix = " = " + name + "."
+     for (var i = vars.length, prop; prop = vars[--i];) {
+         var arr = prop.split("."),a
+         var first = arr[0]
+         while(a = arr.shift()){
+             if(vmodel.hasOwnProperty(a) || a === "*"){
+                  ret.push(first + prefix + first)
+                  binding.tarray.push({
+                     v:vmodel,
+                     p:prop
+                  })
+              
+                  vars.splice(i, 1)
+             }
+         }
     }
     return ret
 }
-
-function uniqSet(array) {
-    var ret = [],
-        unique = {}
-    for (var i = 0; i < array.length; i++) {
-        var el = array[i]
-        var id = el && typeof el.$id === "string" ? el.$id : el
-        if (!unique[id]) {
-            unique[id] = ret.push(el)
-        }
-    }
-    return ret
-}
-//缓存求值函数，以便多次利用
-var evaluatorPool = new Cache(128)
-    //取得求值函数及其传参
-var rduplex = /\w\[.*\]|\w\.\w/
-var rproxy = /(\$proxy\$[a-z]+)\d+$/
-var rthimRightParentheses = /\)\s*$/
-var rthimOtherParentheses = /\)\s*\|/g
-var rquoteFilterName = /\|\s*([$\w]+)/g
-var rpatchBracket = /"\s*\["/g
-var rthimLeftParentheses = /"\s*\(/g
-
-function parseFilter(val, filters) {
-    filters = filters
-        .replace(rthimRightParentheses, "") //处理最后的小括号
-        .replace(rthimOtherParentheses, function () { //处理其他小括号
-            return "],|"
-        })
-        .replace(rquoteFilterName, function (a, b) { //处理|及它后面的过滤器的名字
-            return "[" + quote(b)
-        })
-        .replace(rpatchBracket, function () {
-            return '"],["'
-        })
-        .replace(rthimLeftParentheses, function () {
-            return '",'
-        }) + "]"
-    return "return avalon.filters.$filter(" + val + ", " + filters + ")"
-}
-
-function parseExpr(code, scopes, data) {
-    var dataType = data.type
-    var filters = data.filters || ""
-    var exprId = scopes.map(function (el) {
-        return String(el.$id).replace(rproxy, "$1")
-    }) + code + dataType + filters
-    var vars = getVariables(code).concat(),
-        assigns = [],
-        names = [],
-        args = [],
-        prefix = ""
-        //args 是一个对象数组， names 是将要生成的求值函数的参数
-    scopes = uniqSet(scopes)
-    data.vars = []
-    for (var i = 0, sn = scopes.length; i < sn; i++) {
+function parseExpr(expr, vmodels, binding) {
+   var vars =  parser(expr)
+   console.log("++++++++++++++")
+   var expose = new Date -0
+   var assigns = []
+   var names = []
+   var args = []
+   binding.tarray = []
+     for (var i = 0, sn = vmodels.length; i < sn; i++) {
         if (vars.length) {
             var name = "vm" + expose + "_" + i
             names.push(name)
-            args.push(scopes[i])
-            assigns.push.apply(assigns, addAssign(vars, scopes[i], name, data))
+            args.push(vmodels[i])
+            assigns.push.apply(assigns, addAssign(vars, vmodels[i], name, binding))
         }
     }
-    if (!assigns.length && dataType === "duplex") {
-        return
-    }
-    if (dataType !== "duplex" && (code.indexOf("||") > -1 || code.indexOf("&&") > -1)) {
-        //https://github.com/RubyLouvre/avalon/issues/583
-        data.vars.forEach(function (v) {
-            var reg = new RegExp("\\b" + v + "(?:\\.\\w+|\\[\\w+\\])+", "ig")
-            code = code.replace(reg, function (_, cap) {
-                var c = _.charAt(v.length)
-                //var r = IEVersion ? code.slice(arguments[1] + _.length) : RegExp.rightContext
-                //https://github.com/RubyLouvre/avalon/issues/966
-                var r =  code.slice(cap + _.length) 
-                var method = /^\s*\(/.test(r)
-                if (c === "." || c === "[" || method) { //比如v为aa,我们只匹配aa.bb,aa[cc],不匹配aaa.xxx
-                    var name = "var" + String(Math.random()).replace(/^0\./, "")
-                    if (method) { //array.size()
-                        var array = _.split(".")
-                        if (array.length > 2) {
-                            var last = array.pop()
-                            assigns.push(name + " = " + array.join("."))
-                            return name + "." + last
-                        } else {
-                            return _
-                        }
-                    }
-                  
-                    assigns.push(name + " = " + _)
-                    return name
-                } else {
-                    return _
-                }
-            })
-        })
-    }
-    //---------------args----------------
-    data.args = args
-        //---------------cache----------------
-    delete data.vars
-    var fn = evaluatorPool.get(exprId) //直接从缓存，免得重复生成
-    if (fn) {
-        data.evaluator = fn
-        return
-    }
-    prefix = assigns.join(", ")
-    if (prefix) {
-        prefix = "var " + prefix
-    }
-
-
-    if (/\S/.test(filters)) { //文本绑定，双工绑定才有过滤器
-        if (!/text|html/.test(data.type)) {
-            throw Error("ms-" + data.type + "不支持过滤器")
-        }
-        code = "\nvar ret" + expose + " = " + code + ";\r\n"
-        code += parseFilter("ret" + expose, filters)
-    } else if (dataType === "duplex") { //双工绑定
-        var _body = "'use strict';\nreturn function(vvv){\n\t" +
-            prefix +
-            ";\n\tif(!arguments.length){\n\t\treturn " +
-            code +
-            "\n\t}\n\t" + (!rduplex.test(code) ? vars.get : code) +
-            "= vvv;\n} "
-        try {
-            fn = Function.apply(noop, names.concat(_body))
-            data.evaluator = evaluatorPool.put(exprId, fn)
-        } catch (e) {
-            log("debug: parse error," + e.message)
-        }
-        return
-    } else if (dataType === "on") { //事件绑定
-        if (code.indexOf("(") === -1) {
-            code += ".call(this, $event)"
-        } else {
-            code = code.replace("(", ".call(this,")
-        }
-        names.push("$event")
-        code = "\nreturn " + code + ";" //IE全家 Function("return ")出错，需要Function("return ;")
-        var lastIndex = code.lastIndexOf("\nreturn")
-        var header = code.slice(0, lastIndex)
-        var footer = code.slice(lastIndex)
-        code = header + "\n" + footer
-    } else { //其他绑定
-        code = data.type === "userWatcher" ? fixNumber(code) :code
-        code = "\nreturn " + code + ";" //IE全家 Function("return ")出错，需要Function("return ;")
-    }
-    try {
-        fn = Function.apply(noop, names.concat("'use strict';\n" + prefix + code))
-        data.evaluator = evaluatorPool.put(exprId, fn)
-    } catch (e) {
-        log("debug: parse error," + e.message)
-    } finally {
-        vars = assigns = names = null //释放内存
-    }
+    binding.args = args
+    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") +"\nreturn "+expr))
+  
+   return fn
+ 
 }
-
-
-function stringifyExpr(code){
-  var hasExpr = rexpr.test(code) //比如ms-class="width{{w}}"的情况
-  if (hasExpr) {
-     var array =  scanExpr(code)
-     if(array.length === 1 ){
-        return array[0].expr
-     }
-     return array.map(function (el) {
-        return el.type ? "(" + el.expr + ")" : quote(el.expr)
-     }).join(" + ")
-  }else{
-     return code
-  }
-}
-//parseExpr的智能引用代理
-
-function parseExprProxy(code, scopes, data) {
-    avalon.log("parseExprProxy方法即将被废弃")
-    parseExpr(code, scopes, data)
-    if (data.evaluator ) {
-        data.handler = bindingExecutors[data.handlerName || data.type]
-        avalon.injectBinding(data)
-    }
-}
-avalon.parseExprProxy = parseExprProxy
-
-var rnumberchild  = /(\w+)("?]?)(\.)([\w\-]+)/
-function fixNumber(str) {
-    do {
-        var newStr = str.replace(rnumberchild, function (a, b, c, d, e) {
-            if ((e >>> 0) === parseFloat(e)) {
-                return b + c + "[" + e + "]"
-            } else if (/^\d|\-/.test(e)) {
-                return b + c + "[" + quote(e) + "]"
-            }else {
-                return a
-            }
-
-        })// jshint ignore:line
-        if (newStr === str) {
-            break
-        } else {
-            str = newStr
-        }
-
-    } while (true);
-    
-    return newStr
-}
-
 /*********************************************************************
  *                           扫描系统                                 *
  **********************************************************************/

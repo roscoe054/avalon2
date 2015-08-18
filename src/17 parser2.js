@@ -1,11 +1,3 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>静态依赖分析器</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-        <script>
 var keyMap = {}
 var keys = ["break,case,catch,continue,debugger,default,delete,do,else,false",
     "finally,for,function,if,in,instanceof,new,null,return,switch,this",
@@ -28,7 +20,6 @@ function replaceText(str, start, $1, $2) {
     return str.slice(0, start) + "." + str.slice(start).replace("[" + $1 + "]", $2)
 }
 function parser(input) {
-
     //静态依赖分析器
     var i = 0
     var wordStart = 0
@@ -209,7 +200,7 @@ function parser(input) {
     }
     return result
 }
-function addAssign(vars, vmodel, name){
+function addAssign(vars, vmodel, name, binding){
      var ret = [],
         prefix = " = " + name + "."
      for (var i = vars.length, prop; prop = vars[--i];) {
@@ -218,50 +209,36 @@ function addAssign(vars, vmodel, name){
          while(a = arr.shift()){
              if(vmodel.hasOwnProperty(a) || a === "*"){
                   ret.push(first + prefix + first)
+                  binding.tarray.push({
+                     v:vmodel,
+                     p:prop
+                  })
+              
                   vars.splice(i, 1)
              }
          }
     }
     return ret
 }
-function noop(){}
 function parseExpr(expr, vmodels, binding) {
    var vars =  parser(expr)
+   console.log("++++++++++++++")
    var expose = new Date -0
    var assigns = []
    var names = []
    var args = []
+   binding.tarray = []
      for (var i = 0, sn = vmodels.length; i < sn; i++) {
         if (vars.length) {
             var name = "vm" + expose + "_" + i
             names.push(name)
             args.push(vmodels[i])
-            assigns.push.apply(assigns, addAssign(vars, vmodels[i], name))
+            assigns.push.apply(assigns, addAssign(vars, vmodels[i], name, binding))
         }
     }
-   var  fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") +"\nreturn "+expr))
-   console.log(fn+"")
+    binding.args = args
+    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") +"\nreturn "+expr))
+  
+   return fn
+ 
 }
-parseExpr("aaa+bbb",[
-    {aaa:1},{bbb:2}
-],{})
-
-
-        </script>
-    </head>
-    <body ms-controller="test">
-        <pre>
-            var input = "xxxx['bbb']" // [xxx.bbb]
-            var input = "xxxx['bb'+1]'" // [xxx.bb1]
-            var input = "xxxx.bbb" //[xxxx.bbb]
-            var input = "xxxx[bbb]"  //[xxxx.*, bbb]
-            var input = "ddd['eee']"//[ddd.eee]
-            var input = "xxx['yyy']['zzz']['aaa']"  //[xxx.yyy.zzz]
-            var input = "xxx[yyy+1][zzz+2]" //[xxx.*.*, yyy, zzz]
-            var input = "xxxx[111][222]"  //[xxx.111.222]
-            var input = "xxx[ yyy ][ uuu ]"//[xxx.*.* yyy,uuu]
-            var input = "xxx || true"//[xxx]
-            var input = "aaa[bbb[ccc+1]+2]"//[aaa.*, bbb.*, bbb, ccc]
-        </pre>
-    </body>
-</html>

@@ -44,11 +44,12 @@ try {
 }
 
 function modelFactory(source, $special) {
-    var vm =  observeObject(source, $special, true)
+    var vm = observeObject(source, $special, true)
     console.log(vm)
     vm.$watch = $watch
     vm.$events = {}
-    vm.$emit = function(){}
+    vm.$emit = function () {
+    }
     return vm
 }
 
@@ -119,10 +120,10 @@ function observeObject(source, $special, old) {
         } else {
             simple.push(name)
             if (oldAccessors[name]) {
-                $events[name] = old.$events[name]
+              //  $events[name] = old.$events[name]
                 accessors[name] = oldAccessors[name]
             } else {
-                $events[name] = []
+               // $events[name] = []
                 accessors[name] = makeGetSet(name, value, $events[name])
             }
         }
@@ -160,7 +161,7 @@ function observeObject(source, $special, old) {
     for (name in computed) {
         value = $vmodel[name]
     }
-console.log("-----")
+    console.log("-----")
     return $vmodel
 }
 
@@ -230,12 +231,12 @@ function makeGetSet(key, value, list) {
     var childVm = observe(value)//转换为VM
     if (childVm) {
         value = childVm
-        value.$events[subscribers] = list
+      //  value.$events[subscribers] = list
     }
     return {
         get: function () {
             if (this.$active) {
-                collectDependency(this.$events[key])
+              //  collectDependency(this.$events[key])
             }
             return value
         },
@@ -243,33 +244,45 @@ function makeGetSet(key, value, list) {
             if (value === newVal || stopRepeatAssign)
                 return
             var _value = value
+            if(typeof value === "object"){
+                value.$parent = this
+            }
             //var oldValue = toJson(value)
             var newVm = observe(newVal, value)
 
             if (newVm) {
-
+                newVm.$parent = this
                 value = newVm
                 //testVM.$events.a === testVM.a.$events[avalon.subscribers]
-                value.$events[subscribers] = list
+             //   value.$events[subscribers] = list
             } else {
                 value = newVal
             }
             if (this.$active) {
-                console.log(value)
-            emit(key, value, toJson(_value), this )
-        }
-           // if (this.$fire) {
-              //   notifySubscribers(this.$events[key], key, this)
-               // this.$fire(key, value, toJson(_value))
-           // }
+                emit(key, value, toJson(_value), this)
+            }
+            // if (this.$fire) {
+            //   notifySubscribers(this.$events[key], key, this)
+            // this.$fire(key, value, toJson(_value))
+            // }
 
         },
         enumerable: true,
         configurable: true
     }
 }
-function emit(key, value, oldValue, target){
-    
+function emit(key, value, oldValue, target) {
+    var event = target.$events
+    if(event && event[key]){
+        console.log(key)
+         notifySubscribers(event[key])
+    }else{
+        console.log(target)
+        console.log(key, "cur")
+    }
+  //  console.log(key)
+   // notifySubscribers(target.$events[key])
+   // console.log(key, value, oldValue)
 }
 function isObservable(name, value, $skipArray, $special) {
 
@@ -329,15 +342,29 @@ var $modelDescriptor = {
     configurable: true
 }
 
-var $watch = function (expr, callback, option) {
-    var watcher = {
-        handler: callback,
-        type: "userWatcher",
-        element: root
+var $watch = function (expr, binding) {
+    this.$events = {}
+    var queue = this.$events[expr] = this.$events[expr] || []
+
+    if (!binding.evaluator) {
+        binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
+        binding.add.forEach(function (a) {
+            a.v.$watch(a.p, binding)
+        })
+    }else{
+        avalon.Array.ensure(queue,binding )
     }
-    parseExpr(expr, [this], watcher)
-    avalon.injectBinding(watcher)
-    return function () {
-        watcher.element = null
-    }
+
+
+
+//    var watcher = {
+//        handler: callback,
+//        type: "userWatcher",
+//        element: root
+//    }
+//    parseExpr(expr, [this], watcher)
+//    avalon.injectBinding(watcher)
+//    return function () {
+//        watcher.element = null
+//    }
 }
