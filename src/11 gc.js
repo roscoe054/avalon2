@@ -37,7 +37,7 @@ function injectDisposeQueue(data, list) {
 }
 
 function rejectDisposeQueue(data) {
-    
+
     var i = disposeQueue.length
     var n = i
     var allTypes = []
@@ -63,8 +63,10 @@ function rejectDisposeQueue(data) {
     i = n
     if (diff) {
         while (data = disposeQueue[--i]) {
-            if (!data.element)
+            if (data.element === null) {
+                disposeQueue.splice(i, 1)
                 continue
+            }
             if (iffishTypes[data.type] && shouldDispose(data.element)) { //如果它没有在DOM树
                 disposeQueue.splice(i, 1)
                 delete disposeQueue[data.uuid]

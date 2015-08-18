@@ -1,42 +1,248 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>TODO supply a title</title>
+        <title>静态依赖分析器</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="avalon.js"></script>
+
         <script>
-            var vm = avalon.define({
-                $id: "test",
-                array: [{
-                        a: 1
-                    }, {
-                        a: 2
-                    }, {
-                        a: 3
-                    }
-                ],
-                add: function () {
-                    vm.array.push({
-                        a: 6
-                    })
-                },
-                set: function () {
-                    vm.array[2].a = 5
-                }
+
+
+            var input = "xxxx['bb'+1]'" // [xxx.bb1]
+            var input = "xxxx.bbb" //[xxxx.bbb]
+            var input = "xxxx[bbb]"  //[xxxx.*, bbb]
+            var input = "ddd['eee']"//[ddd.eee]
+
+
+            var input = "xxxx[111][222]"  //[xxx.111.222]
+
+            var input = "xxx || true"//[xxx]
+            var input = "xxx.true"
+            var input = "a"
+            var input = "xxxx['bbb']" // [xxx.bbb]
+            var input = "xxx,yyyy"
+            //  var input = "xxx[ yyy ][ uuu ]"//[xxx.*.* ,yyy,uuu]
+            //  var input = "aaa,bbb,aaa"
+
+            //  var input = "aaa[bbb[ccc+1]+2]"//[aaa.*, bbb.*, bbb, ccc]
+            var input = "xxx['yyy']['zzz']['aaa']"  //[xxx.yyy.zzz]
+         //   var input = "xxx[yyy+1],' aaa.bbb '"
+           // var input = "xxx[yyy+1][zzz+2]" //[xxx.*.*, yyy, zzz]
+            var keyMap = {}
+            var keys = ["break,case,catch,continue,debugger,default,delete,do,else,false",
+                "finally,for,function,if,in,instanceof,new,null,return,switch,this",
+                "throw,true,try,typeof,var,void,while,with", /* 关键字*/
+                "abstract,boolean,byte,char,class,const,double,enum,export,extends",
+                "final,float,goto,implements,import,int,interface,long,native",
+                "package,private,protected,public,short,static,super,synchronized",
+                "throws,transient,volatile", /*保留字*/
+                "arguments,let,yield,undefined"].join(",")
+            keys.replace(/\w+/g, function (a) {
+                keyMap[a] = true
             })
+            //静态依赖分析器
+            var i = 0
+            var wordStart = 0
+            var words = {}
+            var endString = ""
+            var rbracket = /\[(['"]?)([^'"]+)\1\]/
+            var bracketIndex = []
+            var isSkip = false
+            var group = ""
+            var groups = []
+            var isIdentifierStart = function (ch) {
+                return (ch === 36) || (ch === 95) || // `$` and `_`
+                        (ch >= 65 && ch <= 90) || // A...Z
+                        (ch >= 97 && ch <= 122); // a...z
+            }
+            var getWordContent = function (isWildcard) {
+                if (wordStart < 0)
+                    return
+                var wordEnd = i
+                var content = input.slice(wordStart, wordEnd)
+                var key = wordStart + "-" + (wordEnd - 1)
+                words[key] = content
+                if (keyMap[content] && input.charAt(wordStart - 1) !== ".") {
+                    delete  words[key]
+                }
+
+                if (isWildcard) {
+                    words[wordStart] = "*"
+                }
+                wordStart = -1
+            }
+
+            function replaceText(str, start, $1, $2) {
+                return str.slice(0, start) + "." + str.slice(start).replace("[" + $1 + "]", $2)
+            }
+            var getBracketContent = function (sub) {
+                var bracketStart = bracketIndex.pop()
+                var bracketEnd = sub ? i - 1 : i
+                var content = input.slice(bracketStart, bracketEnd)
+
+                try {
+                    var evalText = Function("return " + content)()
+                    evalText += ''
+                    input = replaceText(input, bracketStart - 1, content, evalText)
+                    i = bracketStart + evalText.length - 1
+                    //这个是字符串,不应该放上去
+                    words[bracketStart + "-" + i] = evalText
+
+                    state = "word"
+                    wordStart = -1
+                } catch (e) {
+                    input = replaceText(input, bracketStart - 1, content, "*")
+                    i = bracketStart
+                    words[bracketStart] = "*"
+
+                    state = "word"
+                    wordStart = -1
+                }
+            }
+            var state = "unknown"//初始状态
+            var states = {
+                "unknown": function () {
+                    if (isIdentifierStart(ch)) {
+                        state = "word"
+                        wordStart = i
+                    } else if (ch === 34 || ch === 39) {//如果遇到 ' "
+                        state = "string"
+                        endString = ch
+
+                    } else if (ch === 93) {// 遇到]
+                        getBracketContent()
+                    }
+                },
+                "word": function () {
+                    if (/\B/.test(cw)) {
+                        state = "unknown"
+                        //去掉.与[两边的空白
+                        input = input.slice(0, i) +
+                                input.slice(i).replace(/\s*(\.|\[)\s*/, function (a, b) {
+                            return b
+                        })
+                        cw = input.charAt(i)
+                        if (ch === 46) {//如果遇到 .
+                            state = "dot"
+                            getWordContent()
+                            words[i] = "."
+                        } else if (ch === 91) {// 如果遇到[
+                            words[i] = "."
+                            getWordContent()
+                            bracketIndex.push(i + 1)//先进后出
+                        } else if (ch === 93) {// 如果遇到]
+                            if (wordStart > 0) {
+                                getWordContent(true)
+                            } else {
+                                getBracketContent(true)
+                            }
+                        } else {//如果遇到~!#^&*(){}<>/空白
+                            getWordContent()
+                        }
+
+                    }
+                },
+                "dot": function () {
+                    state = "unknown"
+                    //如果是0-9, *, 或是标识符
+                    if (ch >= 48 && ch <= 57 || ch === 42 || isIdentifierStart(ch)) {//0-9 
+                        state = "word"
+                        wordStart = i
+                    }
+                },
+                "string": function () {
+                    if (isSkip) {
+                        isSkip = false //跳过当前字符的检测
+                    } else {
+                        if (ch === 92) {//如果遇到\\
+                            isSkip = true
+                        }
+                        if (ch === endString) {//如果遇到 " '
+                            state = "unknown"
+                        }
+                    }
+                }
+            };
+            do {
+                var ch = input.charCodeAt(i)
+                if (ch !== ch) { //void 0 --> NaN
+                    getWordContent()
+                    break
+                }
+                var cw = input.charAt(i)
+
+                states[state]()
+                i++
+            } while (true);
+
+            var sorted = []
+            for (var i in words) {
+                var value = words[i]
+                var arr = i.split("-")
+
+                sorted.push({
+                    first: ~~arr[0],
+                    last: ~~arr[1] || ~~arr[0],
+                    text: value
+                })
+            }
+            console.log(words)
+            sorted.sort(function (a, b) {
+                return a.first - b.first
+            })
+
+
+            var kk = sorted.concat()
+            //  var cur = sorted.shift()
+
+            var map = {}
+            //   map[cur.last + 1] = cur.text
+            do {
+                var next = sorted.shift()
+                if (!next) {
+                    // result.push(curText)
+                    break
+                }
+                var ok = true
+                loop:
+                        for (var i in map) {
+                    var arr = i.split("-")
+                    if (Number(arr[1]) + 1 === next.first) {
+
+                        map[arr[0] + "-" + next.last] = map[i] + next.text
+                        delete map[i]
+                        ok = false
+                        break loop
+                    }
+                }
+                if (ok) {
+                    map[next.first + "-" + next.last] = next.text
+                }
+
+            } while (1);
+
+            console.log(kk)
+            console.log(map)
+
+
+
+
 
         </script>
     </head>
     <body ms-controller="test">
-        <ul>
-            <li ms-repeat="array" >
-                <button type="button" ms-click="$remove"> del</button>
-                <input ms-duplex="el.a">{{el.a}}
-            </li>
-        </ul>
-        <button ms-click="add" type="button">add</button>
-        <button ms-click="set" type="button">set</button>
-
+        <pre>
+            var input = "xxxx['bbb']" // [xxx.bbb]
+            var input = "xxxx['bb'+1]'" // [xxx.bb1]
+            var input = "xxxx.bbb" //[xxxx.bbb]
+            var input = "xxxx[bbb]"  //[xxxx.*, bbb]
+            var input = "ddd['eee']"//[ddd.eee]
+            var input = "xxx['yyy']['zzz']['aaa']"  //[xxx.yyy.zzz]
+            var input = "xxx[yyy+1][zzz+2]" //[xxx.*.*, yyy, zzz]
+            var input = "xxxx[111][222]"  //[xxx.111.222]
+            var input = "xxx[ yyy ][ uuu ]"//[xxx.*.* yyy,uuu]
+            var input = "xxx || true"//[xxx]
+            var input = "aaa[bbb[ccc+1]+2]"//[aaa.*, bbb.*, bbb, ccc]
+        </pre>
     </body>
 </html>

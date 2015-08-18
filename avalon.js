@@ -1076,9 +1076,10 @@ var EventBus = {
     },
     $fire: function (type) {
         var callbacks = this.$events[type] || []
+        var args = aslice.call(arguments, 1)
         for (var i = 0 ,callback; callback = callbacks[i++]; ) {
             if (isFunction(callback))
-                callback.apply(this, arguments)
+                callback.apply(this, args)
         }
     }
 
@@ -1121,7 +1122,7 @@ avalon.define = function (id, factory) {
         stopRepeatAssign = false
     }
     //   if (kernel.newWatch) {
-    model.$$watch = $watch
+    //model.$$watch = $watch
     //   }
     model.$id = $id
     return VMODELS[$id] = model
@@ -1143,7 +1144,12 @@ try {
 }
 
 function modelFactory(source, $special) {
-    return observeObject(source, $special)
+    var vm =  observeObject(source, $special, true)
+    console.log(vm)
+    vm.$watch = $watch
+    vm.$events = {}
+    vm.$emit = function(){}
+    return vm
 }
 
 //监听对象属性值的变化(注意,数组元素不是数组的属性),通过对劫持当前对象的访问器实现
@@ -1165,7 +1171,7 @@ function observeObject(source, $special, old) {
     }
 
 
-    var oldAccessors = old ? old.$accessors : nullObject
+    var oldAccessors = typeof old === "object" ? old.$accessors : nullObject
     var $vmodel = new Component() //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
     var hasOwn = {}
@@ -1241,11 +1247,11 @@ function observeObject(source, $special, old) {
     hideProperty($vmodel, "hasOwnProperty", trackBy)
     /* jshint ignore:end */
     hideProperty($vmodel, "$active", true)
-    hideProperty($vmodel, "$events", $events)
+    //hideProperty($vmodel, "$events", $events)
     hideProperty($vmodel, "$track", Object.keys(hasOwn))
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "$id", "anonymous")
-    addOldEventMethod($vmodel)
+    //addOldEventMethod($vmodel)
 
     //必须设置了$active,$events
     simple.forEach(function (name) {
@@ -1254,9 +1260,9 @@ function observeObject(source, $special, old) {
     for (name in computed) {
         value = $vmodel[name]
     }
-
+console.log("-----")
     return $vmodel
-} 
+}
 
 function observeArray(array, old) {
     if (old) {
@@ -1301,40 +1307,18 @@ function observe(obj, old, hasReturn) {
         return observeArray(obj, old)
     } else if (avalon.isPlainObject(obj)) {
         if (old) {
-//            if (canHideOwn) {
-//                var $events = old.$events
-//                var accessors = old.$accessors
-//                for (var name in obj) {
-//                    if (old.hasOwnProperty(i)) {
-//                        old[name] = obj[name]
-//                    } else {//如果添加了新属性
-//                        $events[name] = []
-//                        accessors[name] = makeGetSet(name, obj[name], $events[name])
-//                        Object.defineProperty(name, accessors[name])
-//                    }
-//                }
-//                for (name in old) {
-//                    if (!obj.hasOwnProperty(name)) {
-//                        delete $events[name]
-//                        delete accessors[name]
-//                        delete old[name]
-//                    }
-//                }
-//                return old
-//            } else {
-                var keys = Object.keys(obj)
-                var keys2 = Object.keys(old)
-                if (keys.join(";") === keys2.join(";")) {
-                    for (var i in obj) {
-                        if (obj.hasOwnProperty(i)) {
-                            //0.6 版本   var hack = old[i]
-                            old[i] = obj[i]
-                        }
+            var keys = Object.keys(obj)
+            var keys2 = Object.keys(old)
+            if (keys.join(";") === keys2.join(";")) {
+                for (var i in obj) {
+                    if (obj.hasOwnProperty(i)) {
+                        //0.6 版本   var hack = old[i]
+                        old[i] = obj[i]
                     }
-                    return old
                 }
-                old.$active = false
-//            }
+                return old
+            }
+            old.$active = false
         }
         return observeObject(obj, null, old)
     }
@@ -1370,17 +1354,23 @@ function makeGetSet(key, value, list) {
             } else {
                 value = newVal
             }
-            if (this.$fire) {
-                notifySubscribers(this.$events[key], key, this)
-                this.$fire(key, value, toJson(_value))
-            }
+            if (this.$active) {
+                console.log(value)
+            emit(key, value, toJson(_value), this )
+        }
+           // if (this.$fire) {
+              //   notifySubscribers(this.$events[key], key, this)
+               // this.$fire(key, value, toJson(_value))
+           // }
 
         },
         enumerable: true,
         configurable: true
     }
 }
-
+function emit(key, value, oldValue, target){
+    
+}
 function isObservable(name, value, $skipArray, $special) {
 
     if (isFunction(value) || value && value.nodeType) {
@@ -1863,7 +1853,7 @@ function injectDisposeQueue(data, list) {
 }
 
 function rejectDisposeQueue(data) {
-    
+
     var i = disposeQueue.length
     var n = i
     var allTypes = []
@@ -1889,8 +1879,10 @@ function rejectDisposeQueue(data) {
     i = n
     if (diff) {
         while (data = disposeQueue[--i]) {
-            if (!data.element)
+            if (data.element === null) {
+                disposeQueue.splice(i, 1)
                 continue
+            }
             if (iffishTypes[data.type] && shouldDispose(data.element)) { //如果它没有在DOM树
                 disposeQueue.splice(i, 1)
                 delete disposeQueue[data.uuid]
