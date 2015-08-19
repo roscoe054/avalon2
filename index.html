@@ -13,17 +13,22 @@
         <script>
             var vm = avalon.define({
                 $id: "test",
-                aaa: [1, 2, 3],
+                aaa: [{a:1},{a:3},{a:5}],
                 kk: 111
             })
+//            vm.$watch("aaa.*", function(a){
+//                console.log(a)
+//            })
             setTimeout(function () {
-                vm.aaa.push(4, 6, 7)
+                console.log("====")
+                vm.aaa[0].a = 9
+               // vm.aaa.set(0, {a:9})
             }, 3000)
 
         </script>
         <div ms-controller="test">
             <ul>
-                <li ms-repeat="aaa">{{el}}</li>
+                <li ms-repeat="aaa">{{el.a}}</li>
             </ul>
         </div>
 

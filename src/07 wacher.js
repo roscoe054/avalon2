@@ -28,12 +28,13 @@ function $watch(expr, binding) {
 }
 
 function $emit(key, args) {
-
+    // console.log(key,args)
     var event = this.$events
     if (event && event[key]) {
         notifySubscribers(event[key], args)
     } else {
         var parent = this.$up
+        //console.log(parent,  this.$pathname + "." + key)
         if (parent) {
             $emit.call(parent, this.$pathname + "." + key, args)
             $emit.call(parent, this.$pathname + ".*", args)

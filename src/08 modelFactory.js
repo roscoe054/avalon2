@@ -43,8 +43,8 @@ try {
 
 function modelFactory(source, $special) {
     var vm = observeObject(source, $special, true)
-    vm.$watch = function(){
-       return $watch.apply(vm, arguments)
+    vm.$watch = function () {
+        return $watch.apply(vm, arguments)
     }
     vm.$fire = function (path, a) {
         $emit.call(vm, path, [a])
@@ -57,7 +57,7 @@ function modelFactory(source, $special) {
 //   通过比较前后代理VM顺序实现
 function Component() {
 }
-function observeObject(source, $special, old) {
+function observeObject(source, $special, old, add) {
     if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
         return source
     }
@@ -142,6 +142,12 @@ function observeObject(source, $special, old) {
     hideProperty($vmodel, "$pathname", old ? old.$pathname : "")
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "hasOwnProperty", trackBy)
+
+    if (add) {
+        hideProperty($vmodel, "$watch", function () {
+            return $watch.aplly($vmodel, arguments)
+        })
+    }
     /* jshint ignore:end */
 
     //必须设置了$active,$events
@@ -161,7 +167,7 @@ function observeObject(source, $special, old) {
     return $vmodel
 }
 
-function observeArray(array, old) {
+function observeArray(array, old, add) {
     if (old) {
         var args = [0, old.length].concat(array)
         old.splice.apply(old, args)
@@ -181,8 +187,13 @@ function observeArray(array, old) {
         array._.$watch = $watch
         array._.length = array.length
         array._.$watch("length", function (a, b) {
-            $emit.call(array.$up, array.$pathname + ".length",  [a, b])
+            $emit.call(array.$up, array.$pathname + ".length", [a, b])
         })
+        if (add) {
+            array.$watch = function () {
+                return $watch.aplly(array, arguments)
+            }
+        }
 
         if (W3C) {
             Object.defineProperty(array, "$model", $modelDescriptor)
@@ -198,9 +209,9 @@ function observeArray(array, old) {
     }
 }
 
-function observe(obj, old, hasReturn) {
+function observe(obj, old, hasReturn, add) {
     if (Array.isArray(obj)) {
-        return observeArray(obj, old)
+        return observeArray(obj, old, add)
     } else if (avalon.isPlainObject(obj)) {
         if (old) {
             var keys = Object.keys(obj)
@@ -217,7 +228,7 @@ function observe(obj, old, hasReturn) {
             old.$active = false
         }
 
-        return observeObject(obj, null, old)
+        return observeObject(obj, null, old, add)
     }
     if (hasReturn) {
         return obj

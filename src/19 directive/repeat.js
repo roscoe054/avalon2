@@ -337,7 +337,7 @@ function decorateProxy(proxy, binding, type) {
             binding.$repeat.removeAt(proxy.$index)
         }
         var param = binding.param
-        proxy.$watch(param, function fn(a) {
+        proxy.$watch(param, function (a) {
             var index = proxy.$index
             binding.$repeat[index] = a
         })
