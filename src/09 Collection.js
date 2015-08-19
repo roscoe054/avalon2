@@ -6,7 +6,7 @@ var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice']
 var arrayProto = Array.prototype
 var newProto = {
     notify: function () {
-        $emit.call(this, "*")
+        $emit.call(this.$up, this.$pathname)
     },
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {

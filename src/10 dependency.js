@@ -29,67 +29,6 @@ function returnRandom() {
     return new Date() - 0
 }
 
-//avalon.injectBinding = function (binding) {
-//
-//    binding.handler = binding.handler || directives[binding.type].update || noop
-//    binding.update = function () {
-//
-//        if (!binding.evaluator) {
-//            parseExpr(binding.expr, binding.vmodels, binding)
-//        }
-//        try {
-//
-//            dependencyDetection.begin({
-//                callback: function (array) {
-//                    injectDependency(array, binding)
-//                }
-//            })
-//
-//            var valueFn = roneval.test(binding.type) ? returnRandom : binding.evaluator
-//            var value = valueFn.apply(0, binding.args)
-//
-//            if (binding.type === "duplex") {
-//                value() //ms-duplex进行依赖收集
-//            }
-//
-//            dependencyDetection.end()
-//
-//            if (binding.signature) {
-//                var xtype = avalon.type(value)
-//                if (xtype !== "array" && xtype !== "object") {
-//                    throw Error("warning:" + binding.expr + "只能是对象或数组")
-//                }
-//                binding.xtype = xtype
-//                // 让非监数组与对象也能渲染到页面上
-//                var vtrack = getProxyIds(binding.proxies || [], xtype)
-//                var mtrack = value.$track || (xtype === "array" ? createTrack(value.length) :
-//                        Object.keys(value))
-//
-//                binding.track = mtrack
-//                if (vtrack !== mtrack.join(";")) {
-//                    binding.handler.call(binding, value, binding.oldValue)
-//                    binding.oldValue = 1
-//                }
-//            } else {
-//                if (binding.oldValue !== value) {
-//                    binding.handler.call(binding, value, binding.oldValue)
-//                    binding.oldValue = value
-//                }
-//            }
-//        } catch (e) {
-//            delete binding.evaluator
-//            log("warning:exception throwed in [avalon.injectBinding] ", e)
-//            var node = binding.element
-//            if (node && node.nodeType === 3) {
-//                node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
-//            }
-//        }
-//
-//    }
-//    binding.update()
-//
-//}
-
 avalon.injectBinding = function (binding) {
 
     binding.handler = binding.handler || directives[binding.type].update || noop
@@ -101,16 +40,44 @@ avalon.injectBinding = function (binding) {
             })
             delete binding.observers
         }
-        var value = binding.evaluator.apply(0, binding.args)
-        var fireArgs = binding.fireArgs
-        if (fireArgs) {
+        try {
+            var args = binding.fireArgs, a, b
+            if (!args) {
+                a = binding.evaluator.apply(0, binding.args)
+            } else {
+                a = args[0]
+                b = args[1]
+            }
+            b = typeof b === "undefined" ? binding.oldValue : b
+
+            if (binding.signature) {
+                var xtype = avalon.type(a)
+                if (xtype !== "array" && xtype !== "object") {
+                    throw Error("warning:" + binding.expr + "只能是对象或数组")
+                }
+                binding.xtype = xtype
+                var vtrack = getProxyIds(binding.proxies || [], xtype)
+                var mtrack = a.$track || (xtype === "array" ? createTrack(a.length) :
+                        Object.keys(a))
+
+                binding.track = mtrack
+                if (vtrack !== mtrack.join(";")) {
+                    binding.handler(a, b)
+                    binding.oldValue = 1
+                }
+            } else if (a !== b) {
+                binding.handler(a, b)
+                binding.oldValue = a
+            }
+        } catch (e) {
+            delete binding.evaluator
+            log("warning:exception throwed in [avalon.injectBinding] ", e)
+            var node = binding.element
+            if (node && node.nodeType === 3) {
+                node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
+            }
+        } finally {
             delete binding.fireArgs
-            binding.handler(fireArgs[0], fireArgs[1] || binding.oldValue)
-            binding.oldValue = fireArgs[0]
-           
-        } else if (value !== binding.oldValue) {
-            binding.handler(value, binding.oldValue)
-            binding.oldValue = value
         }
     }
     binding.update()

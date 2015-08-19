@@ -1,25 +1,6 @@
 
 
 //使用来自游戏界的双缓冲技术,减少对视图的冗余刷新
-//var buffer = {
-//    render: function (isAnimate) {
-//        if (!this.locked) {
-//            this.locked = isAnimate ? root.offsetHeight + 10 : 1
-//            avalon.nextTick(function () {
-//                buffer.flush()
-//            })
-//        }
-//    },
-//    queue: [],
-//    flush: function () {
-//        for (var i = 0, sub; sub = this.queue[i++]; ) {
-//            sub.update()
-//        }
-//        this.queue.length = this.locked = 0
-//        this.queue = []
-//    }
-//}
-
 var Buffer = function () {
     this.queue = []
 }

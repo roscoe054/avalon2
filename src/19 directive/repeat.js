@@ -4,19 +4,7 @@ avalon.directive("repeat", {
         var type = binding.type
         binding.cache = {} //用于存放代理VM
         binding.enterCount = 0
-        var arr = binding.expr.split(".") || []
-        if (arr.length > 1) {
-            arr.pop()
-            var n = arr[0]
-            for (var i = 0, v; v = binding.vmodels[i++]; ) {
-                if (v && v.hasOwnProperty(n)) {
-                    var events = v[n].$events || {}
-                    events[subscribers] = events[subscribers] || []
-                    avalon.Array.ensure(events[subscribers], binding)
-                    break
-                }
-            }
-        }
+
         var elem = binding.element
         if (elem.nodeType === 1) {
             elem.removeAttribute(binding.name)
@@ -192,9 +180,7 @@ avalon.directive("repeat", {
             }
 
         }
-//        if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-//            avalon(parent).val(parent.oldValue.split(","))
-//        }
+
 
 //repeat --> duplex
         var callback = binding.renderedCallback
