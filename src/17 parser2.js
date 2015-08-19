@@ -207,7 +207,7 @@ function addAssign(vars, vmodel, name, binding){
          while(a = arr.shift()){
              if(vmodel.hasOwnProperty(a) || a === "*"){
                   ret.push(first + prefix + first)
-                  binding.tarray.push({
+                  binding.observers.push({
                      v:vmodel,
                      p:prop
                   })
@@ -224,7 +224,7 @@ function parseExpr(expr, vmodels, binding) {
    var assigns = []
    var names = []
    var args = []
-   binding.tarray = []
+   binding.observers = []
      for (var i = 0, sn = vmodels.length; i < sn; i++) {
         if (vars.length) {
             var name = "vm" + expose + "_" + i

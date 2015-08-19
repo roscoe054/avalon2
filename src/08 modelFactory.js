@@ -99,7 +99,7 @@ function observeObject(source, $special, old) {
                     enumerable: true,
                     configurable: true
                 }
-            })(name, computed[name])
+            })(name, computed[name])// jshint ignore:line
         }
     }
 

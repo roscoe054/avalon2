@@ -1,12 +1,22 @@
 var $watch = function (expr, binding) {
     this.$events = {}
     var queue = this.$events[expr] = this.$events[expr] || []
+    if (typeof binding === "function") {
+        var backup = binding
+        binding = {
+            element: root,
+            type: "user-watcher",
+            handler: noop,
+            vmodels: [this],
+            expr: expr
+        }
+    }
+    if (!binding.update) {
 
-    if (!binding.evaluator) {
-        binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
-        binding.add.forEach(function (a) {
-            a.v.$watch(a.p, binding)
-        })
+        avalon.injectBinding(binding)
+        if (backup) {
+            binding.handler = backup
+        }
     } else {
         avalon.Array.ensure(queue, binding)
     }

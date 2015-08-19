@@ -953,12 +953,22 @@ avalon.config = kernel
 var $watch = function (expr, binding) {
     this.$events = {}
     var queue = this.$events[expr] = this.$events[expr] || []
+    if (typeof binding === "function") {
+        var backup = binding
+        binding = {
+            element: root,
+            type: "user-watcher",
+            handler: noop,
+            vmodels: [this],
+            expr: expr
+        }
+    }
+    if (!binding.update) {
 
-    if (!binding.evaluator) {
-        binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
-        binding.add.forEach(function (a) {
-            a.v.$watch(a.p, binding)
-        })
+        avalon.injectBinding(binding)
+        if (backup) {
+            binding.handler = backup
+        }
     } else {
         avalon.Array.ensure(queue, binding)
     }
@@ -1077,7 +1087,7 @@ function observeObject(source, $special, old) {
                     enumerable: true,
                     configurable: true
                 }
-            })(name, computed[name])
+            })(name, computed[name])// jshint ignore:line
         }
     }
 
@@ -1636,17 +1646,14 @@ avalon.injectBinding = function (binding) {
     binding.handler = binding.handler || directives[binding.type].update || noop
     binding.update = function () {
         if (!binding.evaluator) {
-             binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
-             binding.tarray.forEach(function(a){
-                 a.v.$watch(a.p, binding)
-             })
-             delete binding.tarray
-             
-             
+            binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
+            binding.observers.forEach(function (a) {
+                a.v.$watch(a.p, binding)
+            })
+            delete binding.observers
         }
         var value = binding.evaluator.apply(0, binding.args)
         if (value !== binding.oldValue) {
-            console.log("!!!", value)
             binding.handler(value, binding.oldValue)
             binding.oldValue = value
         }
@@ -2683,7 +2690,7 @@ function addAssign(vars, vmodel, name, binding){
          while(a = arr.shift()){
              if(vmodel.hasOwnProperty(a) || a === "*"){
                   ret.push(first + prefix + first)
-                  binding.tarray.push({
+                  binding.observers.push({
                      v:vmodel,
                      p:prop
                   })
@@ -2700,7 +2707,7 @@ function parseExpr(expr, vmodels, binding) {
    var assigns = []
    var names = []
    var args = []
-   binding.tarray = []
+   binding.observers = []
      for (var i = 0, sn = vmodels.length; i < sn; i++) {
         if (vars.length) {
             var name = "vm" + expose + "_" + i
@@ -3026,6 +3033,7 @@ var componentHooks = {
     }
 }
 
+
 avalon.components = {}
 avalon.component = function (name, opts) {
     if (opts) {
@@ -3185,7 +3193,6 @@ function isWidget(el) { //如果为自定义标签,返回UI库的名字
 }
 //各种MVVM框架在大型表格下的性能测试
 // https://github.com/RubyLouvre/avalon/issues/859
-
 
 
 function scanTag(elem, vmodels, node) {

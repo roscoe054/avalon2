@@ -95,17 +95,14 @@ avalon.injectBinding = function (binding) {
     binding.handler = binding.handler || directives[binding.type].update || noop
     binding.update = function () {
         if (!binding.evaluator) {
-             binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
-             binding.tarray.forEach(function(a){
-                 a.v.$watch(a.p, binding)
-             })
-             delete binding.tarray
-             
-             
+            binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
+            binding.observers.forEach(function (a) {
+                a.v.$watch(a.p, binding)
+            })
+            delete binding.observers
         }
         var value = binding.evaluator.apply(0, binding.args)
         if (value !== binding.oldValue) {
-            console.log("!!!", value)
             binding.handler(value, binding.oldValue)
             binding.oldValue = value
         }

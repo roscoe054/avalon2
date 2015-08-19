@@ -66,6 +66,7 @@ var componentHooks = {
     }
 }
 
+
 avalon.components = {}
 avalon.component = function (name, opts) {
     if (opts) {
@@ -225,5 +226,4 @@ function isWidget(el) { //如果为自定义标签,返回UI库的名字
 }
 //各种MVVM框架在大型表格下的性能测试
 // https://github.com/RubyLouvre/avalon/issues/859
-
 

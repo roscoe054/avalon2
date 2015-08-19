@@ -13,8 +13,8 @@
                     bbb: "a"
                 } 
             });
-            vm.$watch("aaa.bbb", function(){
-                
+            vm.$watch("aaa.bbb", function(a){
+                console.log(a, "!!!!!!!!!!!!!!")
             })
 //            setTimeout(function () {
 //                vm.aaa.bbb = 444
@@ -31,7 +31,7 @@
         </script>
     </head>
     <body>
-        <div ms-controller="test">
+      <div ms-controller="test">
             <div>{{aaa.bbb}}</div>
         </div>
     </body>
