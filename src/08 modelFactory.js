@@ -21,15 +21,13 @@ avalon.define = function (id, factory) {
         factory(model)
         stopRepeatAssign = false
     }
-    //   if (kernel.newWatch) {
-    //model.$$watch = $watch
-    //   }
+
     model.$id = $id
     return VMODELS[$id] = model
 }
 
 //一些不需要被监听的属性
-var $$skipArray = oneObject("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$pathname,$parent,$track,$accessors")
+var $$skipArray = oneObject("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors")
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -45,7 +43,6 @@ try {
 
 function modelFactory(source, $special) {
     var vm = observeObject(source, $special, true)
-    console.log(vm)
     vm.$watch = $watch
     vm.$events = {}
     vm.$emit = function () {
@@ -63,22 +60,19 @@ function observeObject(source, $special, old) {
         return source
     }
 
-    $special = $special || nullObject
-
     var $skipArray = {}
     if (source.$skipArray) {
         $skipArray = oneObject(source.$skipArray)
         delete source.$skipArray
     }
 
-
+    $special = $special || nullObject
     var oldAccessors = typeof old === "object" ? old.$accessors : nullObject
     var $vmodel = new Component() //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
     var hasOwn = {}
     var skip = []
     var simple = []
-    var $events = {}
 
     //处理计算属性
     var computed = source.$computed
@@ -120,43 +114,38 @@ function observeObject(source, $special, old) {
         } else {
             simple.push(name)
             if (oldAccessors[name]) {
-                //  $events[name] = old.$events[name]
                 accessors[name] = oldAccessors[name]
             } else {
-                // $events[name] = []
-                accessors[name] = makeGetSet(name, value, $events[name])
+                accessors[name] = makeGetSet(name, value)
             }
         }
     }
 
-    /* jshint ignore:end */
+
     accessors["$model"] = $modelDescriptor
     $vmodel = defineProperties($vmodel, accessors, source)
     function trackBy(name) {
         return hasOwn[name] === true
     }
 
-
     skip.forEach(function (name) {
         $vmodel[name] = source[name]
     })
 
-    if (old) {
-        old.$events = {}
-    }
     /* jshint ignore:start */
+    hideProperty($vmodel, "$id", "anonymous")
+    hideProperty($vmodel, "$up", old ? old.$up : null)
+    hideProperty($vmodel, "$track", Object.keys(hasOwn))
+    hideProperty($vmodel, "$active", true)
+    hideProperty($vmodel, "$pathname", old ? old.$pathname : "")
+    hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "hasOwnProperty", trackBy)
     /* jshint ignore:end */
-    hideProperty($vmodel, "$active", true)
-    //hideProperty($vmodel, "$events", $events)
-    hideProperty($vmodel, "$track", Object.keys(hasOwn))
-    hideProperty($vmodel, "$accessors", accessors)
-    hideProperty($vmodel, "$id", "anonymous")
-    //addOldEventMethod($vmodel)
 
     //必须设置了$active,$events
     simple.forEach(function (name) {
         $vmodel[name] = source[name]
+        emit(name, $vmodel)
     })
     for (name in computed) {
         value = $vmodel[name]
@@ -174,11 +163,9 @@ function observeArray(array, old) {
             array[i] = newProto[i]
         }
         hideProperty(array, "$pathname", "")
-        hideProperty(array, "$events", {})
+        hideProperty(array, "$up", null)
         hideProperty(array, "$active", true)
         hideProperty(array, "$track", createTrack(array.length))
-        array.$events[subscribers] = []
-        addOldEventMethod(array)
 
         array._ = observeObject({
             length: NaN
@@ -220,6 +207,7 @@ function observe(obj, old, hasReturn) {
             }
             old.$active = false
         }
+
         return observeObject(obj, null, old)
     }
     if (hasReturn) {
@@ -243,65 +231,28 @@ function makeGetSet(key, value, list) {
         set: function (newVal) {
             if (value === newVal || stopRepeatAssign)
                 return
-            var _value = value
 
             childVm = observe(newVal, value)
+
             if (childVm) {
                 value = childVm
             } else {
                 childVm = void 0
                 value = newVal
             }
-            if (Object(childVm) == childVm) {
+            if (Object(childVm) === childVm) {
                 childVm.$pathname = key
-                childVm.$parent = this
+                childVm.$up = this
             }
-
-
             if (this.$active) {
                 emit(key, this)
             }
-            // if (this.$fire) {
-            //   notifySubscribers(this.$events[key], key, this)
-            // this.$fire(key, value, toJson(_value))
-            // }
-
         },
         enumerable: true,
         configurable: true
     }
 }
-function emit(key, target) {
-    var event = target.$events
-    if (event && event[key]) {
-        console.log(key, "----")
-        notifySubscribers(event[key])
-    } else {
 
-        var parent = target.$parent
-
-        if (parent) {
-            emit(target.$pathname + "." + key, parent)
-            emit(target.$pathname + ".*", parent)
-        }
-    }
-    //  console.log(key)
-    // notifySubscribers(target.$events[key])
-    // console.log(key, value, oldValue)
-}
-function isObservable(name, value, $skipArray, $special) {
-
-    if (isFunction(value) || value && value.nodeType) {
-        return false
-    }
-    if ($skipArray.indexOf(name) !== -1) {
-        return false
-    }
-    if (name && name.charAt(0) === "$" && !$special[name]) {
-        return false
-    }
-    return true
-}
 
 function hideProperty(host, name, value) {
     if (canHideOwn) {
@@ -347,29 +298,3 @@ var $modelDescriptor = {
     configurable: true
 }
 
-var $watch = function (expr, binding) {
-    this.$events = {}
-    var queue = this.$events[expr] = this.$events[expr] || []
-
-    if (!binding.evaluator) {
-        binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
-        binding.add.forEach(function (a) {
-            a.v.$watch(a.p, binding)
-        })
-    } else {
-        avalon.Array.ensure(queue, binding)
-    }
-
-
-
-//    var watcher = {
-//        handler: callback,
-//        type: "userWatcher",
-//        element: root
-//    }
-//    parseExpr(expr, [this], watcher)
-//    avalon.injectBinding(watcher)
-//    return function () {
-//        watcher.element = null
-//    }
-}

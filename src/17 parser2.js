@@ -54,12 +54,12 @@ function parser(input) {
         var content = input.slice(bracketStart, bracketEnd)
 
         try {
-            var evalText = Function("return " + content)()
-            evalText += ''
-            input = replaceText(input, bracketStart - 1, content, evalText)
-            i = bracketStart + evalText.length - 1
+            var execText = Function("return " + content)()
+            execText += ''
+            input = replaceText(input, bracketStart - 1, content, execText)
+            i = bracketStart + execText.length - 1
             //这个是字符串,不应该放上去
-            words[bracketStart + "-" + i] = evalText
+            words[bracketStart + "-" + i] = execText
 
             state = "word"
             wordStart = -1
@@ -149,7 +149,7 @@ function parser(input) {
     } while (true);
 
     var sorted = []
-    for (var i in words) {
+    for ( i in words) {
         var value = words[i]
         var arr = i.split("-")
 
@@ -165,17 +165,15 @@ function parser(input) {
 
 
     var map = {}
-    //   map[cur.last + 1] = cur.text
     do {
         var next = sorted.shift()
         if (!next) {
-            // result.push(curText)
             break
         }
         var ok = true
         loop:
-                for (var i in map) {
-            var arr = i.split("-")
+                for ( i in map) {
+             arr = i.split("-")
             if (Number(arr[1]) + 1 === next.first) {
 
                 map[arr[0] + "-" + next.last] = map[i] + next.text
@@ -191,7 +189,7 @@ function parser(input) {
     } while (1);
     var result = []
     var uniq = {}
-    for (var i in map) {
+    for ( i in map) {
         var v = map[i]
         if (!uniq[v]) {
             uniq[v] = true

@@ -5,7 +5,7 @@ var disposeCount = 0
 var disposeQueue = avalon.$$subscribers = []
 var beginTime = new Date()
 var oldInfo = {}
-var uuid2Node = {}
+
 function getUid(data) { //IE9+,标准浏览器
     if (!data.uuid) {
         var elem = data.element
@@ -21,9 +21,7 @@ function getUid(data) { //IE9+,标准浏览器
     }
     return data.uuid
 }
-function getNode(uuid) {
-    return uuid2Node[uuid]
-}
+
 //添加到回收列队中
 function injectDisposeQueue(data, list) {
     var lists = data.lists || (data.lists = [])
@@ -70,7 +68,6 @@ function rejectDisposeQueue(data) {
             if (iffishTypes[data.type] && shouldDispose(data.element)) { //如果它没有在DOM树
                 disposeQueue.splice(i, 1)
                 delete disposeQueue[data.uuid]
-                // delete uuid2Node[data.element.uuid]
                 var lists = data.lists
                 for (var k = 0, list; list = lists[k++]; ) {
                     avalon.Array.remove(lists, list)
