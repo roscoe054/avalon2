@@ -45,7 +45,8 @@ function modelFactory(source, $special) {
     var vm = observeObject(source, $special, true)
     vm.$watch = $watch
     vm.$events = {}
-    vm.$emit = function () {
+    vm.$fire = function (path, a) {
+        emit(vm, path, [a])
     }
     return vm
 }

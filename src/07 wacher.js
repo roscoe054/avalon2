@@ -1,6 +1,6 @@
 var $watch = function (expr, binding) {
-    this.$events = {}
-    var queue = this.$events[expr] = this.$events[expr] || []
+    var $events = this.$events || (this.$events = {})
+    var queue = $events[expr] || ($events[expr] = [])
     if (typeof binding === "function") {
         var backup = binding
         backup.uuid = Math.random()
@@ -14,13 +14,16 @@ var $watch = function (expr, binding) {
         }
     }
     if (!binding.update) {
-
         avalon.injectBinding(binding)
         if (backup) {
             binding.handler = backup
         }
     } else {
         avalon.Array.ensure(queue, binding)
+    }
+    return function () {
+        binding.update = binding.evaluator = binding.handler = noop
+        binding.element = DOC.createElement("a")
     }
 }
 

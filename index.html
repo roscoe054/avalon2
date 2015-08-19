@@ -13,12 +13,16 @@
         <script>
             var vm = avalon.define({
                 $id: "test",
-                aaa: [1, 2, 3]
+                aaa: [1, 2, 3],
+                kk: 111
             })
             vm.$watch("aaa.length", function (a, b) {
                 console.log("*****", a, b)
             })
-
+            vm.$watch("kk", function (a, b) {
+                console.log("*****", a, b)
+            })
+            vm.kk = 100
             vm.aaa.push(1, 2)
             setTimeout(function () {
                 vm.aaa.push(7, 6)
