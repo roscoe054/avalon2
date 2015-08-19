@@ -10,11 +10,14 @@
             var vm = avalon.define({
                 $id: "test",
                 aaa:{
-                    bbb: "a"
+                    bbb: "a",
+                    ccc:555
                 } 
             });
-            vm.$watch("aaa.bbb", function(a){
-                console.log(a, "!!!!!!!!!!!!!!")
+            avalon.config.async = false
+            vm.$watch("aaa.*", function(newValue, oldValue, key){
+                
+                console.log(newValue, oldValue, key)
             })
 //            setTimeout(function () {
 //                vm.aaa.bbb = 444

@@ -46,8 +46,7 @@ avalon.injectBinding = function (binding) {
                 a = binding.evaluator.apply(0, binding.args)
             } else {
                 a = args[0]
-                b = args[1]
-            }
+                b = args[1]            }
             b = typeof b === "undefined" ? binding.oldValue : b
 
             if (binding.signature) {

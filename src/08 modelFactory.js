@@ -251,21 +251,22 @@ function makeGetSet(key, value, list) {
         set: function (newVal) {
             if (value === newVal || stopRepeatAssign)
                 return
+            var oldValue = value
 
             childVm = observe(newVal, value)
-
             if (childVm) {
                 value = childVm
             } else {
                 childVm = void 0
                 value = newVal
             }
+
             if (Object(childVm) === childVm) {
                 childVm.$pathname = key
                 childVm.$up = this
             }
             if (this.$active) {
-                $emit.call(this, key)
+                $emit.call(this, key, [value, oldValue])
             }
         },
         enumerable: true,

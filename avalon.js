@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.19
+ avalon.js 1.5 built in 2015.8.20
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -966,7 +966,19 @@ function $watch(expr, binding) {
         }
     }
     if (!binding.update) {
-        avalon.injectBinding(binding)
+        if (/\w\.*\B/.test(expr)) {
+            binding.evaluator = noop
+            binding.update = function (x) {
+                var args = this.fireArgs || []
+                if (args[2])
+                    binding.handler.apply(this, args)
+                delete this.fireArgs
+            }
+            queue.sync = true
+            avalon.Array.ensure(queue, binding)
+        } else {
+            avalon.injectBinding(binding)
+        }
         if (backup) {
             binding.handler = backup
         }
@@ -983,13 +995,17 @@ function $emit(key, args) {
     // console.log(key,args)
     var event = this.$events
     if (event && event[key]) {
+
         notifySubscribers(event[key], args)
     } else {
         var parent = this.$up
-         //console.log(parent,  this.$pathname + "." + key)
+        //console.log(parent,  this.$pathname + "." + key)
         if (parent) {
-            $emit.call(parent, this.$pathname + "." + key, args)
-            $emit.call(parent, this.$pathname + ".*", args)
+            if (args) {
+                args[2] = this.$pathname + "." + key
+            }
+            $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
+            $emit.call(parent, this.$pathname + ".*", args)//以模糊的值往上冒泡
         }
     }
 }
@@ -1004,11 +1020,13 @@ function notifySubscribers(subs, args) {
     if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
         rejectDisposeQueue()
     }
-    if (kernel.async) {
+    if (kernel.async && !subs.sync) {
         buffer.render()
         for (var i = 0, sub; sub = subs[i++]; ) {
             if (sub.update) {
-                sub.fireArgs = args
+               // if (args) {
+                    sub.fireArgs = args
+             //   }
                 var uuid = getUid(sub)
                 if (!buffer.queue[uuid]) {
                     buffer.queue[uuid] = 1
@@ -1019,7 +1037,9 @@ function notifySubscribers(subs, args) {
     } else {
         for (i = 0; sub = subs[i++]; ) {
             if (sub.update) {
-                sub.fireArgs = args
+                if (args) {
+                    sub.fireArgs = args
+                }
                 sub.update()//最小化刷新DOM树
             }
         }
@@ -1278,21 +1298,22 @@ function makeGetSet(key, value, list) {
         set: function (newVal) {
             if (value === newVal || stopRepeatAssign)
                 return
+            var oldValue = value
 
             childVm = observe(newVal, value)
-
             if (childVm) {
                 value = childVm
             } else {
                 childVm = void 0
                 value = newVal
             }
+
             if (Object(childVm) === childVm) {
                 childVm.$pathname = key
                 childVm.$up = this
             }
             if (this.$active) {
-                $emit.call(this, key)
+                $emit.call(this, key, [value, oldValue])
             }
         },
         enumerable: true,
@@ -1655,8 +1676,7 @@ avalon.injectBinding = function (binding) {
                 a = binding.evaluator.apply(0, binding.args)
             } else {
                 a = args[0]
-                b = args[1]
-            }
+                b = args[1]            }
             b = typeof b === "undefined" ? binding.oldValue : b
 
             if (binding.signature) {
@@ -4960,6 +4980,8 @@ function decorateProxy(proxy, binding, type) {
             binding.$repeat.removeAt(proxy.$index)
         }
         var param = binding.param
+       
+        
         proxy.$watch(param, function (a) {
             var index = proxy.$index
             binding.$repeat[index] = a

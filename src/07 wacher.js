@@ -14,7 +14,19 @@ function $watch(expr, binding) {
         }
     }
     if (!binding.update) {
-        avalon.injectBinding(binding)
+        if (/\w\.*\B/.test(expr)) {
+            binding.evaluator = noop
+            binding.update = function (x) {
+                var args = this.fireArgs || []
+                if (args[2])
+                    binding.handler.apply(this, args)
+                delete this.fireArgs
+            }
+            queue.sync = true
+            avalon.Array.ensure(queue, binding)
+        } else {
+            avalon.injectBinding(binding)
+        }
         if (backup) {
             binding.handler = backup
         }
@@ -28,16 +40,17 @@ function $watch(expr, binding) {
 }
 
 function $emit(key, args) {
-    // console.log(key,args)
     var event = this.$events
     if (event && event[key]) {
         notifySubscribers(event[key], args)
     } else {
         var parent = this.$up
-        //console.log(parent,  this.$pathname + "." + key)
         if (parent) {
-            $emit.call(parent, this.$pathname + "." + key, args)
-            $emit.call(parent, this.$pathname + ".*", args)
+            if (args) {
+                args[2] = this.$pathname + "." + key
+            }
+            $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
+            $emit.call(parent, this.$pathname + ".*", args)//以模糊的值往上冒泡
         }
     }
 }
@@ -52,11 +65,13 @@ function notifySubscribers(subs, args) {
     if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
         rejectDisposeQueue()
     }
-    if (kernel.async) {
+    if (kernel.async && !subs.sync) {
         buffer.render()
         for (var i = 0, sub; sub = subs[i++]; ) {
             if (sub.update) {
-                sub.fireArgs = args
+                if (args) {
+                    sub.fireArgs = args
+                }
                 var uuid = getUid(sub)
                 if (!buffer.queue[uuid]) {
                     buffer.queue[uuid] = 1
@@ -67,7 +82,9 @@ function notifySubscribers(subs, args) {
     } else {
         for (i = 0; sub = subs[i++]; ) {
             if (sub.update) {
-                sub.fireArgs = args
+                if (args) {
+                    sub.fireArgs = args
+                }
                 sub.update()//最小化刷新DOM树
             }
         }
