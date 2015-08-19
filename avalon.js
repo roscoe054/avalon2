@@ -950,7 +950,7 @@ kernel.paths = {}
 kernel.shim = {}
 kernel.maxRepeatSize = 100
 avalon.config = kernel
-var $watch = function (expr, binding) {
+function $watch(expr, binding) {
     var $events = this.$events || (this.$events = {})
     var queue = $events[expr] || ($events[expr] = [])
     if (typeof binding === "function") {
@@ -979,17 +979,16 @@ var $watch = function (expr, binding) {
     }
 }
 
-function emit(key, target, args) {
+function $emit(key, args) {
 
-    var event = target.$events
+    var event = this.$events
     if (event && event[key]) {
         notifySubscribers(event[key], args)
     } else {
-        var parent = target.$up
-
+        var parent = this.$up
         if (parent) {
-            emit(target.$pathname + "." + key, parent, args)
-            emit(target.$pathname + ".*", parent, args)
+            $emit.call(parent, this.$pathname + "." + key, args)
+            $emit.call(parent, this.$pathname + ".*", args)
         }
     }
 }
@@ -1070,10 +1069,11 @@ try {
 
 function modelFactory(source, $special) {
     var vm = observeObject(source, $special, true)
-    vm.$watch = $watch
-    vm.$events = {}
+    vm.$watch = function(){
+       return $watch.apply(vm, arguments)
+    }
     vm.$fire = function (path, a) {
-        emit(vm, path, [a])
+        $emit.call(vm, path, [a])
     }
     return vm
 }
@@ -1179,7 +1179,7 @@ function observeObject(source, $special, old) {
 
         $vmodel[name] = source[name]
 
-        emit(name, $vmodel)
+        $emit.call($vmodel, name)
     })
     for (name in computed) {
         value = $vmodel[name]
@@ -1207,7 +1207,7 @@ function observeArray(array, old) {
         array._.$watch = $watch
         array._.length = array.length
         array._.$watch("length", function (a, b) {
-            emit(array.$pathname + ".length", array.$up, [a, b])
+            $emit.call(array.$up, array.$pathname + ".length",  [a, b])
         })
 
         if (W3C) {
@@ -1276,12 +1276,11 @@ function makeGetSet(key, value, list) {
                 value = newVal
             }
             if (Object(childVm) === childVm) {
-                console.log("++++")
                 childVm.$pathname = key
                 childVm.$up = this
             }
             if (this.$active) {
-                emit(key, this)
+                $emit.call(this, key)
             }
         },
         enumerable: true,
@@ -1445,8 +1444,7 @@ var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice']
 var arrayProto = Array.prototype
 var newProto = {
     notify: function () {
-        emit("*", this)
-        //emit("length", this)
+        $emit.call(this, "*")
     },
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {

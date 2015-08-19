@@ -1,4 +1,4 @@
-var $watch = function (expr, binding) {
+function $watch(expr, binding) {
     var $events = this.$events || (this.$events = {})
     var queue = $events[expr] || ($events[expr] = [])
     if (typeof binding === "function") {
@@ -27,17 +27,16 @@ var $watch = function (expr, binding) {
     }
 }
 
-function emit(key, target, args) {
+function $emit(key, args) {
 
-    var event = target.$events
+    var event = this.$events
     if (event && event[key]) {
         notifySubscribers(event[key], args)
     } else {
-        var parent = target.$up
-
+        var parent = this.$up
         if (parent) {
-            emit(target.$pathname + "." + key, parent, args)
-            emit(target.$pathname + ".*", parent, args)
+            $emit.call(parent, this.$pathname + "." + key, args)
+            $emit.call(parent, this.$pathname + ".*", args)
         }
     }
 }

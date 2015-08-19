@@ -36,9 +36,11 @@ var canHideOwn = true
 
 function modelFactory(source, $special) {
     var vm = observeObject(source, $special, true)
-    vm.$watch = $watch
-    vm.$events = {}
-    vm.$emit = function () {
+    vm.$watch = function () {
+        return $watch.apply(vm, arguments)
+    }
+    vm.$fire = function (path, a) {
+        $emit.call(vm, path, [a])
     }
     return vm
 }
