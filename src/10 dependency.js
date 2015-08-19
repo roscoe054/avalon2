@@ -102,7 +102,13 @@ avalon.injectBinding = function (binding) {
             delete binding.observers
         }
         var value = binding.evaluator.apply(0, binding.args)
-        if (value !== binding.oldValue) {
+        var fireArgs = binding.fireArgs
+        if (fireArgs) {
+            delete binding.fireArgs
+            binding.handler(fireArgs[0], fireArgs[1] || binding.oldValue)
+            binding.oldValue = fireArgs[0]
+           
+        } else if (value !== binding.oldValue) {
             binding.handler(value, binding.oldValue)
             binding.oldValue = value
         }

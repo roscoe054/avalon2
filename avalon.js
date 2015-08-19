@@ -955,12 +955,14 @@ var $watch = function (expr, binding) {
     var queue = this.$events[expr] = this.$events[expr] || []
     if (typeof binding === "function") {
         var backup = binding
+        backup.uuid = Math.random()
         binding = {
             element: root,
             type: "user-watcher",
             handler: noop,
             vmodels: [this],
-            expr: expr
+            expr: expr,
+            uuid: backup.uuid
         }
     }
     if (!binding.update) {
@@ -974,15 +976,49 @@ var $watch = function (expr, binding) {
     }
 }
 
-function emit(key, target) {
+function emit(key, target, args) {
+
     var event = target.$events
     if (event && event[key]) {
-        notifySubscribers(event[key])
+        notifySubscribers(event[key], args)
     } else {
         var parent = target.$up
+
         if (parent) {
-            emit(target.$pathname + "." + key, parent)
-            emit(target.$pathname + ".*", parent)
+            emit(target.$pathname + "." + key, parent, args)
+            emit(target.$pathname + ".*", parent, args)
+        }
+    }
+}
+
+function collectDependency(subs) {
+    dependencyDetection.collectDependency(subs)
+}
+
+function notifySubscribers(subs, args) {
+    if (!subs)
+        return
+    if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
+        rejectDisposeQueue()
+    }
+    if (kernel.async) {
+        buffer.render()
+        for (var i = 0, sub; sub = subs[i++]; ) {
+            if (sub.update) {
+                sub.fireArgs = args
+                var uuid = getUid(sub)
+                if (!buffer.queue[uuid]) {
+                    buffer.queue[uuid] = 1
+                    buffer.queue.push(sub)
+                }
+            }
+        }
+    } else {
+        for (i = 0; sub = subs[i++]; ) {
+            if (sub.update) {
+                sub.fireArgs = args
+                sub.update()//最小化刷新DOM树
+            }
         }
     }
 }
@@ -1132,7 +1168,13 @@ function observeObject(source, $special, old) {
 
     //必须设置了$active,$events
     simple.forEach(function (name) {
+        if (typeof $vmodel[name] === "object") {
+            $vmodel[name].$up = $vmodel
+            $vmodel[name].$pathname = name
+        }
+
         $vmodel[name] = source[name]
+
         emit(name, $vmodel)
     })
     for (name in computed) {
@@ -1150,17 +1192,18 @@ function observeArray(array, old) {
         for (var i in newProto) {
             array[i] = newProto[i]
         }
-        hideProperty(array, "$pathname", "")
+
         hideProperty(array, "$up", null)
-        hideProperty(array, "$active", true)
+        hideProperty(array, "$pathname", "")
         hideProperty(array, "$track", createTrack(array.length))
 
         array._ = observeObject({
             length: NaN
         })
+        array._.$watch = $watch
         array._.length = array.length
         array._.$watch("length", function (a, b) {
-            array.$fire("length", a, b)
+            emit(array.$pathname + ".length", array.$up, [a, b])
         })
 
         if (W3C) {
@@ -1229,6 +1272,7 @@ function makeGetSet(key, value, list) {
                 value = newVal
             }
             if (Object(childVm) === childVm) {
+                console.log("++++")
                 childVm.$pathname = key
                 childVm.$up = this
             }
@@ -1397,8 +1441,8 @@ var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice']
 var arrayProto = Array.prototype
 var newProto = {
     notify: function () {
-        var subs = this.$events[subscribers]
-        notifySubscribers(subs)
+        emit("*", this)
+        //emit("length", this)
     },
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {
@@ -1653,7 +1697,13 @@ avalon.injectBinding = function (binding) {
             delete binding.observers
         }
         var value = binding.evaluator.apply(0, binding.args)
-        if (value !== binding.oldValue) {
+        var fireArgs = binding.fireArgs
+        if (fireArgs) {
+            delete binding.fireArgs
+            binding.handler(fireArgs[0], fireArgs[1] || binding.oldValue)
+            binding.oldValue = fireArgs[0]
+           
+        } else if (value !== binding.oldValue) {
             binding.handler(value, binding.oldValue)
             binding.oldValue = value
         }
@@ -3315,33 +3365,7 @@ function scanText(textNode, vmodels, index) {
 }
 
 
-function collectDependency(subs) {
-    dependencyDetection.collectDependency(subs)
-}
 
-function notifySubscribers(subs) {
-    if (!subs)
-        return
-    if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
-        rejectDisposeQueue()
-    }
-    if (kernel.async) {
-        buffer.render()
-        for (var i = 0, sub; sub = subs[i++]; ) {
-            if (sub.update) {
-                var uuid = getUid(sub)
-                if (!buffer.queue[uuid]) {
-                    buffer.queue[uuid] = 1
-                    buffer.queue.push(sub)
-                }
-            }
-        }
-    } else {
-        for (i = 0; sub = subs[i++]; ) {
-            sub.update && sub.update()//最小化刷新DOM树
-        }
-    }
-}
 //使用来自游戏界的双缓冲技术,减少对视图的冗余刷新
 //var buffer = {
 //    render: function (isAnimate) {

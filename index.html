@@ -12,14 +12,18 @@
 
         <script>
             var vm = avalon.define({
-               $id: "test",
-               aaa: 111
+                $id: "test",
+                aaa: [1, 2, 3]
             })
-            vm.$watch("aaa", function(){
-                console.log("*****")
+            vm.$watch("aaa.length", function (a, b) {
+                console.log("*****", a, b)
             })
-            vm.aaa = 1
-            //console.log("===")
+
+            vm.aaa.push(1, 2)
+            setTimeout(function () {
+                vm.aaa.push(7, 6)
+            }, 1000)
+
         </script>
 
 

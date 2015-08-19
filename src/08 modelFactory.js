@@ -144,7 +144,13 @@ function observeObject(source, $special, old) {
 
     //必须设置了$active,$events
     simple.forEach(function (name) {
+        if (typeof $vmodel[name] === "object") {
+            $vmodel[name].$up = $vmodel
+            $vmodel[name].$pathname = name
+        }
+
         $vmodel[name] = source[name]
+
         emit(name, $vmodel)
     })
     for (name in computed) {
@@ -162,17 +168,18 @@ function observeArray(array, old) {
         for (var i in newProto) {
             array[i] = newProto[i]
         }
-        hideProperty(array, "$pathname", "")
+
         hideProperty(array, "$up", null)
-        hideProperty(array, "$active", true)
+        hideProperty(array, "$pathname", "")
         hideProperty(array, "$track", createTrack(array.length))
 
         array._ = observeObject({
             length: NaN
         })
+        array._.$watch = $watch
         array._.length = array.length
         array._.$watch("length", function (a, b) {
-            array.$fire("length", a, b)
+            emit(array.$pathname + ".length", array.$up, [a, b])
         })
 
         if (W3C) {
@@ -241,6 +248,7 @@ function makeGetSet(key, value, list) {
                 value = newVal
             }
             if (Object(childVm) === childVm) {
+                console.log("++++")
                 childVm.$pathname = key
                 childVm.$up = this
             }

@@ -6,8 +6,8 @@ var arrayMethods = ['push', 'pop', 'shift', 'unshift', 'splice']
 var arrayProto = Array.prototype
 var newProto = {
     notify: function () {
-        var subs = this.$events[subscribers]
-        notifySubscribers(subs)
+        emit("*", this)
+        //emit("length", this)
     },
     set: function (index, val) {
         if (((index >>> 0) === index) && this[index] !== val) {
