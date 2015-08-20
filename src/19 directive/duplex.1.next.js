@@ -42,15 +42,17 @@ var duplexBinding = avalon.directive("duplex", {
             var v = avalon.vmodels[i]
             //  v.$fire("avalon-ms-duplex-init", binding)
         }
+        
+        
         var cpipe = binding.pipe || (binding.pipe = pipe)
         cpipe(null, binding, "init")
     },
-    update: function (evaluator, elem, binding) {
-        var tagName = elem.tagName
-        var impl = duplexBinding[tagName]
-        if(impl){
-            impl(elem, evaluator, binding)
-        }
+    update: function (value, elem, binding) {
+//        var tagName = elem.tagName
+//        var impl = duplexBinding[tagName]
+//        if(impl){
+//            impl(elem, evaluator, binding)
+//        }
     }
 })
 

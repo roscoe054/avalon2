@@ -20,7 +20,7 @@ var duplexBinding = avalon.directive("duplex", {
                 if (name === "radio")
                     log("ms-duplex-radio已经更名为ms-duplex-checked")
                 name = "checked"
-                binding.isChecked = true
+                binding.xtype = "radio"
             }
             if (name === "bool") {
                 name = "boolean"
@@ -38,6 +38,15 @@ var duplexBinding = avalon.directive("duplex", {
             params.push("string")
         }
         binding.param = params.join("-")
+        if (!binding.xtype) {
+            binding.xtype = elem.tagName === "SELECT" ? "select" :
+                    elem.type === "checkbox" ? "checkbox" : "input"
+        }
+
+        duplexBindEvent(binding.xtype, elem, binding)
+
+
+
         binding.bound = function (type, callback) {
             if (elem.addEventListener) {
                 elem.addEventListener(type, callback, false)
@@ -62,12 +71,71 @@ var duplexBinding = avalon.directive("duplex", {
         var elem = this.element
         var tagName = elem.tagName
         var impl = duplexBinding[tagName]
-        if(impl){
+        if (impl) {
             impl(elem, evaluator, this)
         }
     }
 })
 
+function duplexBindEvent(type, elem, binding) {
+
+    switch (type) {
+        case "input":
+
+            var composing = false
+            function callback(value) {
+                binding.changed.call(this, value, binding)
+            }
+
+            function compositionStart() {
+                composing = true
+            }
+
+            function compositionEnd() {
+                composing = false
+            }
+            //当value变化时改变model的值
+            var updateVModel = function () {
+                if (composing) //处理中文输入法在minlengh下引发的BUG
+                    return
+                var val = elem.value //防止递归调用形成死循环
+                var lastValue = binding.pipe(val, binding, "get")
+                if (avalon(elem).data("duplexObserve") !== false) {
+                    evaluator(lastValue)
+                    callback.call(elem, lastValue)
+                }
+            }
+            if (!IEVersion) { // W3C
+                bound("input", updateVModel)
+                //非IE浏览器才用这个
+                bound("compositionstart", compositionStart)
+                bound("compositionend", compositionEnd)
+                bound("DOMAutoComplete", updateVModel)
+            } else { //onpropertychange事件无法区分是程序触发还是用户触发
+                // IE下通过selectionchange事件监听IE9+点击input右边的X的清空行为，及粘贴，剪切，删除行为
+                if (IEVersion > 8) {
+                    bound("input", updateVModel) //IE9使用propertychange无法监听中文输入改动
+                } else {
+                    bound("propertychange", function (e) { //IE6-8下第一次修改时不会触发,需要使用keydown或selectionchange修正
+                        if (e.propertyName === "value") {
+                            updateVModel()
+                        }
+                    })
+                }
+                bound("dragend", delay)
+                //http://www.cnblogs.com/rubylouvre/archive/2013/02/17/2914604.html
+                //http://www.matts411.com/post/internet-explorer-9-oninput/
+            }
+            
+            break
+        case ""
+            
+
+    }
+
+
+
+}
 
 function fixNull(val) {
     return val == null ? "" : val
