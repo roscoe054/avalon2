@@ -14,7 +14,7 @@ var dependencyDetection = (function () {
         end: function () {
             currentFrame = outerFrames.pop()
         },
-        collectDependency: function (array) {
+        collectDependency: function (array) {         
             if (currentFrame) {
                 //被dependencyDetection.begin调用
                 currentFrame.callback(array)
@@ -33,7 +33,14 @@ avalon.injectBinding = function (binding) {
 
     binding.handler = binding.handler || directives[binding.type].update || noop
     binding.update = function () {
+        var begin = false
         if (!binding.evaluator) {
+            begin = true
+            dependencyDetection.begin({
+                callback: function (array) {
+                    injectDependency(array, binding)
+                }
+            })
             binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
             binding.observers.forEach(function (a) {
                 a.v.$watch(a.p, binding)
@@ -46,7 +53,8 @@ avalon.injectBinding = function (binding) {
                 a = binding.evaluator.apply(0, binding.args)
             } else {
                 a = args[0]
-                b = args[1]            }
+                b = args[1]
+            }
             b = typeof b === "undefined" ? binding.oldValue : b
 
             if (binding.signature) {
@@ -76,6 +84,7 @@ avalon.injectBinding = function (binding) {
                 node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
             }
         } finally {
+            begin && dependencyDetection.end()
             delete binding.fireArgs
         }
     }

@@ -57,7 +57,7 @@ function modelFactory(source, $special) {
 //   通过比较前后代理VM顺序实现
 function Component() {
 }
-function observeObject(source, $special, old, add) {
+function observeObject(source, $special, old, addWatch) {
     if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
         return source
     }
@@ -143,7 +143,7 @@ function observeObject(source, $special, old, add) {
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "hasOwnProperty", trackBy)
 
-    if (add) {
+    if (addWatch) {
         hideProperty($vmodel, "$watch", function () {
             return $watch.aplly($vmodel, arguments)
         })
@@ -167,7 +167,7 @@ function observeObject(source, $special, old, add) {
     return $vmodel
 }
 
-function observeArray(array, old, add) {
+function observeArray(array, old, addWatch) {
     if (old) {
         var args = [0, old.length].concat(array)
         old.splice.apply(old, args)
@@ -189,10 +189,10 @@ function observeArray(array, old, add) {
         array._.$watch("length", function (a, b) {
             $emit.call(array.$up, array.$pathname + ".length", [a, b])
         })
-        if (add) {
-            array.$watch = function () {
+        if (addWatch) {
+            hideProperty($vmodel, "$watch", function () {
                 return $watch.aplly(array, arguments)
-            }
+            })
         }
 
         if (W3C) {
@@ -202,16 +202,16 @@ function observeArray(array, old, add) {
         }
 
         for (var j = 0, n = array.length; j < n; j++) {
-            array[j] = observe(array[j], 0, 1)
+            array[j] = observe(array[j], 0, 1, 1)
         }
 
         return array
     }
 }
 
-function observe(obj, old, hasReturn, add) {
+function observe(obj, old, hasReturn, addWatch) {
     if (Array.isArray(obj)) {
-        return observeArray(obj, old, add)
+        return observeArray(obj, old, addWatch)
     } else if (avalon.isPlainObject(obj)) {
         if (old) {
             var keys = Object.keys(obj)
@@ -228,13 +228,13 @@ function observe(obj, old, hasReturn, add) {
             old.$active = false
         }
 
-        return observeObject(obj, null, old, add)
+        return observeObject(obj, null, old, addWatch)
     }
     if (hasReturn) {
         return obj
     }
 }
-function makeGetSet(key, value, list) {
+function makeGetSet(key, value) {
     var childVm = observe(value)//转换为VM
     if (childVm) {
         value = childVm
@@ -244,7 +244,7 @@ function makeGetSet(key, value, list) {
     return {
         get: function () {
             if (this.$active) {
-                //  collectDependency(this.$events[key])
+                collectDependency(this, key)
             }
             return value
         },

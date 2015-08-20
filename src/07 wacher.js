@@ -55,8 +55,22 @@ function $emit(key, args) {
     }
 }
 
-function collectDependency(subs) {
-    dependencyDetection.collectDependency(subs)
+function collectDependency(el, key) {
+   do {
+        if (el.$watch) {
+            var e = el.$events || (el.$events = {})
+            var array = e[key] || (e[key] = [])
+            dependencyDetection.collectDependency(array)
+            return
+        }
+        el = el.$up
+        if (el) {
+            key = el.$pathname + "." + key
+        } else {
+            break
+        }
+
+    } while (true)
 }
 
 function notifySubscribers(subs, args) {

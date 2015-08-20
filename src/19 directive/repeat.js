@@ -122,6 +122,7 @@ avalon.directive("repeat", {
             parent.insertBefore(transation, elem)
             fragments.forEach(function (fragment) {
                 scanNodeArray(fragment.nodes || [], fragment.vmodels)
+                //if(fragment.vmodels.length > 2)
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
         } else {
@@ -337,7 +338,7 @@ function decorateProxy(proxy, binding, type) {
             binding.$repeat.removeAt(proxy.$index)
         }
         var param = binding.param
-       
+      
         
         proxy.$watch(param, function (a) {
             var index = proxy.$index
