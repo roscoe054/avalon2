@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.20
+ avalon.js 1.5 built in 2015.8.21
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -992,14 +992,11 @@ function $watch(expr, binding) {
 }
 
 function $emit(key, args) {
-    // console.log(key,args)
     var event = this.$events
     if (event && event[key]) {
-
         notifySubscribers(event[key], args)
     } else {
         var parent = this.$up
-        //console.log(parent,  this.$pathname + "." + key)
         if (parent) {
             if (args) {
                 args[2] = this.$pathname + "." + key
@@ -1010,8 +1007,22 @@ function $emit(key, args) {
     }
 }
 
-function collectDependency(subs) {
-    dependencyDetection.collectDependency(subs)
+function collectDependency(el, key) {
+   do {
+        if (el.$watch) {
+            var e = el.$events || (el.$events = {})
+            var array = e[key] || (e[key] = [])
+            dependencyDetection.collectDependency(array)
+            return
+        }
+        el = el.$up
+        if (el) {
+            key = el.$pathname + "." + key
+        } else {
+            break
+        }
+
+    } while (true)
 }
 
 function notifySubscribers(subs, args) {
@@ -1024,9 +1035,9 @@ function notifySubscribers(subs, args) {
         buffer.render()
         for (var i = 0, sub; sub = subs[i++]; ) {
             if (sub.update) {
-               // if (args) {
+                if (args) {
                     sub.fireArgs = args
-             //   }
+                }
                 var uuid = getUid(sub)
                 if (!buffer.queue[uuid]) {
                     buffer.queue[uuid] = 1
@@ -1104,7 +1115,7 @@ function modelFactory(source, $special) {
 //   通过比较前后代理VM顺序实现
 function Component() {
 }
-function observeObject(source, $special, old, add) {
+function observeObject(source, $special, old, addWatch) {
     if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
         return source
     }
@@ -1190,7 +1201,7 @@ function observeObject(source, $special, old, add) {
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "hasOwnProperty", trackBy)
 
-    if (add) {
+    if (addWatch) {
         hideProperty($vmodel, "$watch", function () {
             return $watch.aplly($vmodel, arguments)
         })
@@ -1214,7 +1225,7 @@ function observeObject(source, $special, old, add) {
     return $vmodel
 }
 
-function observeArray(array, old, add) {
+function observeArray(array, old, addWatch) {
     if (old) {
         var args = [0, old.length].concat(array)
         old.splice.apply(old, args)
@@ -1236,10 +1247,10 @@ function observeArray(array, old, add) {
         array._.$watch("length", function (a, b) {
             $emit.call(array.$up, array.$pathname + ".length", [a, b])
         })
-        if (add) {
-            array.$watch = function () {
+        if (addWatch) {
+            hideProperty($vmodel, "$watch", function () {
                 return $watch.aplly(array, arguments)
-            }
+            })
         }
 
         if (W3C) {
@@ -1249,16 +1260,16 @@ function observeArray(array, old, add) {
         }
 
         for (var j = 0, n = array.length; j < n; j++) {
-            array[j] = observe(array[j], 0, 1)
+            array[j] = observe(array[j], 0, 1, 1)
         }
 
         return array
     }
 }
 
-function observe(obj, old, hasReturn, add) {
+function observe(obj, old, hasReturn, addWatch) {
     if (Array.isArray(obj)) {
-        return observeArray(obj, old, add)
+        return observeArray(obj, old, addWatch)
     } else if (avalon.isPlainObject(obj)) {
         if (old) {
             var keys = Object.keys(obj)
@@ -1275,13 +1286,13 @@ function observe(obj, old, hasReturn, add) {
             old.$active = false
         }
 
-        return observeObject(obj, null, old, add)
+        return observeObject(obj, null, old, addWatch)
     }
     if (hasReturn) {
         return obj
     }
 }
-function makeGetSet(key, value, list) {
+function makeGetSet(key, value) {
     var childVm = observe(value)//转换为VM
     if (childVm) {
         value = childVm
@@ -1291,7 +1302,7 @@ function makeGetSet(key, value, list) {
     return {
         get: function () {
             if (this.$active) {
-                //  collectDependency(this.$events[key])
+                collectDependency(this, key)
             }
             return value
         },
@@ -1644,7 +1655,7 @@ var dependencyDetection = (function () {
         end: function () {
             currentFrame = outerFrames.pop()
         },
-        collectDependency: function (array) {
+        collectDependency: function (array) {         
             if (currentFrame) {
                 //被dependencyDetection.begin调用
                 currentFrame.callback(array)
@@ -1663,7 +1674,14 @@ avalon.injectBinding = function (binding) {
 
     binding.handler = binding.handler || directives[binding.type].update || noop
     binding.update = function () {
+        var begin = false
         if (!binding.evaluator) {
+            begin = true
+            dependencyDetection.begin({
+                callback: function (array) {
+                    injectDependency(array, binding)
+                }
+            })
             binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
             binding.observers.forEach(function (a) {
                 a.v.$watch(a.p, binding)
@@ -1676,7 +1694,8 @@ avalon.injectBinding = function (binding) {
                 a = binding.evaluator.apply(0, binding.args)
             } else {
                 a = args[0]
-                b = args[1]            }
+                b = args[1]
+            }
             b = typeof b === "undefined" ? binding.oldValue : b
 
             if (binding.signature) {
@@ -1706,6 +1725,7 @@ avalon.injectBinding = function (binding) {
                 node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
             }
         } finally {
+            begin && dependencyDetection.end()
             delete binding.fireArgs
         }
     }
@@ -2683,7 +2703,7 @@ function parser(input) {
     } while (true);
 
     var sorted = []
-    for ( i in words) {
+    for (i in words) {
         var value = words[i]
         var arr = i.split("-")
 
@@ -2706,8 +2726,8 @@ function parser(input) {
         }
         var ok = true
         loop:
-                for ( i in map) {
-             arr = i.split("-")
+                for (i in map) {
+            arr = i.split("-")
             if (Number(arr[1]) + 1 === next.first) {
 
                 map[arr[0] + "-" + next.last] = map[i] + next.text
@@ -2723,7 +2743,7 @@ function parser(input) {
     } while (1);
     var result = []
     var uniq = {}
-    for ( i in map) {
+    for (i in map) {
         var v = map[i]
         if (!uniq[v]) {
             uniq[v] = true
@@ -2732,34 +2752,34 @@ function parser(input) {
     }
     return result
 }
-function addAssign(vars, vmodel, name, binding){
-     var ret = [],
-        prefix = " = " + name + "."
-     for (var i = vars.length, prop; prop = vars[--i];) {
-         var arr = prop.split("."),a
-         var first = arr[0]
-         while(a = arr.shift()){
-             if(vmodel.hasOwnProperty(a) || a === "*"){
-                  ret.push(first + prefix + first)
-                  binding.observers.push({
-                     v:vmodel,
-                     p:prop
-                  })
-              
-                  vars.splice(i, 1)
-             }
-         }
+function addAssign(vars, vmodel, name, binding) {
+    var ret = [],
+            prefix = " = " + name + "."
+    for (var i = vars.length, prop; prop = vars[--i]; ) {
+        var arr = prop.split("."), a
+        var first = arr[0]
+        while (a = arr.shift()) {
+            if (vmodel.hasOwnProperty(a) || a === "*") {
+                ret.push(first + prefix + first)
+                binding.observers.push({
+                    v: vmodel,
+                    p: prop
+                })
+
+                vars.splice(i, 1)
+            }
+        }
     }
     return ret
 }
 function parseExpr(expr, vmodels, binding) {
-   var vars =  parser(expr)
-   var expose = new Date -0
-   var assigns = []
-   var names = []
-   var args = []
-   binding.observers = []
-     for (var i = 0, sn = vmodels.length; i < sn; i++) {
+    var vars = parser(expr)
+    var expose = new Date - 0
+    var assigns = []
+    var names = []
+    var args = []
+    binding.observers = []
+    for (var i = 0, sn = vmodels.length; i < sn; i++) {
         if (vars.length) {
             var name = "vm" + expose + "_" + i
             names.push(name)
@@ -2768,10 +2788,26 @@ function parseExpr(expr, vmodels, binding) {
         }
     }
     binding.args = args
-    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") +"\nreturn "+expr))
-  
-   return fn
- 
+    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + "\nreturn " + expr))
+    if (binding.type === "duplex") {
+        var nameOne = {}
+        assigns.forEach(function (a) {
+            var arr = a.split("=")
+            nameOne[arr[0].trim()] = arr[1].trim()
+        })
+
+        expr = expr.replace(/\b\w+\b/g, function (a) {
+            return nameOne[a] ? nameOne[a] : a
+        })
+      
+        var fn2 = Function.apply(noop, names.concat("'use strict';"
+                + "return function(vvv){" + expr + " = vvv\n}\n"))
+      
+        binding.setter = fn2.apply(fn2, binding.args)
+    }
+
+    return fn
+
 }
 /*********************************************************************
  *                           扫描系统                                 *
@@ -3611,6 +3647,7 @@ var duplexBinding = avalon.directive("duplex", {
                     log("ms-duplex-radio已经更名为ms-duplex-checked")
                 name = "checked"
                 binding.isChecked = true
+                binding.xtype = "radio"
             }
             if (name === "bool") {
                 name = "boolean"
@@ -3628,6 +3665,14 @@ var duplexBinding = avalon.directive("duplex", {
             params.push("string")
         }
         binding.param = params.join("-")
+        binding.changed = getBindingCallback(elem, "binding-duplex-changed", vmodels) || noop
+        if (!binding.xtype) {
+            binding.xtype = elem.tagName === "SELECT" ? "select" :
+                    elem.type === "checkbox" ? "checkbox" :
+                    /^change/.test(elem.getAttribute("data-duplex-event")) ? "change" :
+                    "input"
+        }
+        //===================绑定事件======================
         binding.bound = function (type, callback) {
             if (elem.addEventListener) {
                 elem.addEventListener(type, callback, false)
@@ -3641,6 +3686,118 @@ var duplexBinding = avalon.directive("duplex", {
                 old && old()
             }
         }
+        var composing = false
+        function callback(value) {
+            binding.changed.call(this, value, binding)
+        }
+        function compositionStart() {
+            composing = true
+        }
+        function compositionEnd() {
+            composing = false
+        }
+        var updateVModel = function (e) {
+            console.log(e && e.type)
+            if (composing) //处理中文输入法在minlengh下引发的BUG
+                return
+          
+            var val = elem.value //防止递归调用形成死循环
+            
+            var lastValue = binding.pipe(val, binding, "get")
+            
+            if (avalon(elem).data("duplexObserve") !== false) {
+                binding.setter(lastValue)
+                callback.call(elem, lastValue)
+                console.log("++++++++")
+            }
+        }
+        switch (binding.xtype) {
+            case "radio":
+                binding.bound("click", function () {
+                    if (elem.data("duplexObserve") !== false) {
+                        var lastValue = binding.pipe(elem.value, binding, "get")
+                        binding.setter(lastValue)
+                        callback.call(elem, lastValue)
+                    }
+                })
+                break
+            case "checkbox":
+                binding.bound(W3C ? "change" : "click", function () {
+                    if (avalon(elem).data("duplexObserve") !== false) {
+                        var method = elem.checked ? "ensure" : "remove"
+                        var array = binding.evaluator()
+                        if (!Array.isArray(array)) {
+                            log("ms-duplex应用于checkbox上要对应一个数组")
+                            array = [array]
+                        }
+                        var val = binding.pipe(elem.value, binding, "get")
+                        avalon.Array[method](array, val)
+                        callback.call(elem, array)
+                    }
+                })
+                break
+            case "change":
+                binding.bound("change", updateVModel)
+                break
+            case "input":
+                if (!IEVersion) { // W3C
+                    binding.bound("input", updateVModel)
+                    //非IE浏览器才用这个
+                    binding.bound("compositionstart", compositionStart)
+                    binding.bound("compositionend", compositionEnd)
+                    binding.bound("DOMAutoComplete", updateVModel)
+                } else { //onpropertychange事件无法区分是程序触发还是用户触发
+                    // IE下通过selectionchange事件监听IE9+点击input右边的X的清空行为，及粘贴，剪切，删除行为
+                    if (IEVersion > 8) {
+                        binding.bound("input", updateVModel) //IE9使用propertychange无法监听中文输入改动
+                    } else {
+                        binding.bound("propertychange", function (e) { //IE6-8下第一次修改时不会触发,需要使用keydown或selectionchange修正
+                            if (e.propertyName === "value") {
+                                updateVModel()
+                            }
+                        })
+                    }
+                    binding.bound("dragend", function (e) {
+                        setTimeout(function () {
+                            updateVModel(e)
+                        })
+                    })
+                    //http://www.cnblogs.com/rubylouvre/archive/2013/02/17/2914604.html
+                    //http://www.matts411.com/post/internet-explorer-9-oninput/
+                }
+                break
+            case "select":
+                binding.bound("change", function () {
+                    if (avalon(elem).data("duplexObserve") !== false) {
+                        var val = avalon(elem).val() //字符串或字符串数组
+                        if (Array.isArray(val)) {
+                            val = val.map(function (v) {
+                                return binding.pipe(v, binding, "get")
+                            })
+                        } else {
+                            val = binding.pipe(val, binding, "get")
+                        }
+                        if (val + "" !== binding.oldValue) {
+                            avalon.setter(val)
+                        }
+                        callback.call(elem, val)
+                    }
+                })
+                break
+        }
+        if (binding.xtype === "input") {
+            watchValueInTimer(function () {
+                if (root.contains(elem)) {
+                    if (!elem.msFocus && binding.oldValue !== elem.value) {
+                        updateVModel()
+                    }
+                } else if (!elem.msRetain) {
+                    return false
+                }
+            })
+        }
+
+        elem.avalonSetter = updateVModel //#765
         for (var i in avalon.vmodels) {
             var v = avalon.vmodels[i]
             v.$fire("avalon-ms-duplex-init", binding)
@@ -3648,12 +3805,49 @@ var duplexBinding = avalon.directive("duplex", {
         var cpipe = binding.pipe || (binding.pipe = pipe)
         cpipe(null, binding, "init")
     },
-    update: function (evaluator) {
-        var elem = this.element
-        var tagName = elem.tagName
-        var impl = duplexBinding[tagName]
-        if(impl){
-            impl(elem, evaluator, this)
+    update: function (value) {
+        var elem = this.element, binding = this, curValue
+        switch (this.xtype) {
+            case "input":
+            case "change":
+                curValue = this.pipe(value, this, "set") + "" //fix #673
+                if (curValue !== this.oldValue) {
+                    elem.value = curValue
+                }
+                break
+            case "radio":
+                curValue = binding.isChecked ? !!value : value + "" === elem.value
+                if (IE6) {
+                    setTimeout(function () {
+                        //IE8 checkbox, radio是使用defaultChecked控制选中状态，
+                        //并且要先设置defaultChecked后设置checked
+                        //并且必须设置延迟
+                        elem.defaultChecked = curValue
+                        elem.checked = curValue
+                    }, 31)
+                } else {
+                    elem.checked = curValue
+                }
+                break
+            case "checkbox":
+                var array = [].concat(value) //强制转换为数组
+                curValue = this.pipe(elem.value, this, "get")
+                elem.checked = array.indexOf(curValue) > -1
+                break
+            case "select":
+                //必须变成字符串后才能比较
+                binding._value = value
+                renderedCallbacks.push(function () {
+                    var value = binding._value
+                    var curValue = Array.isArray(value) ? value.map(String) : value + ""
+                    avalon(elem).val(curValue)
+                    elem.oldValue = curValue + ""
+                    binding.changed.call(elem, curValue)
+                })
+                break
+        }
+        if (binding.xtype !== "select") {
+            binding.changed.call(elem, curValue)
         }
     }
 })
@@ -3740,7 +3934,8 @@ new function () { // jshint ignore:line
         function newSetter(value) { // jshint ignore:line
             setters[this.tagName].call(this, value)
             if (rmsinput.test(this.type) && !this.msFocus && this.avalonSetter) {
-                this.avalonSetter()
+                
+                this.avalonSetter({type:"setter"})
             }
         }
         var inputProto = HTMLInputElement.prototype
@@ -3761,212 +3956,6 @@ new function () { // jshint ignore:line
         watchValueInTimer = avalon.tick
     }
 } // jshint ignore:line
-
-if (IEVersion) {
-    avalon.bind(DOC, "selectionchange", function(e) {
-        var el = DOC.activeElement
-        if (el && typeof el.avalonSetter === "function") {
-            el.avalonSetter()
-        }
-    })
-}
-
-//处理radio, checkbox, text, textarea, password
-duplexBinding.INPUT = function(element, evaluator, binding) {
-    var $type = element.type,
-        bound = binding.bound,
-        $elem = avalon(element),
-        composing = false
-        function callback(value) {
-            binding.changed.call(this, value, binding)
-        }
-
-        function compositionStart() {
-            composing = true
-        }
-
-        function compositionEnd() {
-            composing = false
-        }
-        //当value变化时改变model的值
-    var updateVModel = function() {
-        if (composing) //处理中文输入法在minlengh下引发的BUG
-            return
-        var val = element.oldValue = element.value //防止递归调用形成死循环
-        var lastValue = binding.pipe(val, binding, "get")
-        if ($elem.data("duplexObserve") !== false) {
-            evaluator(lastValue)
-            callback.call(element, lastValue)
-        }
-    }
-    //当model变化时,它就会改变value的值
-    binding.handler = function() {
-        var val = binding.pipe(evaluator(), binding, "set") + "" //fix #673
-        if (val !== element.oldValue) {
-            element.value = val
-        }
-    }
-    if (binding.isChecked || $type === "radio") {
-        var IE6 = IEVersion === 6
-        updateVModel = function() {
-            if ($elem.data("duplexObserve") !== false) {
-                var lastValue = binding.pipe(element.value, binding, "get")
-                evaluator(lastValue)
-                callback.call(element, lastValue)
-            }
-        }
-        binding.handler = function() {
-            var val = evaluator()
-            var checked = binding.isChecked ? !! val : val + "" === element.value
-            element.oldValue = checked
-            if (IE6) {
-                setTimeout(function() {
-                    //IE8 checkbox, radio是使用defaultChecked控制选中状态，
-                    //并且要先设置defaultChecked后设置checked
-                    //并且必须设置延迟
-                    element.defaultChecked = checked
-                    element.checked = checked
-                }, 31)
-            } else {
-                element.checked = checked
-            }
-        }
-        bound("click", updateVModel)
-    } else if ($type === "checkbox") {
-        updateVModel = function() {
-            if ($elem.data("duplexObserve") !== false) {
-                var method = element.checked ? "ensure" : "remove"
-                var array = evaluator()
-                if (!Array.isArray(array)) {
-                    log("ms-duplex应用于checkbox上要对应一个数组")
-                    array = [array]
-                }
-                var val = binding.pipe(element.value, binding, "get")
-                avalon.Array[method](array, val)
-                callback.call(element, array)
-            }
-        }
-
-        binding.handler = function() {
-            var array = [].concat(evaluator()) //强制转换为数组
-            var val = binding.pipe(element.value, binding, "get")
-            element.checked = array.indexOf(val) > -1
-        }
-        bound(W3C ? "change" : "click", updateVModel)
-    } else {
-        var events = element.getAttribute("data-duplex-event") || "input"
-        if (element.attributes["data-event"]) {
-            log("data-event指令已经废弃，请改用data-duplex-event")
-        }
-
-        function delay(e) { // jshint ignore:line
-            setTimeout(function() {
-                updateVModel(e)
-            })
-        }
-        events.replace(rword, function(name) {
-            switch (name) {
-                case "input":
-                    if (!IEVersion) { // W3C
-                        bound("input", updateVModel)
-                        //非IE浏览器才用这个
-                        bound("compositionstart", compositionStart)
-                        bound("compositionend", compositionEnd)
-                        bound("DOMAutoComplete", updateVModel)
-                    } else { //onpropertychange事件无法区分是程序触发还是用户触发
-                        // IE下通过selectionchange事件监听IE9+点击input右边的X的清空行为，及粘贴，剪切，删除行为
-                        if (IEVersion > 8) {
-                            bound("input", updateVModel) //IE9使用propertychange无法监听中文输入改动
-                        } else {
-                            bound("propertychange", function(e) { //IE6-8下第一次修改时不会触发,需要使用keydown或selectionchange修正
-                                if (e.propertyName === "value") {
-                                    updateVModel()
-                                }
-                            })
-                        }
-                        bound("dragend", delay)
-                        //http://www.cnblogs.com/rubylouvre/archive/2013/02/17/2914604.html
-                        //http://www.matts411.com/post/internet-explorer-9-oninput/
-                    }
-                    break
-                default:
-                    bound(name, updateVModel)
-                    break
-            }
-        })
-        bound("focus", function() {
-            element.msFocus = true
-        })
-        bound("blur", function() {
-            element.msFocus = false
-        })
-
-        if (rmsinput.test($type)) {
-            watchValueInTimer(function() {
-                if (root.contains(element)) {
-                    if (!element.msFocus && element.oldValue !== element.value) {
-                        updateVModel()
-                    }
-                } else if (!element.msRetain) {
-                    return false
-                }
-            })
-        }
-
-        element.avalonSetter = updateVModel //#765
-    }
-
-    element.oldValue = element.value
-    binding.handler()
-    callback.call(element, element.value)
-  
-}
-duplexBinding.TEXTAREA = duplexBinding.INPUT
-duplexBinding.SELECT = function (element, evaluator, binding) {
-    var $elem = avalon(element)
-
-    function updateVModel() {
-        if ($elem.data("duplexObserve") !== false) {
-            var val = $elem.val() //字符串或字符串数组
-            if (Array.isArray(val)) {
-                val = val.map(function (v) {
-                    return binding.pipe(v, binding, "get")
-                })
-            } else {
-                val = binding.pipe(val, binding, "get")
-            }
-            if (val + "" !== element.oldValue) {
-                evaluator(val)
-            }
-            binding.changed.call(element, val, binding)
-        }
-    }
-    binding.handler = function () {
-        var val = evaluator()
-        if (Array.isArray(val)) {
-            if (!element.multiple) {
-                log("ms-duplex在<select multiple=true>上要求对应一个数组")
-            }
-        } else {
-            if (element.multiple) {
-                log("ms-duplex在<select multiple=false>不能对应一个数组")
-            }
-        }
-        //必须变成字符串后才能比较
-        val = Array.isArray(val) ? val.map(String) : val + ""
-        if (val + "" !== element.oldValue) {
-            $elem.val(val)
-            element.oldValue = val + ""
-        }
-    }
-    var val = evaluator()
-    element.oldValue = Array.isArray(val) ? val.map(String) : val + ""
-    binding.bound("change", updateVModel)
-    renderedCallbacks.push(function () {
-        binding.handler()
-        binding.changed.call(element, evaluator(), binding)
-    })
-}
 
 avalon.directive("effect", {
     priority: 5,
@@ -4765,6 +4754,7 @@ avalon.directive("repeat", {
             parent.insertBefore(transation, elem)
             fragments.forEach(function (fragment) {
                 scanNodeArray(fragment.nodes || [], fragment.vmodels)
+                //if(fragment.vmodels.length > 2)
                 fragment.nodes = fragment.vmodels = null
             })// jshint ignore:line
         } else {
@@ -4980,7 +4970,7 @@ function decorateProxy(proxy, binding, type) {
             binding.$repeat.removeAt(proxy.$index)
         }
         var param = binding.param
-       
+      
         
         proxy.$watch(param, function (a) {
             var index = proxy.$index

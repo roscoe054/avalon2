@@ -149,7 +149,7 @@ function parser(input) {
     } while (true);
 
     var sorted = []
-    for ( i in words) {
+    for (i in words) {
         var value = words[i]
         var arr = i.split("-")
 
@@ -172,8 +172,8 @@ function parser(input) {
         }
         var ok = true
         loop:
-                for ( i in map) {
-             arr = i.split("-")
+                for (i in map) {
+            arr = i.split("-")
             if (Number(arr[1]) + 1 === next.first) {
 
                 map[arr[0] + "-" + next.last] = map[i] + next.text
@@ -189,7 +189,7 @@ function parser(input) {
     } while (1);
     var result = []
     var uniq = {}
-    for ( i in map) {
+    for (i in map) {
         var v = map[i]
         if (!uniq[v]) {
             uniq[v] = true
@@ -198,34 +198,34 @@ function parser(input) {
     }
     return result
 }
-function addAssign(vars, vmodel, name, binding){
-     var ret = [],
-        prefix = " = " + name + "."
-     for (var i = vars.length, prop; prop = vars[--i];) {
-         var arr = prop.split("."),a
-         var first = arr[0]
-         while(a = arr.shift()){
-             if(vmodel.hasOwnProperty(a) || a === "*"){
-                  ret.push(first + prefix + first)
-                  binding.observers.push({
-                     v:vmodel,
-                     p:prop
-                  })
-              
-                  vars.splice(i, 1)
-             }
-         }
+function addAssign(vars, vmodel, name, binding) {
+    var ret = [],
+            prefix = " = " + name + "."
+    for (var i = vars.length, prop; prop = vars[--i]; ) {
+        var arr = prop.split("."), a
+        var first = arr[0]
+        while (a = arr.shift()) {
+            if (vmodel.hasOwnProperty(a) || a === "*") {
+                ret.push(first + prefix + first)
+                binding.observers.push({
+                    v: vmodel,
+                    p: prop
+                })
+
+                vars.splice(i, 1)
+            }
+        }
     }
     return ret
 }
 function parseExpr(expr, vmodels, binding) {
-   var vars =  parser(expr)
-   var expose = new Date -0
-   var assigns = []
-   var names = []
-   var args = []
-   binding.observers = []
-     for (var i = 0, sn = vmodels.length; i < sn; i++) {
+    var vars = parser(expr)
+    var expose = new Date - 0
+    var assigns = []
+    var names = []
+    var args = []
+    binding.observers = []
+    for (var i = 0, sn = vmodels.length; i < sn; i++) {
         if (vars.length) {
             var name = "vm" + expose + "_" + i
             names.push(name)
@@ -234,8 +234,24 @@ function parseExpr(expr, vmodels, binding) {
         }
     }
     binding.args = args
-    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") +"\nreturn "+expr))
-  
-   return fn
- 
+    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + "\nreturn " + expr))
+    if (binding.type === "duplex") {
+        var nameOne = {}
+        assigns.forEach(function (a) {
+            var arr = a.split("=")
+            nameOne[arr[0].trim()] = arr[1].trim()
+        })
+
+        expr = expr.replace(/\b\w+\b/g, function (a) {
+            return nameOne[a] ? nameOne[a] : a
+        })
+      
+        var fn2 = Function.apply(noop, names.concat("'use strict';"
+                + "return function(vvv){" + expr + " = vvv\n}\n"))
+      
+        binding.setter = fn2.apply(fn2, binding.args)
+    }
+
+    return fn
+
 }

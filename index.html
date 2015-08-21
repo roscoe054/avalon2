@@ -7,32 +7,21 @@
         <script src="avalon.js"></script>
 
     </head>
-    <body >
-
-
+    <body>
         <script>
             var vm = avalon.define({
                 $id: "test",
-                aaa: [{a:1},{a:3},{a:5}],
-                kk: 111
+                aaa: 111,
+                arr:[{a:1},{a:2}]
             })
-//            vm.$watch("aaa.*", function(a){
-//                console.log(a)
-//            })
-            setTimeout(function () {
-                console.log("====")
-                vm.aaa[0].a = 9
-               // vm.aaa.set(0, {a:9})
-            }, 3000)
 
         </script>
         <div ms-controller="test">
+            <p>{{aaa}}</p>
             <ul>
-                <li ms-repeat="aaa">{{el.a}}</li>
+                <li ms-repeat="arr">{{el.a}}</li>
             </ul>
         </div>
-
-
     </body>
 
 </html>
