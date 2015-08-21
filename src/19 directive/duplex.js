@@ -71,18 +71,13 @@ var duplexBinding = avalon.directive("duplex", {
             composing = false
         }
         var updateVModel = function (e) {
-            console.log(e && e.type)
             if (composing) //处理中文输入法在minlengh下引发的BUG
                 return
-          
             var val = elem.value //防止递归调用形成死循环
-            
             var lastValue = binding.pipe(val, binding, "get")
-            
             if (avalon(elem).data("duplexObserve") !== false) {
                 binding.setter(lastValue)
                 callback.call(elem, lastValue)
-                console.log("++++++++")
             }
         }
         switch (binding.xtype) {
@@ -159,10 +154,11 @@ var duplexBinding = avalon.directive("duplex", {
                 })
                 break
         }
-        if (binding.xtype === "input") {
+        if (binding.xtype === "input" && /^(text|password|hidden)/.test(elem.type)) {
+            elem.avalonSetter = updateVModel //#765
             watchValueInTimer(function () {
                 if (root.contains(elem)) {
-                    if (!elem.msFocus && binding.oldValue !== elem.value) {
+                    if (elem.oldValue !== elem.value) {
                         updateVModel()
                     }
                 } else if (!elem.msRetain) {
@@ -171,7 +167,6 @@ var duplexBinding = avalon.directive("duplex", {
             })
         }
 
-        elem.avalonSetter = updateVModel //#765
         for (var i in avalon.vmodels) {
             var v = avalon.vmodels[i]
             v.$fire("avalon-ms-duplex-init", binding)
@@ -186,7 +181,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set") + "" //fix #673
                 if (curValue !== this.oldValue) {
-                    elem.value = curValue
+                    elem.value = elem.oldValue = curValue
                 }
                 break
             case "radio":
@@ -226,6 +221,14 @@ var duplexBinding = avalon.directive("duplex", {
     }
 })
 
+if (IEVersion) {
+    avalon.bind(DOC, "selectionchange", function (e) {
+        var el = DOC.activeElement
+        if (el && typeof el.avalonSetter === "function") {
+            el.avalonSetter()
+        }
+    })
+}
 
 function fixNull(val) {
     return val == null ? "" : val
@@ -299,7 +302,6 @@ function ticker() {
 }
 
 var watchValueInTimer = noop
-var rmsinput = /text|password|hidden/
 new function () { // jshint ignore:line
     try { //#272 IE9-IE11, firefox
         var setters = {}
@@ -307,9 +309,8 @@ new function () { // jshint ignore:line
         var bproto = HTMLTextAreaElement.prototype
         function newSetter(value) { // jshint ignore:line
             setters[this.tagName].call(this, value)
-            if (rmsinput.test(this.type) && !this.msFocus && this.avalonSetter) {
-                
-                this.avalonSetter({type:"setter"})
+            if ((typeof this.avalonSetter === "function") && this.oldValue !== value) {
+                this.avalonSetter()
             }
         }
         var inputProto = HTMLInputElement.prototype

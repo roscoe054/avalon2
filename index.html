@@ -11,13 +11,13 @@
         <script>
             var vm = avalon.define({
                 $id: "test",
-                aaa: 111,
+                aaa: "aa",
                 arr:[{a:1},{a:2}]
             })
 
         </script>
         <div ms-controller="test">
-            <p>{{aaa}}</p>
+            <p>{{aaa|uppercase}}</p>
             <ul>
                 <li ms-repeat="arr">{{el.a}}</li>
             </ul>

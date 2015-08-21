@@ -138,7 +138,7 @@ var duplexBinding = avalon.directive("duplex", {
                 })
                 break
         }
-        if (binding.xtype === "input") {
+        if (binding.xtype === "input" && /^(text|password|hidden)/.test(elem.type)) {
             watchValueInTimer(function () {
                 if (root.contains(elem)) {
                     if (!elem.msFocus && binding.oldValue !== elem.value) {
@@ -165,7 +165,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set") + "" //fix #673
                 if (curValue !== this.oldValue) {
-                    elem.value = curValue
+                    elem.value = elem.oldValue = curValue
                 }
                 break
             case "radio":
@@ -268,7 +268,6 @@ function ticker() {
 }
 
 var watchValueInTimer = noop
-var rmsinput = /text|password|hidden/
 new function () { // jshint ignore:line
     try { //#272 IE9-IE11, firefox
         var setters = {}
@@ -276,7 +275,7 @@ new function () { // jshint ignore:line
         var bproto = HTMLTextAreaElement.prototype
         function newSetter(value) { // jshint ignore:line
             setters[this.tagName].call(this, value)
-            if (rmsinput.test(this.type) && !this.msFocus && this.avalonSetter) {
+            if ((typeof this.avalonSetter === "function") && this.oldValue !== value) {
                 this.avalonSetter()
             }
         }

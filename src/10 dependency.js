@@ -56,6 +56,9 @@ avalon.injectBinding = function (binding) {
                 b = args[1]
             }
             b = typeof b === "undefined" ? binding.oldValue : b
+            if(binding._filters){
+               a = filters.$filter.apply(0, [a].concat(binding._filters))
+            }
 
             if (binding.signature) {
                 var xtype = avalon.type(a)
