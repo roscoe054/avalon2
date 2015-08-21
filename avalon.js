@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.21
+ avalon.js 1.5 built in 2015.8.22
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1692,6 +1692,9 @@ avalon.injectBinding = function (binding) {
             var args = binding.fireArgs, a, b
             if (!args) {
                 a = binding.evaluator.apply(0, binding.args)
+                if(binding.type === "on"){
+                  a = binding.evaluator+""
+                }
             } else {
                 a = args[0]
                 b = args[1]
@@ -2737,17 +2740,13 @@ function parser(input) {
     return result
 }
 function addAssign(vars, vmodel, name, binding) {
-    if (binding.filters && !binding._filters) {
-        binding._filters = parseFilter(binding.filters)
-    }
-
     var ret = [],
             prefix = " = " + name + "."
     for (var i = vars.length, prop; prop = vars[--i]; ) {
         var arr = prop.split("."), a
         var first = arr[0]
         while (a = arr.shift()) {
-            if (vmodel.hasOwnProperty(a) || a === "*") {
+            if (vmodel.hasOwnProperty(a)) {
                 ret.push(first + prefix + first)
                 binding.observers.push({
                     v: vmodel,
@@ -2761,6 +2760,9 @@ function addAssign(vars, vmodel, name, binding) {
     return ret
 }
 function parseExpr(expr, vmodels, binding) {
+    if (binding.filters && !binding._filters) {
+        binding._filters = parseFilter(binding.filters)
+    }
     var vars = parser(expr)
     var expose = new Date - 0
     var assigns = []
@@ -2776,7 +2778,25 @@ function parseExpr(expr, vmodels, binding) {
         }
     }
     binding.args = args
-    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + "\nreturn " + expr))
+    if(!assigns.length){
+        assigns.push("fix"+expose)
+    }
+   if (binding.type === "on") { //事件绑定
+        if (expr.indexOf("(") === -1) {
+            expr += ".call(this, $event)"
+        } else {
+            expr = expr.replace("(", ".call(this,")
+        }
+        names.push("$event")
+        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
+        var lastIndex = expr.lastIndexOf("\nreturn")
+        var header = expr.slice(0, lastIndex)
+        var footer = expr.slice(lastIndex)
+        expr = header + "\n" + footer
+    }else{
+        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
+    }
+    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + expr))
     if (binding.type === "duplex") {
         var nameOne = {}
         assigns.forEach(function (a) {
@@ -4856,7 +4876,7 @@ avalon.directive("repeat", {
                         staggerIndex = mayStaggerAnimate(binding.effectEnterStagger, function () {
                             var curNode = removeItem(proxy2.$anchor)// 如果位置被挪动了
                             var inserted = avalon.slice(curNode.childNodes)
-                            parent.insertBefore(curNode, preElement.nextSibling)
+                            parent.insertBefore(curNode,  preElement.nextSibling)
                             animateRepeat(inserted, 1, binding)
                         }, staggerIndex)
                     })(proxy, preEl)// jshint ignore:line

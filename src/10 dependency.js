@@ -51,6 +51,9 @@ avalon.injectBinding = function (binding) {
             var args = binding.fireArgs, a, b
             if (!args) {
                 a = binding.evaluator.apply(0, binding.args)
+                if(binding.type === "on"){
+                  a = binding.evaluator+""
+                }
             } else {
                 a = args[0]
                 b = args[1]

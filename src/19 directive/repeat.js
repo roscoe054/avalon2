@@ -165,7 +165,7 @@ avalon.directive("repeat", {
                         staggerIndex = mayStaggerAnimate(binding.effectEnterStagger, function () {
                             var curNode = removeItem(proxy2.$anchor)// 如果位置被挪动了
                             var inserted = avalon.slice(curNode.childNodes)
-                            parent.insertBefore(curNode, preElement.nextSibling)
+                            parent.insertBefore(curNode,  preElement.nextSibling)
                             animateRepeat(inserted, 1, binding)
                         }, staggerIndex)
                     })(proxy, preEl)// jshint ignore:line
