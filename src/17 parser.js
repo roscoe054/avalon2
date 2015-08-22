@@ -240,22 +240,6 @@ function parseExpr(expr, vmodels, binding) {
     if(!assigns.length){
         assigns.push("fix"+expose)
     }
-   if (binding.type === "on") { //事件绑定
-        if (expr.indexOf("(") === -1) {
-            expr += ".call(this, $event)"
-        } else {
-            expr = expr.replace("(", ".call(this,")
-        }
-        names.push("$event")
-        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
-        var lastIndex = expr.lastIndexOf("\nreturn")
-        var header = expr.slice(0, lastIndex)
-        var footer = expr.slice(lastIndex)
-        expr = header + "\n" + footer
-    }else{
-        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
-    }
-    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + expr))
     if (binding.type === "duplex") {
         var nameOne = {}
         assigns.forEach(function (a) {
@@ -272,6 +256,24 @@ function parseExpr(expr, vmodels, binding) {
 
         binding.setter = fn2.apply(fn2, binding.args)
     }
+    
+   if (binding.type === "on") { //事件绑定
+        if (expr.indexOf("(") === -1) {
+            expr += ".call(this, $event)"
+        } else {
+            expr = expr.replace("(", ".call(this,")
+        }
+        names.push("$event")
+        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
+        var lastIndex = expr.lastIndexOf("\nreturn")
+        var header = expr.slice(0, lastIndex)
+        var footer = expr.slice(lastIndex)
+        expr = header + "\n" + footer
+    }else{
+        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
+    }
+    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + expr))
+    
 
     return fn
 

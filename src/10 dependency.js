@@ -14,7 +14,7 @@ var dependencyDetection = (function () {
         end: function () {
             currentFrame = outerFrames.pop()
         },
-        collectDependency: function (array) {         
+        collectDependency: function (array) {
             if (currentFrame) {
                 //被dependencyDetection.begin调用
                 currentFrame.callback(array)
@@ -49,18 +49,22 @@ avalon.injectBinding = function (binding) {
         }
         try {
             var args = binding.fireArgs, a, b
+            delete binding.fireArgs
             if (!args) {
-                a = binding.evaluator.apply(0, binding.args)
-                if(binding.type === "on"){
-                  a = binding.evaluator+""
+                if (binding.type === "on") {
+                    a = binding.evaluator + ""
+                } else {
+                    a = binding.evaluator.apply(0, binding.args)
                 }
             } else {
+
                 a = args[0]
                 b = args[1]
+                b = typeof b === "undefined" ? binding.oldValue : b
             }
-            b = typeof b === "undefined" ? binding.oldValue : b
-            if(binding._filters){
-               a = filters.$filter.apply(0, [a].concat(binding._filters))
+            // b = typeof b === "undefined" ? binding.oldValue : b
+            if (binding._filters) {
+                a = filters.$filter.apply(0, [a].concat(binding._filters))
             }
 
             if (binding.signature) {
@@ -78,7 +82,9 @@ avalon.injectBinding = function (binding) {
                     binding.handler(a, b)
                     binding.oldValue = 1
                 }
+
             } else if (a !== b) {
+
                 binding.handler(a, b)
                 binding.oldValue = a
             }
@@ -91,7 +97,7 @@ avalon.injectBinding = function (binding) {
             }
         } finally {
             begin && dependencyDetection.end()
-            delete binding.fireArgs
+
         }
     }
     binding.update()

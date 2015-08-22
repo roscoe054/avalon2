@@ -56,7 +56,7 @@ function $emit(key, args) {
 }
 
 function collectDependency(el, key) {
-   do {
+    do {
         if (el.$watch) {
             var e = el.$events || (el.$events = {})
             var array = e[key] || (e[key] = [])
@@ -79,24 +79,23 @@ function notifySubscribers(subs, args) {
     if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
         rejectDisposeQueue()
     }
-    if (kernel.async && !subs.sync) {
+    if (kernel.async) {
         buffer.render()
         for (var i = 0, sub; sub = subs[i++]; ) {
-            if (sub.update) {
-                if (args) {
-                    sub.fireArgs = args
-                }
+            if (sub.update && sub.type !== "user-watcher") {
                 var uuid = getUid(sub)
                 if (!buffer.queue[uuid]) {
                     buffer.queue[uuid] = 1
                     buffer.queue.push(sub)
                 }
+            } else {
+                sub.update()
             }
         }
     } else {
         for (i = 0; sub = subs[i++]; ) {
             if (sub.update) {
-                if (args) {
+                if (args && sub.type === "user-watcher") {
                     sub.fireArgs = args
                 }
                 sub.update()//最小化刷新DOM树

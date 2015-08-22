@@ -1008,7 +1008,7 @@ function $emit(key, args) {
 }
 
 function collectDependency(el, key) {
-   do {
+    do {
         if (el.$watch) {
             var e = el.$events || (el.$events = {})
             var array = e[key] || (e[key] = [])
@@ -1031,24 +1031,23 @@ function notifySubscribers(subs, args) {
     if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
         rejectDisposeQueue()
     }
-    if (kernel.async && !subs.sync) {
+    if (kernel.async) {
         buffer.render()
         for (var i = 0, sub; sub = subs[i++]; ) {
-            if (sub.update) {
-                if (args) {
-                    sub.fireArgs = args
-                }
+            if (sub.update && sub.type !== "user-watcher") {
                 var uuid = getUid(sub)
                 if (!buffer.queue[uuid]) {
                     buffer.queue[uuid] = 1
                     buffer.queue.push(sub)
                 }
+            } else {
+                sub.update()
             }
         }
     } else {
         for (i = 0; sub = subs[i++]; ) {
             if (sub.update) {
-                if (args) {
+                if (args && sub.type === "user-watcher") {
                     sub.fireArgs = args
                 }
                 sub.update()//最小化刷新DOM树
@@ -1655,7 +1654,7 @@ var dependencyDetection = (function () {
         end: function () {
             currentFrame = outerFrames.pop()
         },
-        collectDependency: function (array) {         
+        collectDependency: function (array) {
             if (currentFrame) {
                 //被dependencyDetection.begin调用
                 currentFrame.callback(array)
@@ -1690,18 +1689,22 @@ avalon.injectBinding = function (binding) {
         }
         try {
             var args = binding.fireArgs, a, b
+            delete binding.fireArgs
             if (!args) {
-                a = binding.evaluator.apply(0, binding.args)
-                if(binding.type === "on"){
-                  a = binding.evaluator+""
+                if (binding.type === "on") {
+                    a = binding.evaluator + ""
+                } else {
+                    a = binding.evaluator.apply(0, binding.args)
                 }
             } else {
+
                 a = args[0]
                 b = args[1]
+                b = typeof b === "undefined" ? binding.oldValue : b
             }
-            b = typeof b === "undefined" ? binding.oldValue : b
-            if(binding._filters){
-               a = filters.$filter.apply(0, [a].concat(binding._filters))
+            // b = typeof b === "undefined" ? binding.oldValue : b
+            if (binding._filters) {
+                a = filters.$filter.apply(0, [a].concat(binding._filters))
             }
 
             if (binding.signature) {
@@ -1719,7 +1722,9 @@ avalon.injectBinding = function (binding) {
                     binding.handler(a, b)
                     binding.oldValue = 1
                 }
+
             } else if (a !== b) {
+
                 binding.handler(a, b)
                 binding.oldValue = a
             }
@@ -1732,7 +1737,7 @@ avalon.injectBinding = function (binding) {
             }
         } finally {
             begin && dependencyDetection.end()
-            delete binding.fireArgs
+
         }
     }
     binding.update()
@@ -2781,22 +2786,6 @@ function parseExpr(expr, vmodels, binding) {
     if(!assigns.length){
         assigns.push("fix"+expose)
     }
-   if (binding.type === "on") { //事件绑定
-        if (expr.indexOf("(") === -1) {
-            expr += ".call(this, $event)"
-        } else {
-            expr = expr.replace("(", ".call(this,")
-        }
-        names.push("$event")
-        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
-        var lastIndex = expr.lastIndexOf("\nreturn")
-        var header = expr.slice(0, lastIndex)
-        var footer = expr.slice(lastIndex)
-        expr = header + "\n" + footer
-    }else{
-        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
-    }
-    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + expr))
     if (binding.type === "duplex") {
         var nameOne = {}
         assigns.forEach(function (a) {
@@ -2813,6 +2802,24 @@ function parseExpr(expr, vmodels, binding) {
 
         binding.setter = fn2.apply(fn2, binding.args)
     }
+    
+   if (binding.type === "on") { //事件绑定
+        if (expr.indexOf("(") === -1) {
+            expr += ".call(this, $event)"
+        } else {
+            expr = expr.replace("(", ".call(this,")
+        }
+        names.push("$event")
+        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
+        var lastIndex = expr.lastIndexOf("\nreturn")
+        var header = expr.slice(0, lastIndex)
+        var footer = expr.slice(lastIndex)
+        expr = header + "\n" + footer
+    }else{
+        expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
+    }
+    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + expr))
+    
 
     return fn
 
@@ -3024,8 +3031,10 @@ function scanAttr(elem, vmodels, match) {
                             priority: (directives[type].priority || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
+                            
                             var filters = getToken(value).filters
-                           
+                            binding.expr = binding.expr.replace(filters, "")
+                          
                             binding.filters = filters.replace(rhasHtml, function () {
                                     binding.type = "html"
                                     binding.group = 1
@@ -3890,7 +3899,7 @@ var duplexBinding = avalon.directive("duplex", {
                 break
             case "radio":
                 curValue = binding.isChecked ? !!value : value + "" === elem.value
-                if (IE6) {
+                if (IEVersion === 6) {
                     setTimeout(function () {
                         //IE8 checkbox, radio是使用defaultChecked控制选中状态，
                         //并且要先设置defaultChecked后设置checked

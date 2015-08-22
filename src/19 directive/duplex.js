@@ -186,7 +186,7 @@ var duplexBinding = avalon.directive("duplex", {
                 break
             case "radio":
                 curValue = binding.isChecked ? !!value : value + "" === elem.value
-                if (IE6) {
+                if (IEVersion === 6) {
                     setTimeout(function () {
                         //IE8 checkbox, radio是使用defaultChecked控制选中状态，
                         //并且要先设置defaultChecked后设置checked
