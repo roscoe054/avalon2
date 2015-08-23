@@ -140,6 +140,7 @@ avalon.directive("repeat", {
             }
 
             //  console.log(effectEnterStagger)
+            console.log(length+"!")
             for (i = 0; i < length; i++) {
                 proxy = proxies[i]
                 keyOrId = xtype === "array" ? proxy.$id : proxy.$key
@@ -335,6 +336,7 @@ function eachProxyFactory(itemName) {
 function decorateProxy(proxy, binding, type) {
     if (type === "array") {
         proxy.$remove = function () {
+            
             binding.$repeat.removeAt(proxy.$index)
         }
         var param = binding.param

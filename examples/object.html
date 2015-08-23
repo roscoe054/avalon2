@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="../avalon.js"></script>
+    </head>
+    <body>
+        <script>
+            var vm = avalon.define({
+                $id: "test",
+                object: {
+                    a: 111,
+                    b: 222,
+                    c: 333
+                }
+            })
+            setTimeout(function () {
+//                 vm.object = {
+//                     b: 555,
+//                     a: 777,
+//                     c: 888
+//                 }
+            }, 3000)
+        </script>
+        <div ms-controller="test">
+
+            <ul>
+                <li ms-repeat="object">{{$key}}--{{$val}}<input ms-duplex="$val"/></li>
+            </ul>
+
+        </div>
+
+    </body>
+</html>

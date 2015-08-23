@@ -163,15 +163,20 @@ function effectFactory(el, opts) {
 }
 
 function effectBinding(elem, binding) {
-    binding.effectName = elem.getAttribute("data-effect-name")
-    binding.effectDriver = elem.getAttribute("data-effect-driver")
-    var stagger = +elem.getAttribute("data-effect-stagger")
-    binding.effectLeaveStagger = +elem.getAttribute("data-effect-leave-stagger") || stagger
-    binding.effectEnterStagger = +elem.getAttribute("data-effect-enter-stagger") || stagger
-    binding.effectClass = elem.className || NaN
+    var name = elem.getAttribute("data-effect-name")
+    if (name) {
+        binding.effectName = name
+        binding.effectDriver = elem.getAttribute("data-effect-driver")
+        var stagger = +elem.getAttribute("data-effect-stagger")
+        binding.effectLeaveStagger = +elem.getAttribute("data-effect-leave-stagger") || stagger
+        binding.effectEnterStagger = +elem.getAttribute("data-effect-enter-stagger") || stagger
+        binding.effectClass = elem.className || NaN
+    }
 }
 function upperFirstChar(str) {
-    return str.replace(/^[\S]/g, function(m) {return m.toUpperCase()})
+    return str.replace(/^[\S]/g, function (m) {
+        return m.toUpperCase()
+    })
 }
 var effectBuffer = new Buffer()
 function Effect() {
@@ -186,7 +191,7 @@ Effect.prototype = {
         return getEffectClass(this, "leave")
     },
     // 共享一个函数
-    actionFun: function(name, before, after) {
+    actionFun: function (name, before, after) {
         if (document.hidden) {
             return
         }
@@ -197,10 +202,11 @@ Effect.prototype = {
         var oppositeName = isLeave ? "enter" : "leave"
         callEffectHook(me, "abort" + upperFirstChar(oppositeName))
         callEffectHook(me, "before" + upperFirstChar(name))
-        if(!isLeave) before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
+        if (!isLeave)
+            before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
         var cssCallback = function (cancel) {
             el.removeEventListener(me.cssEvent, me.cssCallback)
-            if(isLeave) {
+            if (isLeave) {
                 before(el) //这里可能做移出DOM树操作,因此必须位于动画之后
                 avalon(el).removeClass(me.cssClass)
             } else {
@@ -240,11 +246,11 @@ Effect.prototype = {
     },
     enter: function (before, after) {
         this.actionFun.apply(this, ["enter"].concat(avalon.slice(arguments)))
-       
+
     },
     leave: function (before, after) {
         this.actionFun.apply(this, ["leave"].concat(avalon.slice(arguments)))
-       
+
     },
     dispose: function () {//销毁与回收到池子中
         this.update = this.cssCallback = null

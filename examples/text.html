@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="../avalon.js"></script>
+        <script>
+            avalon.filters.a = function (a, v) {
+                return a.replace("-", v)
+            }
+            avalon.filters.html2 = function (a) {
+                return a + a
+            }
+            avalon.define({
+                $id: "test",
+                aaa: "aaa-bbb",
+                date: new Date - 0,
+                html: "<strong>111</strong>"
+            })
+        </script>
+    </head>
+    <body>
+        <div ms-controller="test">
+            <p>{{aaa}}</p>
+            <p>{{date|date("yyyy:MM:dd")}}</p>
+            <p ms-text="aaa|uppercase|a('*')"></p>
+            <p>{{html|html2|html}}</p>
+            <p ms-html="html|html2"></p>
+        </div>
+    </body>
+</html>

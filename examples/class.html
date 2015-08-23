@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>ms-attr-*</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <script src="../avalon.js"></script>
+
+        <script>
+            var vm = avalon.define({
+                $id: "test",
+                aaa: true,
+                click: function () {
+                    vm.aaa = !vm.aaa
+                },
+                bbb: "@@@",
+                ccc: "&&&",
+                active: "active"
+            })
+
+        </script>
+        <style>
+            .active {
+                background: goldenrod;
+            }
+            .readonly{
+                border:1px solid blueviolet;
+            }
+        </style>
+
+    </head>
+    <body>
+        <div  ms-controller="test">
+            <input ms-readonly="aaa" name="a3" ms-class="readonly:aaa" value="readonly" />
+
+            <button type="button" ms-click="click" ms-attr-class="active">
+                点我
+            </button>
+
+        </div>
+    </body>
+</html>

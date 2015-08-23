@@ -60,9 +60,9 @@ avalon.injectBinding = function (binding) {
 
                 a = args[0]
                 b = args[1]
-                b = typeof b === "undefined" ? binding.oldValue : b
+                
             }
-            // b = typeof b === "undefined" ? binding.oldValue : b
+             b = typeof b === "undefined" ? binding.oldValue : b
             if (binding._filters) {
                 a = filters.$filter.apply(0, [a].concat(binding._filters))
             }
@@ -76,7 +76,6 @@ avalon.injectBinding = function (binding) {
                 var vtrack = getProxyIds(binding.proxies || [], xtype)
                 var mtrack = a.$track || (xtype === "array" ? createTrack(a.length) :
                         Object.keys(a))
-
                 binding.track = mtrack
                 if (vtrack !== mtrack.join(";")) {
                     binding.handler(a, b)

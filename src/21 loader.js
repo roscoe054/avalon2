@@ -25,7 +25,7 @@ new function () { // jshint ignore:line
     var loadings = [] //正在加载中的模块列表
     var factorys = [] //放置define方法的factory函数
     var rjsext = /\.js$/i
-
+    var rquery = /(\?[^#]*)$/
     function makeRequest(name, config) {
         //1. 去掉资源前缀
         var res = "js"
@@ -85,7 +85,7 @@ new function () { // jshint ignore:line
                 state: 1 //send
             }
             var wrap = function (obj) {
-                resources[res] = obj
+                resources[res] = obj//标识该插件已注册
                 obj.load(name, req, function (a) {
                     if (arguments.length && a !== void 0) {
                         module.exports = a
@@ -95,10 +95,10 @@ new function () { // jshint ignore:line
                 })
             }
 
-            if (!resources[res]) {
+            if (!resources[res]) {//如果资源插件不存在,先加载插件
                 innerRequire([res], wrap)
             } else {
-                wrap(resources[res])
+                wrap(resources[res])//使用资源插件的load方法加载我们的模块
             }
         }
         return name ? urlNoQuery : res + "!"
@@ -178,7 +178,7 @@ new function () { // jshint ignore:line
                 deps = []
             }
             var config = {
-                built: !isUserFirstRequire, //用r.js打包后,所有define会放到requirejs之前
+                built: !isUserFirstRequire, //用r.js打包后,所有define方法会放到require方法之前()
                 defineName: name
             }
             var args = [deps, factory, config]
@@ -326,7 +326,7 @@ new function () { // jshint ignore:line
     }
 
     function checkDeps() {
-        //检测此JS模块的依赖是否都已安装完毕,是则安装自身
+        //检测此模块的依赖是否都执行完毕,是则执行自身
         loop: for (var i = loadings.length, id; id = loadings[--i];) {
             var obj = modules[id],
                 deps = obj.deps
@@ -337,11 +337,11 @@ new function () { // jshint ignore:line
                     continue loop
                 }
             }
-            //如果deps是空对象或者其依赖的模块的状态都是2
+            //如果deps是空对象或者其依赖的模块的状态都是4
             if (obj.state !== 4) {
                 loadings.splice(i, 1) //必须先移除再安装，防止在IE下DOM树建完后手动刷新页面，会多次执行它
                 fireFactory(obj.id, obj.deps, obj.factory)
-                checkDeps() //如果成功,则再执行一次,以防有些模块就差本模块没有安装好
+                checkDeps() //如果成功,则再执行一次,以防有些模块就差本模块没有执行
             }
         }
     }
@@ -351,12 +351,12 @@ new function () { // jshint ignore:line
     function loadJS(url, id, callback) {
         //通过script节点加载目标模块
         var node = DOC.createElement("script")
-        node.className = subscribers //让getCurrentScript只处理类名为subscribers的script节点
+       
         var supportLoad = "onload" in node
         var onEvent = supportLoad ? "onload" : "onreadystatechange"
 
         function onload() {
-            var factory = factorys.pop()
+            var factory = factorys.pop()//处理safari早期版本
             factory && factory.require(id)
             if (callback) {
                 callback()
@@ -367,31 +367,24 @@ new function () { // jshint ignore:line
                 checkDeps()
             }
         }
-        var index = 0,
-            loadID
         node[onEvent] = supportLoad ? onload : function () {
             if (rreadyState.test(node.readyState)) {
-                ++index
-                if (index === 1) {
-                    loadID = setTimeout(onload, 500)
-                } else {
-                    clearTimeout(loadID)
-                    onload()
-                }
+                onload()
             }
         }
         node.onerror = function () {
             checkFail(node, true)
         }
-
-        head.insertBefore(node, head.firstChild) //chrome下第二个参数不能为null
+        node.className = subscribers //让getCurrentScript只处理类名为subscribers的script节点
         node.src = url //插入到head的第一个节点前，防止IE6下head标签没闭合前使用appendChild抛错
+        head.insertBefore(node, head.firstChild) //chrome下第二个参数不能为null
+       
         log("debug: 正准备加载 " + url) //更重要的是IE6下可以收窄getCurrentScript的寻找范围
     }
 
     var resources = innerRequire.plugins = {
-        //三大常用资源插件 js!, css!, text!, ready!
-        ready: {
+        //三大常用资源插件 js!, css!, text!, domReady!
+        domReady: {
             load: noop
         },
         js: {
@@ -450,8 +443,6 @@ new function () { // jshint ignore:line
         }
     }
     innerRequire.checkDeps = checkDeps
-
-    var rquery = /(\?[^#]*)$/
 
     function trimQuery(url) {
         return (url || "").replace(rquery, "")
@@ -571,7 +562,7 @@ new function () { // jshint ignore:line
         //5. 还原扩展名，query
         var urlNoQuery = url + ext
         url = urlNoQuery + this.query
-            //6. 处理urlArgs
+        //6. 处理urlArgs
         eachIndexArray(id, kernel.urlArgs, function (value) {
             url += (url.indexOf("?") === -1 ? "?" : "&") + value;
         })

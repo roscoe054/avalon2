@@ -214,7 +214,7 @@ new function () {// jshint ignore:line
             factorys.push(factory)
         }
     }
-//核心API之三 require.config(settings)
+    //核心API之三 require.config(settings)
     innerRequire.config = kernel
     //核心API之四 define.amd 标识其符合AMD规范
     innerRequire.define.amd = modules
@@ -332,7 +332,7 @@ new function () {// jshint ignore:line
                     continue loop
                 }
             }
-            //如果deps是空对象或者其依赖的模块的状态都是2
+            //如果deps是空对象或者其依赖的模块的状态都是4
             if (obj.state !== 4) {
                 loadings.splice(i, 1) //必须先移除再安装，防止在IE下DOM树建完后手动刷新页面，会多次执行它
                 fireFactory(obj.id, obj.deps, obj.factory)
@@ -365,8 +365,8 @@ new function () {// jshint ignore:line
     }
 
     var resources = innerRequire.plugins = {
-        //三大常用资源插件 js!, css!, text!, ready!
-        ready: {
+        //三大常用资源插件 js!, css!, text!, domReady!
+        domReady: {
             load: noop
         },
         js: {

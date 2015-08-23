@@ -38,7 +38,7 @@ function parser(input) {
         var key = wordStart + "-" + (wordEnd - 1)
         words[key] = content
         if (keyMap[content] && input.charAt(wordStart - 1) !== ".") {
-            delete  words[key]
+            delete words[key]
         }
 
         if (isWildcard) {
@@ -54,7 +54,10 @@ function parser(input) {
         var content = input.slice(bracketStart, bracketEnd)
 
         try {
+            /* jshint ignore:start */
             var execText = Function("return " + content)()
+            /* jshint ignore:end */
+
             execText += ''
             input = replaceText(input, bracketStart - 1, content, execText)
             i = bracketStart + execText.length - 1
@@ -223,7 +226,7 @@ function parseExpr(expr, vmodels, binding) {
         binding._filters = parseFilter(binding.filters)
     }
     var vars = parser(expr)
-    var expose = new Date - 0
+    var expose = new Date() - 0
     var assigns = []
     var names = []
     var args = []
@@ -237,8 +240,8 @@ function parseExpr(expr, vmodels, binding) {
         }
     }
     binding.args = args
-    if(!assigns.length){
-        assigns.push("fix"+expose)
+    if (!assigns.length) {
+        assigns.push("fix" + expose)
     }
     if (binding.type === "duplex") {
         var nameOne = {}
@@ -246,18 +249,18 @@ function parseExpr(expr, vmodels, binding) {
             var arr = a.split("=")
             nameOne[arr[0].trim()] = arr[1].trim()
         })
-
-        expr = expr.replace(/\b\w+\b/g, function (a) {
+        expr = expr.replace(/[\$\w]+/, function (a) {
             return nameOne[a] ? nameOne[a] : a
         })
-
+        /* jshint ignore:start */
         var fn2 = Function.apply(noop, names.concat("'use strict';" +
                 "return function(vvv){" + expr + " = vvv\n}\n"))
+        /* jshint ignore:end */
 
         binding.setter = fn2.apply(fn2, binding.args)
     }
-    
-   if (binding.type === "on") { //事件绑定
+
+    if (binding.type === "on") { //事件绑定
         if (expr.indexOf("(") === -1) {
             expr += ".call(this, $event)"
         } else {
@@ -269,11 +272,13 @@ function parseExpr(expr, vmodels, binding) {
         var header = expr.slice(0, lastIndex)
         var footer = expr.slice(lastIndex)
         expr = header + "\n" + footer
-    }else{
+    } else {
         expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
-    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + expr))
-    
+    /* jshint ignore:start */
+    var fn = Function.apply(noop, names.concat("'use strict';\nvar " +
+            assigns.join(",\n") + expr))
+    /* jshint ignore:end */
 
     return fn
 
@@ -326,6 +331,8 @@ function parseFilter(filters) {
             .replace(rthimLeftParentheses, function () {
                 return '",'
             }) + "]"
-
+    /* jshint ignore:start */
     return  Function("return [" + filters + "]")()
+    /* jshint ignore:end */
+
 }

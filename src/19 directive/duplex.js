@@ -83,8 +83,8 @@ var duplexBinding = avalon.directive("duplex", {
         switch (binding.xtype) {
             case "radio":
                 binding.bound("click", function () {
-                    if (elem.data("duplexObserve") !== false) {
-                        var lastValue = binding.pipe(elem.value, binding, "get")
+                    if (avalon(elem).data("duplexObserve") !== false) {
+                        var lastValue = binding.pipe(elem.checked, binding, "get")
                         binding.setter(lastValue)
                         callback.call(elem, lastValue)
                     }
@@ -236,7 +236,7 @@ function fixNull(val) {
 avalon.duplexHooks = {
     checked: {
         get: function (val, binding) {
-            return !binding.element.oldValue
+            return !binding.oldValue
         }
     },
     string: {

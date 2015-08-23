@@ -73,33 +73,42 @@ function collectDependency(el, key) {
     } while (true)
 }
 
+
 function notifySubscribers(subs, args) {
     if (!subs)
         return
     if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
         rejectDisposeQueue()
     }
+    var users = [], renders = []
+    for (var i = 0, sub; sub = subs[i++]; ) {
+        if (sub.type === "user-watcher") {
+            users.push(sub)
+        } else {
+            renders.push(sub)
+        }
+
+    }
     if (kernel.async) {
         buffer.render()
-        for (var i = 0, sub; sub = subs[i++]; ) {
-            if (sub.update && sub.type !== "user-watcher") {
+        for (i = 0; sub = renders[i++]; ) {
+            if (sub.update) {
                 var uuid = getUid(sub)
                 if (!buffer.queue[uuid]) {
                     buffer.queue[uuid] = 1
                     buffer.queue.push(sub)
                 }
-            } else {
-                sub.update()
             }
         }
     } else {
-        for (i = 0; sub = subs[i++]; ) {
+        for (i = 0; sub = renders[i++]; ) {
             if (sub.update) {
-                if (args && sub.type === "user-watcher") {
-                    sub.fireArgs = args
-                }
                 sub.update()//最小化刷新DOM树
             }
         }
+    }
+    for (i = 0; sub = users[i++]; ) {
+        sub.fireArgs = args
+        sub.update()
     }
 }

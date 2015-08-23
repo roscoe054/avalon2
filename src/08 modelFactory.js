@@ -129,7 +129,6 @@ function observeObject(source, $special, old, addWatch) {
     function trackBy(name) {
         return hasOwn[name] === true
     }
-
     skip.forEach(function (name) {
         $vmodel[name] = source[name]
     })
@@ -142,7 +141,6 @@ function observeObject(source, $special, old, addWatch) {
     hideProperty($vmodel, "$pathname", old ? old.$pathname : "")
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "hasOwnProperty", trackBy)
-
     if (addWatch) {
         hideProperty($vmodel, "$watch", function () {
             return $watch.aplly($vmodel, arguments)
@@ -150,7 +148,7 @@ function observeObject(source, $special, old, addWatch) {
     }
     /* jshint ignore:end */
 
-    //必须设置了$active,$events
+//必须设置了$active,$events
     simple.forEach(function (name) {
         if (typeof $vmodel[name] === "object") {
             $vmodel[name].$up = $vmodel
@@ -219,7 +217,7 @@ function observe(obj, old, hasReturn, addWatch) {
             if (keys.join(";") === keys2.join(";")) {
                 for (var i in obj) {
                     if (obj.hasOwnProperty(i)) {
-                        //0.6 版本   var hack = old[i]
+//0.6 版本   var hack = old[i]
                         old[i] = obj[i]
                     }
                 }
@@ -289,16 +287,14 @@ function hideProperty(host, name, value) {
 }
 
 function toJson(val) {
-    var xtype = avalon.type(val)
-    if (xtype === "array") {
-        if (val.$events) {
-            var array = []
-            for (var i = 0; i < val.length; i++) {
-                array[i] = toJson(val[i])
-            }
-            return array
+    if (Array.isArray(val)) {
+        var array = []
+        for (var i = 0; i < val.length; i++) {
+            array[i] = toJson(val[i])
         }
-    } else if (xtype === "object" && val.$events) {
+        return array
+
+    } else if (val && typeof val === "object") {
         var obj = {}
         for (i in val) {
             if (val.hasOwnProperty(i)) {

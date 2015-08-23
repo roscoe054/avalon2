@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="../avalon.js"></script>
+    </head>
+    <body>
+        <script>
+            var vm = avalon.define({
+                $id: "test",
+
+                array: [10, 20, 30]
+            })
+        </script>
+        <div ms-controller="test">
+          <ul>
+                <li ms-repeat-item="array"> 
+                    <input type="radio" ms-click="$remove"/>{{item}}--"$index"{{$index}}
+                    <input ms-duplex="item"/></li>
+            </ul>
+            
+        </div>
+
+    </body>
+</html>

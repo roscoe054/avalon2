@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.22
+ avalon.js 1.5 built in 2015.8.23
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1025,34 +1025,43 @@ function collectDependency(el, key) {
     } while (true)
 }
 
+
 function notifySubscribers(subs, args) {
     if (!subs)
         return
     if (new Date() - beginTime > 444 && typeof subs[0] === "object") {
         rejectDisposeQueue()
     }
+    var users = [], renders = []
+    for (var i = 0, sub; sub = subs[i++]; ) {
+        if (sub.type === "user-watcher") {
+            users.push(sub)
+        } else {
+            renders.push(sub)
+        }
+
+    }
     if (kernel.async) {
         buffer.render()
-        for (var i = 0, sub; sub = subs[i++]; ) {
-            if (sub.update && sub.type !== "user-watcher") {
+        for (i = 0; sub = renders[i++]; ) {
+            if (sub.update) {
                 var uuid = getUid(sub)
                 if (!buffer.queue[uuid]) {
                     buffer.queue[uuid] = 1
                     buffer.queue.push(sub)
                 }
-            } else {
-                sub.update()
             }
         }
     } else {
-        for (i = 0; sub = subs[i++]; ) {
+        for (i = 0; sub = renders[i++]; ) {
             if (sub.update) {
-                if (args && sub.type === "user-watcher") {
-                    sub.fireArgs = args
-                }
                 sub.update()//最小化刷新DOM树
             }
         }
+    }
+    for (i = 0; sub = users[i++]; ) {
+        sub.fireArgs = args
+        sub.update()
     }
 }
 //avalon最核心的方法的两个方法之一（另一个是avalon.scan），返回一个ViewModel(VM)
@@ -1186,7 +1195,6 @@ function observeObject(source, $special, old, addWatch) {
     function trackBy(name) {
         return hasOwn[name] === true
     }
-
     skip.forEach(function (name) {
         $vmodel[name] = source[name]
     })
@@ -1199,7 +1207,6 @@ function observeObject(source, $special, old, addWatch) {
     hideProperty($vmodel, "$pathname", old ? old.$pathname : "")
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "hasOwnProperty", trackBy)
-
     if (addWatch) {
         hideProperty($vmodel, "$watch", function () {
             return $watch.aplly($vmodel, arguments)
@@ -1207,7 +1214,7 @@ function observeObject(source, $special, old, addWatch) {
     }
     /* jshint ignore:end */
 
-    //必须设置了$active,$events
+//必须设置了$active,$events
     simple.forEach(function (name) {
         if (typeof $vmodel[name] === "object") {
             $vmodel[name].$up = $vmodel
@@ -1276,7 +1283,7 @@ function observe(obj, old, hasReturn, addWatch) {
             if (keys.join(";") === keys2.join(";")) {
                 for (var i in obj) {
                     if (obj.hasOwnProperty(i)) {
-                        //0.6 版本   var hack = old[i]
+//0.6 版本   var hack = old[i]
                         old[i] = obj[i]
                     }
                 }
@@ -1346,16 +1353,14 @@ function hideProperty(host, name, value) {
 }
 
 function toJson(val) {
-    var xtype = avalon.type(val)
-    if (xtype === "array") {
-        if (val.$events) {
-            var array = []
-            for (var i = 0; i < val.length; i++) {
-                array[i] = toJson(val[i])
-            }
-            return array
+    if (Array.isArray(val)) {
+        var array = []
+        for (var i = 0; i < val.length; i++) {
+            array[i] = toJson(val[i])
         }
-    } else if (xtype === "object" && val.$events) {
+        return array
+
+    } else if (val && typeof val === "object") {
         var obj = {}
         for (i in val) {
             if (val.hasOwnProperty(i)) {
@@ -1700,9 +1705,9 @@ avalon.injectBinding = function (binding) {
 
                 a = args[0]
                 b = args[1]
-                b = typeof b === "undefined" ? binding.oldValue : b
+                
             }
-            // b = typeof b === "undefined" ? binding.oldValue : b
+             b = typeof b === "undefined" ? binding.oldValue : b
             if (binding._filters) {
                 a = filters.$filter.apply(0, [a].concat(binding._filters))
             }
@@ -1716,7 +1721,6 @@ avalon.injectBinding = function (binding) {
                 var vtrack = getProxyIds(binding.proxies || [], xtype)
                 var mtrack = a.$track || (xtype === "array" ? createTrack(a.length) :
                         Object.keys(a))
-
                 binding.track = mtrack
                 if (vtrack !== mtrack.join(";")) {
                     binding.handler(a, b)
@@ -2584,7 +2588,7 @@ function parser(input) {
         var key = wordStart + "-" + (wordEnd - 1)
         words[key] = content
         if (keyMap[content] && input.charAt(wordStart - 1) !== ".") {
-            delete  words[key]
+            delete words[key]
         }
 
         if (isWildcard) {
@@ -2600,7 +2604,10 @@ function parser(input) {
         var content = input.slice(bracketStart, bracketEnd)
 
         try {
+            /* jshint ignore:start */
             var execText = Function("return " + content)()
+            /* jshint ignore:end */
+
             execText += ''
             input = replaceText(input, bracketStart - 1, content, execText)
             i = bracketStart + execText.length - 1
@@ -2769,7 +2776,7 @@ function parseExpr(expr, vmodels, binding) {
         binding._filters = parseFilter(binding.filters)
     }
     var vars = parser(expr)
-    var expose = new Date - 0
+    var expose = new Date() - 0
     var assigns = []
     var names = []
     var args = []
@@ -2783,8 +2790,8 @@ function parseExpr(expr, vmodels, binding) {
         }
     }
     binding.args = args
-    if(!assigns.length){
-        assigns.push("fix"+expose)
+    if (!assigns.length) {
+        assigns.push("fix" + expose)
     }
     if (binding.type === "duplex") {
         var nameOne = {}
@@ -2792,18 +2799,18 @@ function parseExpr(expr, vmodels, binding) {
             var arr = a.split("=")
             nameOne[arr[0].trim()] = arr[1].trim()
         })
-
-        expr = expr.replace(/\b\w+\b/g, function (a) {
+        expr = expr.replace(/[\$\w]+/, function (a) {
             return nameOne[a] ? nameOne[a] : a
         })
-
+        /* jshint ignore:start */
         var fn2 = Function.apply(noop, names.concat("'use strict';" +
                 "return function(vvv){" + expr + " = vvv\n}\n"))
+        /* jshint ignore:end */
 
         binding.setter = fn2.apply(fn2, binding.args)
     }
-    
-   if (binding.type === "on") { //事件绑定
+
+    if (binding.type === "on") { //事件绑定
         if (expr.indexOf("(") === -1) {
             expr += ".call(this, $event)"
         } else {
@@ -2815,11 +2822,13 @@ function parseExpr(expr, vmodels, binding) {
         var header = expr.slice(0, lastIndex)
         var footer = expr.slice(lastIndex)
         expr = header + "\n" + footer
-    }else{
+    } else {
         expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
-    var fn = Function.apply(noop, names.concat("'use strict';\nvar " + assigns.join(",\n") + expr))
-    
+    /* jshint ignore:start */
+    var fn = Function.apply(noop, names.concat("'use strict';\nvar " +
+            assigns.join(",\n") + expr))
+    /* jshint ignore:end */
 
     return fn
 
@@ -2872,8 +2881,10 @@ function parseFilter(filters) {
             .replace(rthimLeftParentheses, function () {
                 return '",'
             }) + "]"
-
+    /* jshint ignore:start */
     return  Function("return [" + filters + "]")()
+    /* jshint ignore:end */
+
 }
 /*********************************************************************
  *                          编译系统                                  *
@@ -3796,8 +3807,8 @@ var duplexBinding = avalon.directive("duplex", {
         switch (binding.xtype) {
             case "radio":
                 binding.bound("click", function () {
-                    if (elem.data("duplexObserve") !== false) {
-                        var lastValue = binding.pipe(elem.value, binding, "get")
+                    if (avalon(elem).data("duplexObserve") !== false) {
+                        var lastValue = binding.pipe(elem.checked, binding, "get")
                         binding.setter(lastValue)
                         callback.call(elem, lastValue)
                     }
@@ -3949,7 +3960,7 @@ function fixNull(val) {
 avalon.duplexHooks = {
     checked: {
         get: function (val, binding) {
-            return !binding.element.oldValue
+            return !binding.oldValue
         }
     },
     string: {
@@ -4210,15 +4221,20 @@ function effectFactory(el, opts) {
 }
 
 function effectBinding(elem, binding) {
-    binding.effectName = elem.getAttribute("data-effect-name")
-    binding.effectDriver = elem.getAttribute("data-effect-driver")
-    var stagger = +elem.getAttribute("data-effect-stagger")
-    binding.effectLeaveStagger = +elem.getAttribute("data-effect-leave-stagger") || stagger
-    binding.effectEnterStagger = +elem.getAttribute("data-effect-enter-stagger") || stagger
-    binding.effectClass = elem.className || NaN
+    var name = elem.getAttribute("data-effect-name")
+    if (name) {
+        binding.effectName = name
+        binding.effectDriver = elem.getAttribute("data-effect-driver")
+        var stagger = +elem.getAttribute("data-effect-stagger")
+        binding.effectLeaveStagger = +elem.getAttribute("data-effect-leave-stagger") || stagger
+        binding.effectEnterStagger = +elem.getAttribute("data-effect-enter-stagger") || stagger
+        binding.effectClass = elem.className || NaN
+    }
 }
 function upperFirstChar(str) {
-    return str.replace(/^[\S]/g, function(m) {return m.toUpperCase()})
+    return str.replace(/^[\S]/g, function (m) {
+        return m.toUpperCase()
+    })
 }
 var effectBuffer = new Buffer()
 function Effect() {
@@ -4233,7 +4249,7 @@ Effect.prototype = {
         return getEffectClass(this, "leave")
     },
     // 共享一个函数
-    actionFun: function(name, before, after) {
+    actionFun: function (name, before, after) {
         if (document.hidden) {
             return
         }
@@ -4244,10 +4260,11 @@ Effect.prototype = {
         var oppositeName = isLeave ? "enter" : "leave"
         callEffectHook(me, "abort" + upperFirstChar(oppositeName))
         callEffectHook(me, "before" + upperFirstChar(name))
-        if(!isLeave) before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
+        if (!isLeave)
+            before(el) //  这里可能做插入DOM树的操作,因此必须在修改类名前执行
         var cssCallback = function (cancel) {
             el.removeEventListener(me.cssEvent, me.cssCallback)
-            if(isLeave) {
+            if (isLeave) {
                 before(el) //这里可能做移出DOM树操作,因此必须位于动画之后
                 avalon(el).removeClass(me.cssClass)
             } else {
@@ -4287,11 +4304,11 @@ Effect.prototype = {
     },
     enter: function (before, after) {
         this.actionFun.apply(this, ["enter"].concat(avalon.slice(arguments)))
-       
+
     },
     leave: function (before, after) {
         this.actionFun.apply(this, ["leave"].concat(avalon.slice(arguments)))
-       
+
     },
     dispose: function () {//销毁与回收到池子中
         this.update = this.cssCallback = null
@@ -4860,6 +4877,7 @@ avalon.directive("repeat", {
             }
 
             //  console.log(effectEnterStagger)
+            console.log(length+"!")
             for (i = 0; i < length; i++) {
                 proxy = proxies[i]
                 keyOrId = xtype === "array" ? proxy.$id : proxy.$key
@@ -5055,6 +5073,7 @@ function eachProxyFactory(itemName) {
 function decorateProxy(proxy, binding, type) {
     if (type === "array") {
         proxy.$remove = function () {
+            
             binding.$repeat.removeAt(proxy.$index)
         }
         var param = binding.param
@@ -5650,7 +5669,7 @@ new function () { // jshint ignore:line
     var loadings = [] //正在加载中的模块列表
     var factorys = [] //放置define方法的factory函数
     var rjsext = /\.js$/i
-
+    var rquery = /(\?[^#]*)$/
     function makeRequest(name, config) {
         //1. 去掉资源前缀
         var res = "js"
@@ -5710,7 +5729,7 @@ new function () { // jshint ignore:line
                 state: 1 //send
             }
             var wrap = function (obj) {
-                resources[res] = obj
+                resources[res] = obj//标识该插件已注册
                 obj.load(name, req, function (a) {
                     if (arguments.length && a !== void 0) {
                         module.exports = a
@@ -5720,10 +5739,10 @@ new function () { // jshint ignore:line
                 })
             }
 
-            if (!resources[res]) {
+            if (!resources[res]) {//如果资源插件不存在,先加载插件
                 innerRequire([res], wrap)
             } else {
-                wrap(resources[res])
+                wrap(resources[res])//使用资源插件的load方法加载我们的模块
             }
         }
         return name ? urlNoQuery : res + "!"
@@ -5803,7 +5822,7 @@ new function () { // jshint ignore:line
                 deps = []
             }
             var config = {
-                built: !isUserFirstRequire, //用r.js打包后,所有define会放到requirejs之前
+                built: !isUserFirstRequire, //用r.js打包后,所有define方法会放到require方法之前()
                 defineName: name
             }
             var args = [deps, factory, config]
@@ -5951,7 +5970,7 @@ new function () { // jshint ignore:line
     }
 
     function checkDeps() {
-        //检测此JS模块的依赖是否都已安装完毕,是则安装自身
+        //检测此模块的依赖是否都执行完毕,是则执行自身
         loop: for (var i = loadings.length, id; id = loadings[--i];) {
             var obj = modules[id],
                 deps = obj.deps
@@ -5962,11 +5981,11 @@ new function () { // jshint ignore:line
                     continue loop
                 }
             }
-            //如果deps是空对象或者其依赖的模块的状态都是2
+            //如果deps是空对象或者其依赖的模块的状态都是4
             if (obj.state !== 4) {
                 loadings.splice(i, 1) //必须先移除再安装，防止在IE下DOM树建完后手动刷新页面，会多次执行它
                 fireFactory(obj.id, obj.deps, obj.factory)
-                checkDeps() //如果成功,则再执行一次,以防有些模块就差本模块没有安装好
+                checkDeps() //如果成功,则再执行一次,以防有些模块就差本模块没有执行
             }
         }
     }
@@ -5976,12 +5995,12 @@ new function () { // jshint ignore:line
     function loadJS(url, id, callback) {
         //通过script节点加载目标模块
         var node = DOC.createElement("script")
-        node.className = subscribers //让getCurrentScript只处理类名为subscribers的script节点
+       
         var supportLoad = "onload" in node
         var onEvent = supportLoad ? "onload" : "onreadystatechange"
 
         function onload() {
-            var factory = factorys.pop()
+            var factory = factorys.pop()//处理safari早期版本
             factory && factory.require(id)
             if (callback) {
                 callback()
@@ -5992,31 +6011,24 @@ new function () { // jshint ignore:line
                 checkDeps()
             }
         }
-        var index = 0,
-            loadID
         node[onEvent] = supportLoad ? onload : function () {
             if (rreadyState.test(node.readyState)) {
-                ++index
-                if (index === 1) {
-                    loadID = setTimeout(onload, 500)
-                } else {
-                    clearTimeout(loadID)
-                    onload()
-                }
+                onload()
             }
         }
         node.onerror = function () {
             checkFail(node, true)
         }
-
-        head.insertBefore(node, head.firstChild) //chrome下第二个参数不能为null
+        node.className = subscribers //让getCurrentScript只处理类名为subscribers的script节点
         node.src = url //插入到head的第一个节点前，防止IE6下head标签没闭合前使用appendChild抛错
+        head.insertBefore(node, head.firstChild) //chrome下第二个参数不能为null
+       
         log("debug: 正准备加载 " + url) //更重要的是IE6下可以收窄getCurrentScript的寻找范围
     }
 
     var resources = innerRequire.plugins = {
-        //三大常用资源插件 js!, css!, text!, ready!
-        ready: {
+        //三大常用资源插件 js!, css!, text!, domReady!
+        domReady: {
             load: noop
         },
         js: {
@@ -6075,8 +6087,6 @@ new function () { // jshint ignore:line
         }
     }
     innerRequire.checkDeps = checkDeps
-
-    var rquery = /(\?[^#]*)$/
 
     function trimQuery(url) {
         return (url || "").replace(rquery, "")
@@ -6196,7 +6206,7 @@ new function () { // jshint ignore:line
         //5. 还原扩展名，query
         var urlNoQuery = url + ext
         url = urlNoQuery + this.query
-            //6. 处理urlArgs
+        //6. 处理urlArgs
         eachIndexArray(id, kernel.urlArgs, function (value) {
             url += (url.indexOf("?") === -1 ? "?" : "&") + value;
         })
