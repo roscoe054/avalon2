@@ -27,7 +27,7 @@ avalon.define = function (id, factory) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = oneObject("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors")
+var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors")
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -43,12 +43,13 @@ try {
 
 function modelFactory(source, $special) {
     var vm = observeObject(source, $special, true)
-    vm.$watch = function () {
+    hideProperty(vm, "$watch", function () {
         return $watch.apply(vm, arguments)
-    }
-    vm.$fire = function (path, a) {
+    })
+    hideProperty(vm, "$fire", function (path, a) {
         $emit.call(vm, path, [a])
-    }
+    })
+
     return vm
 }
 

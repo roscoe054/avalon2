@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.23
+ avalon.js 1.5 built in 2015.8.24
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -994,18 +994,19 @@ function $watch(expr, binding) {
 function $emit(key, args) {
     var event = this.$events
     if (event && event[key]) {
+        if (args) {
+            args[2] = key
+        }
         notifySubscribers(event[key], args)
     } else {
         var parent = this.$up
         if (parent) {
-            if (args) {
-                args[2] = this.$pathname + "." + key
-            }
             $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
             $emit.call(parent, this.$pathname + ".*", args)//以模糊的值往上冒泡
         }
     }
 }
+
 
 function collectDependency(el, key) {
     do {
@@ -1093,7 +1094,7 @@ avalon.define = function (id, factory) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = oneObject("$id,$watch,$unwatch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors")
+var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors")
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -1109,12 +1110,13 @@ try {
 
 function modelFactory(source, $special) {
     var vm = observeObject(source, $special, true)
-    vm.$watch = function () {
+    hideProperty(vm, "$watch", function () {
         return $watch.apply(vm, arguments)
-    }
-    vm.$fire = function (path, a) {
+    })
+    hideProperty(vm, "$fire", function (path, a) {
         $emit.call(vm, path, [a])
-    }
+    })
+
     return vm
 }
 
@@ -1702,7 +1704,6 @@ avalon.injectBinding = function (binding) {
                     a = binding.evaluator.apply(0, binding.args)
                 }
             } else {
-
                 a = args[0]
                 b = args[1]
                 
@@ -4877,7 +4878,6 @@ avalon.directive("repeat", {
             }
 
             //  console.log(effectEnterStagger)
-            console.log(length+"!")
             for (i = 0; i < length; i++) {
                 proxy = proxies[i]
                 keyOrId = xtype === "array" ? proxy.$id : proxy.$key

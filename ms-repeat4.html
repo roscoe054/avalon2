@@ -63,10 +63,8 @@
                 value: ""
             })
             vm.$watch("value", function(a){
-                console.log(typeof a,  a)
                 if(a){
                     vm.array.removeAll(function(el){
-                        console.log(el)
                        return  el !== a
                     })
                 }else{

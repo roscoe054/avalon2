@@ -7,14 +7,23 @@
         <script src="avalon.js" ></script>
 
         <script>
-     avalon.define({
-         $id: "test",
-         aaa: 222
-     })
+            avalon.define({
+                $id: "test",
+                aaa: 222,
+                bbb: 111,
+                ccc: false,
+                ddd: false,
+                eee: false
+            })
 
         </script>
     </head>
     <body ms-controller="test">
+        <p>类型转换</p>
         <input ms-duplex="aaa" id="aa"/>{{aaa}}
+        <input ms-duplex-number="bbb" />{{bbb}}
+        <p><input ms-duplex-checked='ccc' type='radio'>{{ccc}}</p>
+        <p><input ms-duplex='ddd' type='radio'>{{ddd}}</p>
+        <p><input ms-duplex-checked='eee' type='checkbox'>{{eee}}</p>
     </body>
 </html>

@@ -42,18 +42,19 @@ function $watch(expr, binding) {
 function $emit(key, args) {
     var event = this.$events
     if (event && event[key]) {
+        if (args) {
+            args[2] = key
+        }
         notifySubscribers(event[key], args)
     } else {
         var parent = this.$up
         if (parent) {
-            if (args) {
-                args[2] = this.$pathname + "." + key
-            }
             $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
             $emit.call(parent, this.$pathname + ".*", args)//以模糊的值往上冒泡
         }
     }
 }
+
 
 function collectDependency(el, key) {
     do {
