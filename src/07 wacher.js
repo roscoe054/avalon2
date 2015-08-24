@@ -12,10 +12,12 @@ function $watch(expr, binding) {
             expr: expr,
             uuid: backup.uuid
         }
+        binding.wildcard = /\*/.test(expr)
     }
     if (!binding.update) {
         if (/\w\.*\B/.test(expr)) {
             binding.evaluator = noop
+          
             binding.update = function (x) {
                 var args = this.fireArgs || []
                 if (args[2])
@@ -109,7 +111,9 @@ function notifySubscribers(subs, args) {
         }
     }
     for (i = 0; sub = users[i++]; ) {
-        sub.fireArgs = args
+        if (args && args[2] === sub.expr || sub.wildcard) {
+            sub.fireArgs = args
+        }
         sub.update()
     }
 }

@@ -15,6 +15,7 @@ var duplexBinding = avalon.directive("duplex", {
         if (elem.msData) {
             elem.msData["ms-duplex"] = binding.expr
         }
+
         binding.param.replace(rw20g, function (name) {
             if (rduplexType.test(elem.type) && rduplexParam.test(name)) {
                 if (name === "radio")
@@ -35,6 +36,9 @@ var duplexBinding = avalon.directive("duplex", {
             }
             avalon.Array.ensure(params, name)
         })
+        if (elem.type === "radio") {
+            binding.xtype = "radio"
+        }
         if (!hasCast) {
             params.push("string")
         }
@@ -84,7 +88,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "radio":
                 binding.bound("click", function () {
                     if (avalon(elem).data("duplexObserve") !== false) {
-                        var lastValue = binding.pipe(elem.checked, binding, "get")
+                        var lastValue = binding.pipe(elem.value, binding, "get")
                         binding.setter(lastValue)
                         callback.call(elem, lastValue)
                     }
@@ -147,7 +151,7 @@ var duplexBinding = avalon.directive("duplex", {
                             val = binding.pipe(val, binding, "get")
                         }
                         if (val + "" !== binding.oldValue) {
-                            avalon.setter(val)
+                            binding.setter(val)
                         }
                         callback.call(elem, val)
                     }
@@ -181,7 +185,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set") + "" //fix #673
                 if (curValue !== this.oldValue) {
-                    elem.value = elem.oldValue = curValue
+                    elem.oldValue = elem.value = curValue
                 }
                 break
             case "radio":
@@ -253,10 +257,11 @@ avalon.duplexHooks = {
     },
     number: {
         get: function (val, binding) {
-            var number = parseFloat(val)
+            var number = parseFloat(val + "")
             if (-val === -number) {
                 return number
             }
+
             var arr = /strong|medium|weak/.exec(binding.element.getAttribute("data-duplex-number")) || ["medium"]
             switch (arr[0]) {
                 case "strong":
@@ -271,7 +276,7 @@ avalon.duplexHooks = {
     }
 }
 
-function pipe(val, binding, action, e) {
+function pipe(val, binding, action) {
     binding.param.replace(rw20g, function (name) {
         var hook = avalon.duplexHooks[name]
         if (hook && typeof hook[action] === "function") {

@@ -9,18 +9,47 @@
     </head>
     <body>
         <script>
-            var vm = avalon.define({
-                $id: "test",
-                aaa: "aa",
-                arr:[{a:1},{a:2}]
-            })
+            function expect(a) {
+                return {
+                    to: {
+                        be: function (b) {
+                            console.log(a, "|", b, a === b)
+                        }
+                    }
+                }
+            }
+            function heredoc(fn) {
+                return fn.toString().replace(/^[^\/]+\/\*!?\s?/, '').replace(/\*\/[^\/]+$/, '')
+            }
+var model = avalon.define({
+    $id: "ms-duplex-number",
+    aaa: 222,
+    bbb: NaN
+})
+var body = document.body
+var div = document.createElement("div")
+div.innerHTML = ['<input ms-duplex-number="aaa" >',
+    '<input ms-duplex-number="bbb" data-duplex-number="strong">'
+].join("")
+body.appendChild(div)
+avalon.scan(div, model)
+setTimeout(function () {
+    var inputs = div.getElementsByTagName("input")
+    expect(inputs.length).to.be(2)
+    expect(inputs[0].value).to.be("222")
+    expect(inputs[1].value).to.be("0")
+    inputs[0].value = "888"
+    inputs[1].value = "999"
+    setTimeout(function () {
+        expect(model.aaa).to.be(888)
+        expect(model.bbb).to.be(999)
+      //  clearTest("ms-duplex-number", div, done)
+    }, 100)
+}, 100)
 
         </script>
         <div ms-controller="test">
-            <p>{{aaa|uppercase}}</p>
-            <ul>
-                <li ms-repeat="arr">{{el.a}}</li>
-            </ul>
+
         </div>
     </body>
 

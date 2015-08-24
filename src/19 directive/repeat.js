@@ -62,6 +62,7 @@ avalon.directive("repeat", {
                 track = keys2
             }
         }
+
         var action = "move"
         binding.$repeat = value
         var fragments = []
@@ -130,6 +131,7 @@ avalon.directive("repeat", {
             var staggerIndex = binding.staggerIndex = 0
             for (keyOrId in retain) {
                 if (retain[keyOrId] !== true) {
+
                     action = "del"
                     removeItem(retain[keyOrId].$anchor, binding)
                     // avalon.log("删除", keyOrId)
@@ -165,7 +167,7 @@ avalon.directive("repeat", {
                         staggerIndex = mayStaggerAnimate(binding.effectEnterStagger, function () {
                             var curNode = removeItem(proxy2.$anchor)// 如果位置被挪动了
                             var inserted = avalon.slice(curNode.childNodes)
-                            parent.insertBefore(curNode,  preElement.nextSibling)
+                            parent.insertBefore(curNode, preElement.nextSibling)
                             animateRepeat(inserted, 1, binding)
                         }, staggerIndex)
                     })(proxy, preEl)// jshint ignore:line
@@ -240,8 +242,10 @@ function removeItem(node, binding) {
     var last = node
     var breakText = last.nodeValue
     var staggerIndex = binding && Math.max(+binding.staggerIndex, 0)
+    var nodes = avalon.slice(last.parentNode.childNodes)
+    var index = nodes.indexOf(last)
     while (true) {
-        var pre = node.previousSibling
+        var pre = nodes[--index] //node.previousSibling
         if (!pre || String(pre.nodeValue).indexOf(breakText) === 0) {
             break
         }
@@ -335,12 +339,12 @@ function eachProxyFactory(itemName) {
 function decorateProxy(proxy, binding, type) {
     if (type === "array") {
         proxy.$remove = function () {
-            
+
             binding.$repeat.removeAt(proxy.$index)
         }
         var param = binding.param
-      
-        
+
+
         proxy.$watch(param, function (a) {
             var index = proxy.$index
             binding.$repeat[index] = a

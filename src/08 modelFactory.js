@@ -114,6 +114,28 @@ function observeObject(source, $special, old, addWatch) {
         if (!$special[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
                 typeof value === "function" || (value && value.nodeType))) {
             skip.push(name)
+        } else if (value && Object.keys(value).length <= 2 && typeof value.get === "function") {
+            log("warning:i计算属性建议放在$computed对象中统一定义");
+            (function (key, value) {
+                var old
+                accessors[key] = {
+                    get: function () {
+                        return old = value.get.call(this)
+                    },
+                    set: function (x) {
+                        if (!stopRepeatAssign && typeof value.set === "function") {
+                            var older = old
+                            value.set.call(this, x)
+                            var newer = this[key]
+                            if (this.$fire && (newer !== older)) {
+                                this.$fire(key, newer, older)
+                            }
+                        }
+                    },
+                    enumerable: true,
+                    configurable: true
+                }
+            })(name, value)// jshint ignore:line
         } else {
             simple.push(name)
             if (oldAccessors[name]) {

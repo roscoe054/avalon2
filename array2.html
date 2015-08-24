@@ -7,18 +7,32 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
 
-        <script>
-            var vm = avalon.define({
-                $id: "test",
-                array: [[1, 2, 3], [4, 5, 6]]
-            })
-        </script>
+
     </head>
     <body>
-        <table ms-controller="test" border="1">
-            <tr ms-repeat="array">
-                <td ms-repeat-elem="el">{{elem}}</td>
-            </tr>
-        </table>
+
+        <script>
+            function heredoc(fn) {
+                return fn.toString().replace(/^[^\/]+\/\*!?\s?/, '').replace(/\*\/[^\/]+$/, '')
+            }
+            var vm = avalon.define({
+                $id: 'testvv',
+                postData: {
+                    venue: '3323',
+                    aa: 333
+                }
+            })
+
+
+            vm.$watch('postData.venue', function (val) {
+                console.log(val)
+            })
+            setTimeout(function () {
+                vm.postData = {
+                    venue: '11',
+                    aa: 444
+                }
+            }, 200)
+        </script>
     </body>
 </html>
