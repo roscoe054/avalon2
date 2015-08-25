@@ -13,6 +13,7 @@ var newProto = {
             if (index > this.length) {
                 throw Error(index + "set方法的第一个参数不能大于原数组长度")
             }
+            $emit.call(this.$up, this.$pathname + ".*", [val, this[index]])
             this.splice(index, 1, val)
         }
     },
@@ -77,7 +78,7 @@ arrayMethods.forEach(function (method) {
         // 继续尝试劫持数组元素的属性
         var args = []
         for (var i = 0, n = arguments.length; i < n; i++) {
-            args[i] = observe(arguments[i], 0, 1,1)
+            args[i] = observe(arguments[i], 0, 1, 1)
         }
         var result = original.apply(this, args)
         addTrack(this.$track, method, args)
@@ -151,6 +152,11 @@ function addTrack(track, method, args) {
             break
         case 'splice':
             if (args.length > 2) {
+                // 0, 5, a, b, c --> 0, 2, 0
+                // 0, 5, a, b, c, d, e, f, g--> 0, 0, 3
+                var del = args[1]
+                var add = args.length - 2
+                // args = [args[0], Math.max(del - add, 0)].concat(createTrack(Math.max(add - del, 0)))
                 args = [args[0], args[1]].concat(createTrack(args.length - 2))
             }
             break

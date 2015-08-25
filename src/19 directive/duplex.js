@@ -98,7 +98,7 @@ var duplexBinding = avalon.directive("duplex", {
                 binding.bound(W3C ? "change" : "click", function () {
                     if (avalon(elem).data("duplexObserve") !== false) {
                         var method = elem.checked ? "ensure" : "remove"
-                        var array = binding.evaluator()
+                        var array = binding.getter()
                         if (!Array.isArray(array)) {
                             log("ms-duplex应用于checkbox上要对应一个数组")
                             array = [array]
@@ -210,13 +210,18 @@ var duplexBinding = avalon.directive("duplex", {
             case "select":
                 //必须变成字符串后才能比较
                 binding._value = value
-                renderedCallbacks.push(function () {
-                    var value = binding._value
-                    var curValue = Array.isArray(value) ? value.map(String) : value + ""
-                    avalon(elem).val(curValue)
-                    elem.oldValue = curValue + ""
-                    binding.changed.call(elem, curValue)
+                elem.msHasEvent = "selectDuplex"
+                //必须等到其孩子准备好才触发
+                avalon.bind(elem, "datasetchanged", function (e) {
+                    if (e.bubble === "selectDuplex") {
+                        var value = binding._value
+                        var curValue = Array.isArray(value) ? value.map(String) : value + ""
+                        avalon(elem).val(curValue)
+                        elem.oldValue = curValue + ""
+                        binding.changed.call(elem, curValue)
+                    }
                 })
+
                 break
         }
         if (binding.xtype !== "select") {

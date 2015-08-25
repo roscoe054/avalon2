@@ -11,7 +11,9 @@ avalon.directive("repeat", {
             effectBinding(elem, binding)
             binding.param = binding.param || "el"
             binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", binding.vmodels)
-            binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
+            // binding.renderedCallback = 
+            var rendered = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
+
             var signature = generateID(type)
             var start = DOC.createComment(signature + ":start")
             var end = binding.element = DOC.createComment(signature + ":end")
@@ -29,8 +31,17 @@ avalon.directive("repeat", {
                 }
                 elem.appendChild(start)
                 elem.appendChild(end)
+                parent = elem
             }
             binding.element = end
+
+            if (rendered) {
+                var removeFn = avalon.bind(parent, "datasetchanged", function () {
+                    rendered.apply(parent, parent.args)
+                    avalon.unbind(parent, "datasetchanged", removeFn)
+                    parent.msRendered = rendered
+                })
+            }
         }
     },
     update: function (value, oldValue) {
@@ -39,7 +50,6 @@ avalon.directive("repeat", {
 
         this.enterCount += 1
         var init = !oldValue
-        var now = new Date()
         if (init) {
             binding.$outer = {}
             var check0 = "$key"
@@ -70,7 +80,6 @@ avalon.directive("repeat", {
         var proxies = []
         var param = this.param
         var retain = avalon.mix({}, this.cache)
-
         var elem = this.element
         var length = track.length
 
@@ -85,6 +94,7 @@ avalon.directive("repeat", {
                 if (xtype === "array") {
                     action = "add"
                     proxy.$id = keyOrId
+
                     proxy[param] = value[i] //index
 
                 } else {
@@ -98,6 +108,9 @@ avalon.directive("repeat", {
                 shimController(binding, transation, proxy, fragments, init && !binding.effectDriver)
                 decorateProxy(proxy, binding, xtype)
             } else {
+//                if (xtype === "array") {
+//                    proxy[param] = value[i]
+//                }
                 fragments.push({})
                 retain[keyOrId] = true
             }
@@ -108,11 +121,13 @@ avalon.directive("repeat", {
                 proxy.$oldIndex = proxy.$index
                 proxy.$active = true
                 proxy.$index = i
+
             }
 
             if (xtype === "array") {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
+                // proxy[param] = value[i]
             } else {
                 proxy.$val = toJson(value[keyOrId]) // 这里是处理vm.object = newObject的情况 
             }
@@ -184,29 +199,21 @@ avalon.directive("repeat", {
 
         }
 
-
-//repeat --> duplex
-        var callback = binding.renderedCallback
-        if (callback) {
-            (function (fn, args) {
-                // console.log("+++++")
-                renderedCallbacks.push(function () {
-                    fn.call(parent, args)
-                    avalon.log("耗时 ", new Date() - now)
-                    if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-
-                        avalon(parent).val(parent.oldValue.split(","))
-                    }
-
-                })//兼容早期的传参方式
-                if (!(init && !binding.effectDriver) && renderedCallbacks.length) {
-                    renderedCallbacks.pop().call(parent)
-                }
-            })(callback, kernel.newWatch ? arguments : action)
-
-        }
+        //repeat --> duplex
+        (function (args) {
+            parent.args = args
+            if (parent.msRendered) {//第一次事件触发,以后直接调用
+                parent.msRendered.apply(parent, args)
+            }
+        })(kernel.newWatch ? arguments : [action]);
+        var id = setTimeout(function () {
+            clearTimeout(id)
+            //触发上层的select回调及自己的rendered回调
+            avalon.fireDom(parent, "datasetchanged", {
+                bubble: parent.msHasEvent
+            })
+        })
         this.enterCount -= 1
-        //  avalon.log("耗时 ", new Date() - now)
 
     }
 
@@ -325,13 +332,15 @@ function eachProxyFactory(itemName) {
     }
     source[itemName] = NaN
 
-    var second = {
+    var force = {
         $last: 1,
         $first: 1,
         $index: 1
     }
-    second[itemName] = 1
-    var proxy = modelFactory(source, second)
+    force[itemName] = 1
+    var proxy = modelFactory(source, {
+        force: force
+    })
     proxy.$id = generateID("$proxy$each")
     return proxy
 }
@@ -371,9 +380,11 @@ function withProxyFactory() {
         $outer: {},
         $anchor: null
     }, {
-        $key: 1,
-        $val: 1,
-        $index: 1
+        force: {
+            $key: 1,
+            $val: 1,
+            $index: 1
+        }
     })
     proxy.$id = generateID("$proxy$with")
     return proxy

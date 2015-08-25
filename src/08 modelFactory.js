@@ -1,29 +1,13 @@
 //avalon最核心的方法的两个方法之一（另一个是avalon.scan），返回一个ViewModel(VM)
 var VMODELS = avalon.vmodels = {} //所有vmodel都储存在这里
-avalon.define = function (id, factory) {
-    var $id = id.$id || id
+avalon.define = function (source) {
+    var $id = source.$id
     if (!$id) {
         log("warning: vm必须指定$id")
     }
-    if (VMODELS[$id]) {
-        log("warning: " + $id + " 已经存在于avalon.vmodels中")
-    }
-    if (typeof id === "object") {
-        var model = modelFactory(id)
-    } else {
-        var scope = {
-            $watch: noop
-        }
-        factory(scope) //得到所有定义
-
-        model = modelFactory(scope) //偷天换日，将scope换为model
-        stopRepeatAssign = true
-        factory(model)
-        stopRepeatAssign = false
-    }
-
-    model.$id = $id
-    return VMODELS[$id] = model
+    var vmodel = modelFactory(source)
+    vmodel.$id = $id
+    return VMODELS[$id] = vmodel
 }
 
 //一些不需要被监听的属性
@@ -41,16 +25,10 @@ try {
     canHideOwn = false
 }
 
-function modelFactory(source, $special) {
-    var vm = observeObject(source, $special, true)
-    hideProperty(vm, "$watch", function () {
-        return $watch.apply(vm, arguments)
-    })
-    hideProperty(vm, "$fire", function (path, a) {
-        $emit.call(vm, path, [a])
-    })
-
-    return vm
+function modelFactory(source, options) {
+    options = options || {}
+    options.watch = true
+    return observeObject(source, options)
 }
 
 //监听对象属性值的变化(注意,数组元素不是数组的属性),通过对劫持当前对象的访问器实现
@@ -58,25 +36,24 @@ function modelFactory(source, $special) {
 //   通过比较前后代理VM顺序实现
 function Component() {
 }
-function observeObject(source, $special, old, addWatch) {
-    if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
-        return source
-    }
 
-    var $skipArray = {}
-    if (source.$skipArray) {
-        $skipArray = oneObject(source.$skipArray)
-        delete source.$skipArray
-    }
-
-    $special = $special || nullObject
+function observeObject(source, options) {
+    //source为原对象,不能是元素节点或null
+    //options,可选,配置对象,里面有old, force, watch这三个属性
+    options = options || nullObject
+    var force = options.force || nullObject
+    var old = options.old
     var oldAccessors = typeof old === "object" ? old.$accessors : nullObject
     var $vmodel = new Component() //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
     var hasOwn = {}
     var skip = []
     var simple = []
-
+    var $skipArray = {}
+    if (source.$skipArray) {
+        $skipArray = oneObject(source.$skipArray)
+        delete source.$skipArray
+    }
     //处理计算属性
     var computed = source.$computed
     if (computed) {
@@ -90,7 +67,7 @@ function observeObject(source, $special, old, addWatch) {
                         return old = value.get.call(this)
                     },
                     set: function (x) {
-                        if (!stopRepeatAssign && typeof value.set === "function") {
+                        if (typeof value.set === "function") {
                             var older = old
                             value.set.call(this, x)
                             var newer = this[key]
@@ -111,11 +88,11 @@ function observeObject(source, $special, old, addWatch) {
         var value = source[name]
         if (!$$skipArray[name])
             hasOwn[name] = true
-        if (!$special[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
+        if (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
                 typeof value === "function" || (value && value.nodeType))) {
             skip.push(name)
         } else if (value && Object.keys(value).length <= 2 && typeof value.get === "function") {
-            log("warning:i计算属性建议放在$computed对象中统一定义");
+            log("warning:计算属性建议放在$computed对象中统一定义");
             (function (key, value) {
                 var old
                 accessors[key] = {
@@ -123,7 +100,7 @@ function observeObject(source, $special, old, addWatch) {
                         return old = value.get.call(this)
                     },
                     set: function (x) {
-                        if (!stopRepeatAssign && typeof value.set === "function") {
+                        if (typeof value.set === "function") {
                             var older = old
                             value.set.call(this, x)
                             var newer = this[key]
@@ -160,108 +137,53 @@ function observeObject(source, $special, old, addWatch) {
     hideProperty($vmodel, "$id", "anonymous")
     hideProperty($vmodel, "$up", old ? old.$up : null)
     hideProperty($vmodel, "$track", Object.keys(hasOwn))
-    hideProperty($vmodel, "$active", true)
+    hideProperty($vmodel, "$active", false)
     hideProperty($vmodel, "$pathname", old ? old.$pathname : "")
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "hasOwnProperty", trackBy)
-    if (addWatch) {
+    if (options.watch) {
         hideProperty($vmodel, "$watch", function () {
-            return $watch.aplly($vmodel, arguments)
+            return $watch.apply($vmodel, arguments)
+        })
+        hideProperty($vmodel, "$fire", function (path, a) {
+            $emit.call($vmodel, path, [a])
         })
     }
     /* jshint ignore:end */
 
-//必须设置了$active,$events
+    //必须设置了$active,$events
     simple.forEach(function (name) {
-        if (typeof $vmodel[name] === "object") {
-            $vmodel[name].$up = $vmodel
-            $vmodel[name].$pathname = name
+        var val = $vmodel[name] = source[name]
+        if (typeof val === "object") {
+            val.$up = $vmodel
+            val.$pathname = name
         }
-
-        $vmodel[name] = source[name]
-
         $emit.call($vmodel, name)
     })
     for (name in computed) {
         value = $vmodel[name]
     }
+    $vmodel.$active = true
     return $vmodel
 }
+/*
+ 新的VM拥有如下私有属性
+ $id: vm.id
+ $events: 放置$watch回调与绑定对象
+ $watch: 增强版$watch
+ $fire: 触发$watch回调
+ $track:一个数组,里面包含用户定义的所有键名
+ $active:boolean,false时防止依赖收集
+ $model:返回一个纯净的JS对象
+ $accessors:放置所有读写器的数据描述对象
+ $up:返回其上级对象
+ $pathname:返回此对象在上级对象的名字,注意,数组元素的$pathname为空字符串
+ =============================
+ $skipArray:用于指定不可监听的属性,但VM生成是没有此属性的
+ */
 
-function observeArray(array, old, addWatch) {
-    if (old) {
-        var args = [0, old.length].concat(array)
-        old.splice.apply(old, args)
-        return old
-    } else {
-        for (var i in newProto) {
-            array[i] = newProto[i]
-        }
-
-        hideProperty(array, "$up", null)
-        hideProperty(array, "$pathname", "")
-        hideProperty(array, "$track", createTrack(array.length))
-
-        array._ = observeObject({
-            length: NaN
-        })
-        array._.$watch = $watch
-        array._.length = array.length
-        array._.$watch("length", function (a, b) {
-            $emit.call(array.$up, array.$pathname + ".length", [a, b])
-        })
-        if (addWatch) {
-            hideProperty($vmodel, "$watch", function () {
-                return $watch.aplly(array, arguments)
-            })
-        }
-
-        if (W3C) {
-            Object.defineProperty(array, "$model", $modelDescriptor)
-        } else {
-            array.$model = toJson(array)
-        }
-
-        for (var j = 0, n = array.length; j < n; j++) {
-            array[j] = observe(array[j], 0, 1, 1)
-        }
-
-        return array
-    }
-}
-
-function observe(obj, old, hasReturn, addWatch) {
-    if (Array.isArray(obj)) {
-        return observeArray(obj, old, addWatch)
-    } else if (avalon.isPlainObject(obj)) {
-        if (old) {
-            var keys = Object.keys(obj)
-            var keys2 = Object.keys(old)
-            if (keys.join(";") === keys2.join(";")) {
-                for (var i in obj) {
-                    if (obj.hasOwnProperty(i)) {
-//0.6 版本   var hack = old[i]
-                        old[i] = obj[i]
-                    }
-                }
-                return old
-            }
-            old.$active = false
-        }
-
-        return observeObject(obj, null, old, addWatch)
-    }
-    if (hasReturn) {
-        return obj
-    }
-}
 function makeGetSet(key, value) {
-    var childVm = observe(value)//转换为VM
-    if (childVm) {
-        value = childVm
-    } else {
-        childVm = void 0
-    }
+    var childVm, value = NaN
     return {
         get: function () {
             if (this.$active) {
@@ -270,10 +192,9 @@ function makeGetSet(key, value) {
             return value
         },
         set: function (newVal) {
-            if (value === newVal || stopRepeatAssign)
+            if (value === newVal)
                 return
             var oldValue = value
-
             childVm = observe(newVal, value)
             if (childVm) {
                 value = childVm
@@ -295,6 +216,76 @@ function makeGetSet(key, value) {
     }
 }
 
+function observe(obj, old, hasReturn, watch) {
+    if (Array.isArray(obj)) {
+        return observeArray(obj, old, watch)
+    } else if (avalon.isPlainObject(obj)) {
+        if (old) {
+            var keys = Object.keys(obj)
+            var keys2 = Object.keys(old)
+            if (keys.join(";") === keys2.join(";")) {
+                for (var i in obj) {
+                    if (obj.hasOwnProperty(i)) {
+                        old[i] = obj[i]
+                    }
+                }
+                return old
+            }
+            old.$active = false
+        }
+        return observeObject(obj, {
+            old: old,
+            watch: watch
+        })
+    }
+    if (hasReturn) {
+        return obj
+    }
+}
+
+function observeArray(array, old, watch) {
+    if (old) {
+        var args = [0, old.length].concat(array)
+        old.splice.apply(old, args)
+        return old
+    } else {
+        for (var i in newProto) {
+            array[i] = newProto[i]
+        }
+
+        hideProperty(array, "$up", null)
+        hideProperty(array, "$pathname", "")
+        hideProperty(array, "$track", createTrack(array.length))
+
+        array._ = observeObject({
+            length: NaN
+        })
+        array._.$watch = $watch
+        array._.length = array.length
+        array._.$watch("length", function (a, b) {
+            $emit.call(array.$up, array.$pathname + ".length", [a, b])
+        })
+        if (watch) {
+            hideProperty(array, "$watch", function () {
+                return $watch.apply(array, arguments)
+            })
+        }
+
+        if (W3C) {
+            Object.defineProperty(array, "$model", $modelDescriptor)
+        } else {
+            array.$model = toJson(array)
+        }
+        for (var j = 0, n = array.length; j < n; j++) {
+            var el = array[j] = observe(array[j], 0, 1, 1)
+            if (Object(el)) {
+                el.$up = array
+            }
+        }
+
+        return array
+    }
+}
 
 function hideProperty(host, name, value) {
     if (canHideOwn) {
@@ -310,14 +301,14 @@ function hideProperty(host, name, value) {
 }
 
 function toJson(val) {
-    if (Array.isArray(val)) {
+    var xtype = avalon.type(val)
+    if (xtype === "array") {
         var array = []
         for (var i = 0; i < val.length; i++) {
             array[i] = toJson(val[i])
         }
         return array
-
-    } else if (val && typeof val === "object") {
+    } else if (xtype === "object") {
         var obj = {}
         for (i in val) {
             if (val.hasOwnProperty(i)) {

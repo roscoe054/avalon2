@@ -34,14 +34,14 @@ avalon.injectBinding = function (binding) {
     binding.handler = binding.handler || directives[binding.type].update || noop
     binding.update = function () {
         var begin = false
-        if (!binding.evaluator) {
+        if (!binding.getter) {
             begin = true
             dependencyDetection.begin({
                 callback: function (array) {
                     injectDependency(array, binding)
                 }
             })
-            binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
+            binding.getter = parseExpr(binding.expr, binding.vmodels, binding)
             binding.observers.forEach(function (a) {
                 a.v.$watch(a.p, binding)
             })
@@ -52,20 +52,19 @@ avalon.injectBinding = function (binding) {
             delete binding.fireArgs
             if (!args) {
                 if (binding.type === "on") {
-                    a = binding.evaluator + ""
+                    a = binding.getter + ""
                 } else {
-                    a = binding.evaluator.apply(0, binding.args)
+                    a = binding.getter.apply(0, binding.args)
                 }
             } else {
                 a = args[0]
                 b = args[1]
-                
+
             }
-             b = typeof b === "undefined" ? binding.oldValue : b
+            b = typeof b === "undefined" ? binding.oldValue : b
             if (binding._filters) {
                 a = filters.$filter.apply(0, [a].concat(binding._filters))
             }
-
             if (binding.signature) {
                 var xtype = avalon.type(a)
                 if (xtype !== "array" && xtype !== "object") {
@@ -80,14 +79,15 @@ avalon.injectBinding = function (binding) {
                     binding.handler(a, b)
                     binding.oldValue = 1
                 }
-
+            } else if (Array.isArray(a) ? a.length !== (b && b.length) : false) {
+                binding.handler(a, b)
+                binding.oldValue = a.concat()
             } else if (a !== b) {
-
                 binding.handler(a, b)
                 binding.oldValue = a
             }
         } catch (e) {
-            delete binding.evaluator
+            delete binding.getter
             log("warning:exception throwed in [avalon.injectBinding] ", e)
             var node = binding.element
             if (node && node.nodeType === 3) {

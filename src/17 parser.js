@@ -210,6 +210,7 @@ function addAssign(vars, vmodel, name, binding) {
         while (a = arr.shift()) {
             if (vmodel.hasOwnProperty(a)) {
                 ret.push(first + prefix + first)
+             
                 binding.observers.push({
                     v: vmodel,
                     p: prop
@@ -221,11 +222,28 @@ function addAssign(vars, vmodel, name, binding) {
     }
     return ret
 }
+var rproxy = /(\$proxy\$[a-z]+)\d+$/
+var variablePool = new Cache(218)
+//缓存求值函数，以便多次利用
+var evaluatorPool = new Cache(128)
+
+function getVars(expr) {
+    expr = expr.trim()
+    var ret = variablePool.get(expr)
+    if (ret) {
+        return ret.concat()
+    }
+    ret = parser(expr)
+    return variablePool.put(expr, ret).concat()
+}
+
 function parseExpr(expr, vmodels, binding) {
     if (binding.filters && !binding._filters) {
         binding._filters = parseFilter(binding.filters)
     }
-    var vars = parser(expr)
+
+    var vars = getVars(expr)
+   
     var expose = new Date() - 0
     var assigns = []
     var names = []
@@ -240,10 +258,24 @@ function parseExpr(expr, vmodels, binding) {
         }
     }
     binding.args = args
+    var dataType = binding.type
+    var exprId = vmodels.map(function (el) {
+        return String(el.$id).replace(rproxy, "$1")
+    }) + expr + dataType
+    var getter = evaluatorPool.get(exprId) //直接从缓存，免得重复生成
+    if (getter) {
+        if (dataType === "duplex") {
+            var setter = evaluatorPool.get(exprId + "setter")
+            binding.setter = setter.apply(setter, binding.args)
+        }
+        return binding.getter = getter
+    }
+    
     if (!assigns.length) {
         assigns.push("fix" + expose)
     }
-    if (binding.type === "duplex") {
+
+    if (dataType === "duplex") {
         var nameOne = {}
         assigns.forEach(function (a) {
             var arr = a.split("=")
@@ -256,11 +288,11 @@ function parseExpr(expr, vmodels, binding) {
         var fn2 = Function.apply(noop, names.concat("'use strict';" +
                 "return function(vvv){" + expr + " = vvv\n}\n"))
         /* jshint ignore:end */
-
+        evaluatorPool.put(exprId + "setter", fn2)
         binding.setter = fn2.apply(fn2, binding.args)
     }
 
-    if (binding.type === "on") { //事件绑定
+    if (dataType === "on") { //事件绑定
         if (expr.indexOf("(") === -1) {
             expr += ".call(this, $event)"
         } else {
@@ -276,11 +308,11 @@ function parseExpr(expr, vmodels, binding) {
         expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     /* jshint ignore:start */
-    var fn = Function.apply(noop, names.concat("'use strict';\nvar " +
+    getter = Function.apply(noop, names.concat("'use strict';\nvar " +
             assigns.join(",\n") + expr))
     /* jshint ignore:end */
 
-    return fn
+    return  evaluatorPool.put(exprId, getter)
 
 }
 //========
@@ -303,8 +335,8 @@ function stringifyExpr(code) {
 
 function parseExprProxy(code, scopes, data) {
     avalon.log("parseExprProxy方法即将被废弃")
-    parseExpr(code, scopes, data)
-    if (data.evaluator) {
+    var fn = data.evaluator = parseExpr(code, scopes, data)
+    if (fn) {
         data.handler = bindingExecutors[data.handlerName || data.type]
         avalon.injectBinding(data)
     }

@@ -14,10 +14,11 @@ function $watch(expr, binding) {
         }
         binding.wildcard = /\*/.test(expr)
     }
+
     if (!binding.update) {
         if (/\w\.*\B/.test(expr)) {
-            binding.evaluator = noop
-          
+            binding.getter = noop
+
             binding.update = function (x) {
                 var args = this.fireArgs || []
                 if (args[2])
@@ -36,7 +37,7 @@ function $watch(expr, binding) {
         avalon.Array.ensure(queue, binding)
     }
     return function () {
-        binding.update = binding.evaluator = binding.handler = noop
+        binding.update = binding.getter = binding.handler = noop
         binding.element = DOC.createElement("a")
     }
 }
@@ -48,11 +49,26 @@ function $emit(key, args) {
             args[2] = key
         }
         notifySubscribers(event[key], args)
-    } else {
         var parent = this.$up
+        if (parent && parent.$event) {
+            if (this.$pathname) {
+                $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
+            }
+
+           $emit.call(parent, "*." + key, args)//以模糊的值往上冒泡
+        }
+    } else {
+        parent = this.$up
         if (parent) {
-            $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
-            $emit.call(parent, this.$pathname + ".*", args)//以模糊的值往上冒泡
+            var path = this.$pathname + "." + key
+            var arr = path.split(".")
+            if (arr.indexOf("*") === -1) {
+                $emit.call(parent, path, args)//以确切的值往上冒泡
+                arr[1] = "*"
+                $emit.call(parent, arr.join("."), args)//以确切的值往上冒泡
+            } else {
+                $emit.call(parent, path, args)//以确切的值往上冒泡
+            }
         }
     }
 }
@@ -93,7 +109,7 @@ function notifySubscribers(subs, args) {
 
     }
     if (kernel.async) {
-        buffer.render()
+        buffer.render()//1
         for (i = 0; sub = renders[i++]; ) {
             if (sub.update) {
                 var uuid = getUid(sub)

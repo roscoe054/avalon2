@@ -20,7 +20,7 @@ var onDir = avalon.directive("on", {
         var binding = this
         var elem = this.element
         callback = function (e) {
-            var fn = binding.evaluator || noop
+            var fn = binding.getter || noop
             return fn.apply(this, binding.args.concat(e))
         }
         var eventType = binding.param.replace(/-\d+$/, "") // ms-on-mousemove-10

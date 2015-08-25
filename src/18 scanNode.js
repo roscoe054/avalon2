@@ -33,12 +33,11 @@ function scanNodeArray(nodes, vmodels) {
                         }
                     }
                 }
-                if (renderedCallbacks.length) {
-                    while (fn = renderedCallbacks.pop()) {
-                        fn.call(node)
-                    }
+                if(node.msHasEvent){
+                    avalon.fireDom(node, "datasetchanged",{
+                        bubble: node.msHasEvent
+                    })
                 }
-
                 break
             case 3:
                 if (rexpr.test(node.nodeValue)) {

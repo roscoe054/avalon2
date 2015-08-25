@@ -5,7 +5,7 @@ function scanAttr(elem, vmodels, match) {
         var bindings = []
         var fixAttrs = []
         var msData = createMap()
-        for (var i = 0, attr; attr = attributes[i++];) {
+        for (var i = 0, attr; attr = attributes[i++]; ) {
             if (attr.specified) {
                 if (match = attr.name.match(rmsAttr)) {
                     //如果是以指定前缀命名的
@@ -28,7 +28,7 @@ function scanAttr(elem, vmodels, match) {
                         fixAttrs.push([attr.name, name, value])
                     }
                     msData[name] = value
-                      if (directives[type]) {
+                    if (directives[type]) {
                         var newValue = value.replace(roneTime, "")
                         var oneTime = value !== newValue
                         var binding = {
@@ -41,14 +41,14 @@ function scanAttr(elem, vmodels, match) {
                             priority: (directives[type].priority || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
-                            
+
                             var filters = getToken(value).filters
                             binding.expr = binding.expr.replace(filters, "")
                             binding.filters = filters.replace(rhasHtml, function () {
-                                    binding.type = "html"
-                                    binding.group = 1
-                                    return ""
-                                }) // jshint ignore:line
+                                binding.type = "html"
+                                binding.group = 1
+                                return ""
+                            }) // jshint ignore:line
                         } else if (type === "duplex") {
                             var hasDuplex = name
                         } else if (name === "ms-if-loop") {
@@ -69,14 +69,8 @@ function scanAttr(elem, vmodels, match) {
                 elem.removeAttribute(arr[0])
                 elem.setAttribute(arr[1], arr[2])
             })
-            var control = elem.type
-            if (control && hasDuplex) {
-                if (msData["ms-attr-checked"]) {
-                    log("warning!" + control + "控件不能同时定义ms-attr-checked与" + hasDuplex)
-                }
-                if (msData["ms-attr-value"]) {
-                    log("warning!" + control + "控件不能同时定义ms-attr-value与" + hasDuplex)
-                }
+            if (hasDuplex && msData["ms-attr-value"] &&  elem.type === "text") {
+                log("warning!一个控件不能同时定义ms-attr-value与" + hasDuplex)
             }
 
             for (i = 0; binding = bindings[i]; i++) {

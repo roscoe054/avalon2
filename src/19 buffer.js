@@ -18,7 +18,7 @@ Buffer.prototype = {
         for (var i = 0, sub; sub = this.queue[i++]; ) {
             sub.update()
         }
-        this.queue.length = this.locked = 0
+        this.locked = 0
         this.queue = []
     }
 }
