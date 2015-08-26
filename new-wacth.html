@@ -1,40 +1,53 @@
-&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-    &lt;head&gt;
-        &lt;meta charset="UTF-8"&gt;
-        &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
-        &lt;script src="avalon.js"&gt;&lt;/script&gt;
-        &lt;script src="jquery.js"&gt;&lt;/script&gt;
-        &lt;style&gt;
-            .box{
-                width:200px;
-                height:200px;
-                background: red;
-            }
-        &lt;/style&gt;
-        &lt;script&gt;
-            avalon.effect("toggle", {
-                enter: function (elem) {
-                    $(elem).show(500)
-                },
-                leave: function (elem) {
-                    $(elem).hide(500)
-                }
-
-            })
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+    </head>
+    <body>
+        <script>
             var vm = avalon.define({
                 $id: "test",
-                bool: true,
-                click: function () {
-                    vm.bool = !vm.bool
+                array: [1, 2, 3],
+                arr: [{a: 1}, {a: 2}, {a: 3}],
+//                obj: {
+//                    a: 1,
+//                    b: 2
+//                },
+                a: {
+                    b: {
+                        c: {
+                            d: 33
+                        }
+                    }
                 }
             })
+            vm.$watch("array.*", function (a, b) {
+                console.log(a, b)
+            })
+            vm.$watch("arr.*.a", function (a, b) {
+                console.log(a, b)
+            })
+//            vm.$watch("obj.*", function (a, b, c) {
+//                console.log(a, b, c)
+//            })
+            vm.$watch("a.*.c.d", function (a, b, c) {
+                console.log(a, b, c)
+            })
+            setTimeout(function () {
+                vm.arr.sort()
+            
+               // vm.arr[0].a = 99
+                //  vm.array.set(1, 6)
+//                vm.obj.a = 111
+                // vm.a.b.c.d = 88
+            }, 1000)
 
-        &lt;/script&gt;
-    &lt;/head&gt;
-    &lt;body ms-controller="test"&gt;
-        &lt;div ms-effect="toggle" ms-visible="bool" class="box"&gt;&lt;/div&gt;
-        &lt;p&gt;&lt;button ms-click="click" type="button"&gt;button&lt;/button&gt;&lt;/p&gt;
 
-    &lt;/body&gt;
-&lt;/html&gt;
+        </script>
+
+
+    </body>
+</html>

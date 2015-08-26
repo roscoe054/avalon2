@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.24
+ avalon.js 1.5 built in 2015.8.26
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -966,10 +966,11 @@ function $watch(expr, binding) {
         }
         binding.wildcard = /\*/.test(expr)
     }
+
     if (!binding.update) {
         if (/\w\.*\B/.test(expr)) {
-            binding.evaluator = noop
-          
+            binding.getter = noop
+
             binding.update = function (x) {
                 var args = this.fireArgs || []
                 if (args[2])
@@ -988,7 +989,7 @@ function $watch(expr, binding) {
         avalon.Array.ensure(queue, binding)
     }
     return function () {
-        binding.update = binding.evaluator = binding.handler = noop
+        binding.update = binding.getter = binding.handler = noop
         binding.element = DOC.createElement("a")
     }
 }
@@ -1000,11 +1001,26 @@ function $emit(key, args) {
             args[2] = key
         }
         notifySubscribers(event[key], args)
-    } else {
         var parent = this.$up
+        if (parent && parent.$event) {
+            if (this.$pathname) {
+                $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
+            }
+
+           $emit.call(parent, "*." + key, args)//以模糊的值往上冒泡
+        }
+    } else {
+        parent = this.$up
         if (parent) {
-            $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
-            $emit.call(parent, this.$pathname + ".*", args)//以模糊的值往上冒泡
+            var path = this.$pathname + "." + key
+            var arr = path.split(".")
+            if (arr.indexOf("*") === -1) {
+                $emit.call(parent, path, args)//以确切的值往上冒泡
+                arr[1] = "*"
+                $emit.call(parent, arr.join("."), args)//以确切的值往上冒泡
+            } else {
+                $emit.call(parent, path, args)//以确切的值往上冒泡
+            }
         }
     }
 }
@@ -1045,7 +1061,7 @@ function notifySubscribers(subs, args) {
 
     }
     if (kernel.async) {
-        buffer.render()
+        buffer.render()//1
         for (i = 0; sub = renders[i++]; ) {
             if (sub.update) {
                 var uuid = getUid(sub)
@@ -1071,30 +1087,14 @@ function notifySubscribers(subs, args) {
 }
 //avalon最核心的方法的两个方法之一（另一个是avalon.scan），返回一个ViewModel(VM)
 var VMODELS = avalon.vmodels = {} //所有vmodel都储存在这里
-avalon.define = function (id, factory) {
-    var $id = id.$id || id
+avalon.define = function (source) {
+    var $id = source.$id
     if (!$id) {
         log("warning: vm必须指定$id")
     }
-    if (VMODELS[$id]) {
-        log("warning: " + $id + " 已经存在于avalon.vmodels中")
-    }
-    if (typeof id === "object") {
-        var model = modelFactory(id)
-    } else {
-        var scope = {
-            $watch: noop
-        }
-        factory(scope) //得到所有定义
-
-        model = modelFactory(scope) //偷天换日，将scope换为model
-        stopRepeatAssign = true
-        factory(model)
-        stopRepeatAssign = false
-    }
-
-    model.$id = $id
-    return VMODELS[$id] = model
+    var vmodel = modelFactory(source)
+    vmodel.$id = $id
+    return VMODELS[$id] = vmodel
 }
 
 //一些不需要被监听的属性
@@ -1112,16 +1112,10 @@ try {
     canHideOwn = false
 }
 
-function modelFactory(source, $special) {
-    var vm = observeObject(source, $special, true)
-    hideProperty(vm, "$watch", function () {
-        return $watch.apply(vm, arguments)
-    })
-    hideProperty(vm, "$fire", function (path, a) {
-        $emit.call(vm, path, [a])
-    })
-
-    return vm
+function modelFactory(source, options) {
+    options = options || {}
+    options.watch = true
+    return observeObject(source, options)
 }
 
 //监听对象属性值的变化(注意,数组元素不是数组的属性),通过对劫持当前对象的访问器实现
@@ -1129,25 +1123,24 @@ function modelFactory(source, $special) {
 //   通过比较前后代理VM顺序实现
 function Component() {
 }
-function observeObject(source, $special, old, addWatch) {
-    if (!source || source.nodeType > 0 || (source.$id && source.$events)) {
-        return source
-    }
 
-    var $skipArray = {}
-    if (source.$skipArray) {
-        $skipArray = oneObject(source.$skipArray)
-        delete source.$skipArray
-    }
-
-    $special = $special || nullObject
+function observeObject(source, options) {
+    //source为原对象,不能是元素节点或null
+    //options,可选,配置对象,里面有old, force, watch这三个属性
+    options = options || nullObject
+    var force = options.force || nullObject
+    var old = options.old
     var oldAccessors = typeof old === "object" ? old.$accessors : nullObject
     var $vmodel = new Component() //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
     var hasOwn = {}
     var skip = []
     var simple = []
-
+    var $skipArray = {}
+    if (source.$skipArray) {
+        $skipArray = oneObject(source.$skipArray)
+        delete source.$skipArray
+    }
     //处理计算属性
     var computed = source.$computed
     if (computed) {
@@ -1161,7 +1154,7 @@ function observeObject(source, $special, old, addWatch) {
                         return old = value.get.call(this)
                     },
                     set: function (x) {
-                        if (!stopRepeatAssign && typeof value.set === "function") {
+                        if (typeof value.set === "function") {
                             var older = old
                             value.set.call(this, x)
                             var newer = this[key]
@@ -1182,11 +1175,11 @@ function observeObject(source, $special, old, addWatch) {
         var value = source[name]
         if (!$$skipArray[name])
             hasOwn[name] = true
-        if (!$special[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
+        if (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
                 typeof value === "function" || (value && value.nodeType))) {
             skip.push(name)
         } else if (value && Object.keys(value).length <= 2 && typeof value.get === "function") {
-            log("warning:i计算属性建议放在$computed对象中统一定义");
+            log("warning:计算属性建议放在$computed对象中统一定义");
             (function (key, value) {
                 var old
                 accessors[key] = {
@@ -1194,7 +1187,7 @@ function observeObject(source, $special, old, addWatch) {
                         return old = value.get.call(this)
                     },
                     set: function (x) {
-                        if (!stopRepeatAssign && typeof value.set === "function") {
+                        if (typeof value.set === "function") {
                             var older = old
                             value.set.call(this, x)
                             var newer = this[key]
@@ -1231,108 +1224,53 @@ function observeObject(source, $special, old, addWatch) {
     hideProperty($vmodel, "$id", "anonymous")
     hideProperty($vmodel, "$up", old ? old.$up : null)
     hideProperty($vmodel, "$track", Object.keys(hasOwn))
-    hideProperty($vmodel, "$active", true)
+    hideProperty($vmodel, "$active", false)
     hideProperty($vmodel, "$pathname", old ? old.$pathname : "")
     hideProperty($vmodel, "$accessors", accessors)
     hideProperty($vmodel, "hasOwnProperty", trackBy)
-    if (addWatch) {
+    if (options.watch) {
         hideProperty($vmodel, "$watch", function () {
-            return $watch.aplly($vmodel, arguments)
+            return $watch.apply($vmodel, arguments)
+        })
+        hideProperty($vmodel, "$fire", function (path, a) {
+            $emit.call($vmodel, path, [a])
         })
     }
     /* jshint ignore:end */
 
-//必须设置了$active,$events
+    //必须设置了$active,$events
     simple.forEach(function (name) {
-        if (typeof $vmodel[name] === "object") {
-            $vmodel[name].$up = $vmodel
-            $vmodel[name].$pathname = name
+        var val = $vmodel[name] = source[name]
+        if (typeof val === "object") {
+            val.$up = $vmodel
+            val.$pathname = name
         }
-
-        $vmodel[name] = source[name]
-
         $emit.call($vmodel, name)
     })
     for (name in computed) {
         value = $vmodel[name]
     }
+    $vmodel.$active = true
     return $vmodel
 }
+/*
+ 新的VM拥有如下私有属性
+ $id: vm.id
+ $events: 放置$watch回调与绑定对象
+ $watch: 增强版$watch
+ $fire: 触发$watch回调
+ $track:一个数组,里面包含用户定义的所有键名
+ $active:boolean,false时防止依赖收集
+ $model:返回一个纯净的JS对象
+ $accessors:放置所有读写器的数据描述对象
+ $up:返回其上级对象
+ $pathname:返回此对象在上级对象的名字,注意,数组元素的$pathname为空字符串
+ =============================
+ $skipArray:用于指定不可监听的属性,但VM生成是没有此属性的
+ */
 
-function observeArray(array, old, addWatch) {
-    if (old) {
-        var args = [0, old.length].concat(array)
-        old.splice.apply(old, args)
-        return old
-    } else {
-        for (var i in newProto) {
-            array[i] = newProto[i]
-        }
-
-        hideProperty(array, "$up", null)
-        hideProperty(array, "$pathname", "")
-        hideProperty(array, "$track", createTrack(array.length))
-
-        array._ = observeObject({
-            length: NaN
-        })
-        array._.$watch = $watch
-        array._.length = array.length
-        array._.$watch("length", function (a, b) {
-            $emit.call(array.$up, array.$pathname + ".length", [a, b])
-        })
-        if (addWatch) {
-            hideProperty($vmodel, "$watch", function () {
-                return $watch.aplly(array, arguments)
-            })
-        }
-
-        if (W3C) {
-            Object.defineProperty(array, "$model", $modelDescriptor)
-        } else {
-            array.$model = toJson(array)
-        }
-
-        for (var j = 0, n = array.length; j < n; j++) {
-            array[j] = observe(array[j], 0, 1, 1)
-        }
-
-        return array
-    }
-}
-
-function observe(obj, old, hasReturn, addWatch) {
-    if (Array.isArray(obj)) {
-        return observeArray(obj, old, addWatch)
-    } else if (avalon.isPlainObject(obj)) {
-        if (old) {
-            var keys = Object.keys(obj)
-            var keys2 = Object.keys(old)
-            if (keys.join(";") === keys2.join(";")) {
-                for (var i in obj) {
-                    if (obj.hasOwnProperty(i)) {
-//0.6 版本   var hack = old[i]
-                        old[i] = obj[i]
-                    }
-                }
-                return old
-            }
-            old.$active = false
-        }
-
-        return observeObject(obj, null, old, addWatch)
-    }
-    if (hasReturn) {
-        return obj
-    }
-}
 function makeGetSet(key, value) {
-    var childVm = observe(value)//转换为VM
-    if (childVm) {
-        value = childVm
-    } else {
-        childVm = void 0
-    }
+    var childVm, value = NaN
     return {
         get: function () {
             if (this.$active) {
@@ -1341,10 +1279,9 @@ function makeGetSet(key, value) {
             return value
         },
         set: function (newVal) {
-            if (value === newVal || stopRepeatAssign)
+            if (value === newVal)
                 return
             var oldValue = value
-
             childVm = observe(newVal, value)
             if (childVm) {
                 value = childVm
@@ -1366,6 +1303,76 @@ function makeGetSet(key, value) {
     }
 }
 
+function observe(obj, old, hasReturn, watch) {
+    if (Array.isArray(obj)) {
+        return observeArray(obj, old, watch)
+    } else if (avalon.isPlainObject(obj)) {
+        if (old) {
+            var keys = Object.keys(obj)
+            var keys2 = Object.keys(old)
+            if (keys.join(";") === keys2.join(";")) {
+                for (var i in obj) {
+                    if (obj.hasOwnProperty(i)) {
+                        old[i] = obj[i]
+                    }
+                }
+                return old
+            }
+            old.$active = false
+        }
+        return observeObject(obj, {
+            old: old,
+            watch: watch
+        })
+    }
+    if (hasReturn) {
+        return obj
+    }
+}
+
+function observeArray(array, old, watch) {
+    if (old) {
+        var args = [0, old.length].concat(array)
+        old.splice.apply(old, args)
+        return old
+    } else {
+        for (var i in newProto) {
+            array[i] = newProto[i]
+        }
+
+        hideProperty(array, "$up", null)
+        hideProperty(array, "$pathname", "")
+        hideProperty(array, "$track", createTrack(array.length))
+
+        array._ = observeObject({
+            length: NaN
+        })
+        array._.$watch = $watch
+        array._.length = array.length
+        array._.$watch("length", function (a, b) {
+            $emit.call(array.$up, array.$pathname + ".length", [a, b])
+        })
+        if (watch) {
+            hideProperty(array, "$watch", function () {
+                return $watch.apply(array, arguments)
+            })
+        }
+
+        if (W3C) {
+            Object.defineProperty(array, "$model", $modelDescriptor)
+        } else {
+            array.$model = toJson(array)
+        }
+        for (var j = 0, n = array.length; j < n; j++) {
+            var el = array[j] = observe(array[j], 0, 1, 1)
+            if (Object(el)) {
+                el.$up = array
+            }
+        }
+
+        return array
+    }
+}
 
 function hideProperty(host, name, value) {
     if (canHideOwn) {
@@ -1381,14 +1388,14 @@ function hideProperty(host, name, value) {
 }
 
 function toJson(val) {
-    if (Array.isArray(val)) {
+    var xtype = avalon.type(val)
+    if (xtype === "array") {
         var array = []
         for (var i = 0; i < val.length; i++) {
             array[i] = toJson(val[i])
         }
         return array
-
-    } else if (val && typeof val === "object") {
+    } else if (xtype === "object") {
         var obj = {}
         for (i in val) {
             if (val.hasOwnProperty(i)) {
@@ -1527,6 +1534,7 @@ var newProto = {
             if (index > this.length) {
                 throw Error(index + "set方法的第一个参数不能大于原数组长度")
             }
+            $emit.call(this.$up, this.$pathname + ".*", [val, this[index]])
             this.splice(index, 1, val)
         }
     },
@@ -1591,7 +1599,7 @@ arrayMethods.forEach(function (method) {
         // 继续尝试劫持数组元素的属性
         var args = []
         for (var i = 0, n = arguments.length; i < n; i++) {
-            args[i] = observe(arguments[i], 0, 1,1)
+            args[i] = observe(arguments[i], 0, 1, 1)
         }
         var result = original.apply(this, args)
         addTrack(this.$track, method, args)
@@ -1665,6 +1673,11 @@ function addTrack(track, method, args) {
             break
         case 'splice':
             if (args.length > 2) {
+                // 0, 5, a, b, c --> 0, 2, 0
+                // 0, 5, a, b, c, d, e, f, g--> 0, 0, 3
+                var del = args[1]
+                var add = args.length - 2
+                // args = [args[0], Math.max(del - add, 0)].concat(createTrack(Math.max(add - del, 0)))
                 args = [args[0], args[1]].concat(createTrack(args.length - 2))
             }
             break
@@ -1707,14 +1720,14 @@ avalon.injectBinding = function (binding) {
     binding.handler = binding.handler || directives[binding.type].update || noop
     binding.update = function () {
         var begin = false
-        if (!binding.evaluator) {
+        if (!binding.getter) {
             begin = true
             dependencyDetection.begin({
                 callback: function (array) {
                     injectDependency(array, binding)
                 }
             })
-            binding.evaluator = parseExpr(binding.expr, binding.vmodels, binding)
+            binding.getter = parseExpr(binding.expr, binding.vmodels, binding)
             binding.observers.forEach(function (a) {
                 a.v.$watch(a.p, binding)
             })
@@ -1725,20 +1738,19 @@ avalon.injectBinding = function (binding) {
             delete binding.fireArgs
             if (!args) {
                 if (binding.type === "on") {
-                    a = binding.evaluator + ""
+                    a = binding.getter + ""
                 } else {
-                    a = binding.evaluator.apply(0, binding.args)
+                    a = binding.getter.apply(0, binding.args)
                 }
             } else {
                 a = args[0]
                 b = args[1]
-                
+
             }
-             b = typeof b === "undefined" ? binding.oldValue : b
+            b = typeof b === "undefined" ? binding.oldValue : b
             if (binding._filters) {
                 a = filters.$filter.apply(0, [a].concat(binding._filters))
             }
-
             if (binding.signature) {
                 var xtype = avalon.type(a)
                 if (xtype !== "array" && xtype !== "object") {
@@ -1753,14 +1765,15 @@ avalon.injectBinding = function (binding) {
                     binding.handler(a, b)
                     binding.oldValue = 1
                 }
-
+            } else if (Array.isArray(a) ? a.length !== (b && b.length) : false) {
+                binding.handler(a, b)
+                binding.oldValue = a.concat()
             } else if (a !== b) {
-
                 binding.handler(a, b)
                 binding.oldValue = a
             }
         } catch (e) {
-            delete binding.evaluator
+            delete binding.getter
             log("warning:exception throwed in [avalon.injectBinding] ", e)
             var node = binding.element
             if (node && node.nodeType === 3) {
@@ -1877,6 +1890,7 @@ function rejectDisposeQueue(data) {
 }
 
 function disposeData(data) {
+    delete disposeQueue[data.uuid] // 先清除，不然无法回收了
     data.element = null
     data.rollback && data.rollback()
     for (var key in data) {
@@ -1886,15 +1900,21 @@ function disposeData(data) {
 
 function shouldDispose(el) {
     try {//IE下，如果文本节点脱离DOM树，访问parentNode会报错
-        if (!el.parentNode) {
-            return true
-        }
+        var fireError = el.parentNode.nodeType
     } catch (e) {
         return true
     }
-
+    if (el.ifRemove) {
+        // 如果节点被放到ifGroup，才移除
+        if (!root.contains(el.ifRemove) && (ifGroup === el.parentNode)) {
+            el.parentNode && el.parentNode.removeChild(el)
+            return true
+        }
+    }
     return el.msRetain ? 0 : (el.nodeType === 1 ? !root.contains(el) : !avalon.contains(root, el))
 }
+
+
 
 /************************************************************************
  *            HTML处理(parseHTML, innerHTML, clearHTML)                  *
@@ -2787,6 +2807,7 @@ function addAssign(vars, vmodel, name, binding) {
         while (a = arr.shift()) {
             if (vmodel.hasOwnProperty(a)) {
                 ret.push(first + prefix + first)
+             
                 binding.observers.push({
                     v: vmodel,
                     p: prop
@@ -2798,11 +2819,28 @@ function addAssign(vars, vmodel, name, binding) {
     }
     return ret
 }
+var rproxy = /(\$proxy\$[a-z]+)\d+$/
+var variablePool = new Cache(218)
+//缓存求值函数，以便多次利用
+var evaluatorPool = new Cache(128)
+
+function getVars(expr) {
+    expr = expr.trim()
+    var ret = variablePool.get(expr)
+    if (ret) {
+        return ret.concat()
+    }
+    ret = parser(expr)
+    return variablePool.put(expr, ret).concat()
+}
+
 function parseExpr(expr, vmodels, binding) {
     if (binding.filters && !binding._filters) {
         binding._filters = parseFilter(binding.filters)
     }
-    var vars = parser(expr)
+
+    var vars = getVars(expr)
+   
     var expose = new Date() - 0
     var assigns = []
     var names = []
@@ -2817,10 +2855,24 @@ function parseExpr(expr, vmodels, binding) {
         }
     }
     binding.args = args
+    var dataType = binding.type
+    var exprId = vmodels.map(function (el) {
+        return String(el.$id).replace(rproxy, "$1")
+    }) + expr + dataType
+    var getter = evaluatorPool.get(exprId) //直接从缓存，免得重复生成
+    if (getter) {
+        if (dataType === "duplex") {
+            var setter = evaluatorPool.get(exprId + "setter")
+            binding.setter = setter.apply(setter, binding.args)
+        }
+        return binding.getter = getter
+    }
+    
     if (!assigns.length) {
         assigns.push("fix" + expose)
     }
-    if (binding.type === "duplex") {
+
+    if (dataType === "duplex") {
         var nameOne = {}
         assigns.forEach(function (a) {
             var arr = a.split("=")
@@ -2833,11 +2885,11 @@ function parseExpr(expr, vmodels, binding) {
         var fn2 = Function.apply(noop, names.concat("'use strict';" +
                 "return function(vvv){" + expr + " = vvv\n}\n"))
         /* jshint ignore:end */
-
+        evaluatorPool.put(exprId + "setter", fn2)
         binding.setter = fn2.apply(fn2, binding.args)
     }
 
-    if (binding.type === "on") { //事件绑定
+    if (dataType === "on") { //事件绑定
         if (expr.indexOf("(") === -1) {
             expr += ".call(this, $event)"
         } else {
@@ -2853,11 +2905,11 @@ function parseExpr(expr, vmodels, binding) {
         expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     /* jshint ignore:start */
-    var fn = Function.apply(noop, names.concat("'use strict';\nvar " +
+    getter = Function.apply(noop, names.concat("'use strict';\nvar " +
             assigns.join(",\n") + expr))
     /* jshint ignore:end */
 
-    return fn
+    return  evaluatorPool.put(exprId, getter)
 
 }
 //========
@@ -2880,8 +2932,8 @@ function stringifyExpr(code) {
 
 function parseExprProxy(code, scopes, data) {
     avalon.log("parseExprProxy方法即将被废弃")
-    parseExpr(code, scopes, data)
-    if (data.evaluator) {
+    var fn = data.evaluator = parseExpr(code, scopes, data)
+    if (fn) {
         data.handler = bindingExecutors[data.handlerName || data.type]
         avalon.injectBinding(data)
     }
@@ -2983,7 +3035,7 @@ function executeBindings(bindings, vmodels) {
         directives[binding.type].init(binding)
       
         avalon.injectBinding(binding)
-        if (binding.evaluator && binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
+        if (binding.getter && binding.element.nodeType === 1) { //移除数据绑定，防止被二次解析
             //chrome使用removeAttributeNode移除不存在的特性节点时会报错 https://github.com/RubyLouvre/avalon/issues/99
             binding.element.removeAttribute(binding.name)
         }
@@ -3026,7 +3078,7 @@ function scanAttr(elem, vmodels, match) {
         var fixAttrs = []
         var msData = {}
         var uniq = {}
-        for (var i = 0, attr; attr = attributes[i++];) {
+        for (var i = 0, attr; attr = attributes[i++]; ) {
             if (attr.specified) {
                 if (match = attr.name.match(rmsAttr)) {
                     //如果是以指定前缀命名的
@@ -3034,11 +3086,11 @@ function scanAttr(elem, vmodels, match) {
                     var param = match[2] || ""
                     var value = attr.value
                     var name = attr.name
-                    if( uniq[name] ){//IE8下ms-repeat,ms-with BUG
+                    if (uniq[name]) {//IE8下ms-repeat,ms-with BUG
                         continue
                     }
                     uniq[name] = 1
-                    
+
                     if (events[type]) {
                         param = type
                         type = "on"
@@ -3069,15 +3121,15 @@ function scanAttr(elem, vmodels, match) {
                             priority: (directives[type].priority || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                         }
                         if (type === "html" || type === "text") {
-                            
+
                             var filters = getToken(value).filters
                             binding.expr = binding.expr.replace(filters, "")
-                          
+
                             binding.filters = filters.replace(rhasHtml, function () {
-                                    binding.type = "html"
-                                    binding.group = 1
-                                    return ""
-                                }) // jshint ignore:line
+                                binding.type = "html"
+                                binding.group = 1
+                                return ""
+                            }) // jshint ignore:line
                         } else if (type === "duplex") {
                             var hasDuplex = name
                         } else if (name === "ms-if-loop") {
@@ -3094,19 +3146,14 @@ function scanAttr(elem, vmodels, match) {
         if (bindings.length) {
             bindings.sort(bindingSorter)
             fixAttrs.forEach(function (arr) {
-                    log("warning!请改用" + arr[1] + "代替" + arr[0] + "!")
-                    elem.removeAttribute(arr[0])
-                    elem.setAttribute(arr[1], arr[2])
-                })
-                //http://bugs.jquery.com/ticket/7071
-                //在IE下对VML读取type属性,会让此元素所有属性都变成<Failed>
-            if (hasDuplex) {
-                if (msData["ms-attr-checked"]) {
-                    log("warning!一个控件不能同时定义ms-attr-checked与" + hasDuplex)
-                }
-                if (msData["ms-attr-value"]) {
-                    log("warning!一个控件不能同时定义ms-attr-value与" + hasDuplex)
-                }
+                log("warning!请改用" + arr[1] + "代替" + arr[0] + "!")
+                elem.removeAttribute(arr[0])
+                elem.setAttribute(arr[1], arr[2])
+            })
+            //http://bugs.jquery.com/ticket/7071
+            //在IE下对VML读取type属性,会让此元素所有属性都变成<Failed>
+            if (hasDuplex && msData["ms-attr-value"] && elem.nodeName === "INPUT" && elem.type === "text") {
+                log("warning!一个控件不能同时定义ms-attr-value与" + hasDuplex)
             }
             for (i = 0; binding = bindings[i]; i++) {
                 type = binding.type
@@ -3119,8 +3166,7 @@ function scanAttr(elem, vmodels, match) {
             executeBindings(bindings, vmodels)
         }
     }
-    //&& rbind.test(elem.innerHTML.replace(rlt, "<").replace(rgt, ">"))
-    if (scanNode && !stopScan[elem.tagName] ) {
+    if (scanNode && !stopScan[elem.tagName]) {
         mergeTextNodes && mergeTextNodes(elem)
         scanNodeList(elem, vmodels) //扫描子孙元素
 
@@ -3128,33 +3174,33 @@ function scanAttr(elem, vmodels, match) {
 }
 var rnoscanAttrBinding = /^if|widget|repeat$/
 var rnoscanNodeBinding = /^each|with|html|include$/
-    //IE67下，在循环绑定中，一个节点如果是通过cloneNode得到，自定义属性的specified为false，无法进入里面的分支，
-    //但如果我们去掉scanAttr中的attr.specified检测，一个元素会有80+个特性节点（因为它不区分固有属性与自定义属性），很容易卡死页面
+//IE67下，在循环绑定中，一个节点如果是通过cloneNode得到，自定义属性的specified为false，无法进入里面的分支，
+//但如果我们去掉scanAttr中的attr.specified检测，一个元素会有80+个特性节点（因为它不区分固有属性与自定义属性），很容易卡死页面
 if (!"1" [0]) {
     var attrPool = new Cache(512)
     var rattrs = /\s+(ms-[^=\s]+)(?:=("[^"]*"|'[^']*'|[^\s>]+))?/g,
-        rquote = /^['"]/,
-        rtag = /<\w+\b(?:(["'])[^"]*?(\1)|[^>])*>/i,
-        ramp = /&amp;/g
-        //IE6-8解析HTML5新标签，会将它分解两个元素节点与一个文本节点
-        //<body><section>ddd</section></body>
-        //        window.onload = function() {
-        //            var body = document.body
-        //            for (var i = 0, el; el = body.children[i++]; ) {
-        //                avalon.log(el.outerHTML)
-        //            }
-        //        }
-        //依次输出<SECTION>, </SECTION>
+            rquote = /^['"]/,
+            rtag = /<\w+\b(?:(["'])[^"]*?(\1)|[^>])*>/i,
+            ramp = /&amp;/g
+    //IE6-8解析HTML5新标签，会将它分解两个元素节点与一个文本节点
+    //<body><section>ddd</section></body>
+    //        window.onload = function() {
+    //            var body = document.body
+    //            for (var i = 0, el; el = body.children[i++]; ) {
+    //                avalon.log(el.outerHTML)
+    //            }
+    //        }
+    //依次输出<SECTION>, </SECTION>
     var getAttributes = function (elem) {
         var html = elem.outerHTML
-            //处理IE6-8解析HTML5新标签的情况，及<br>等半闭合标签outerHTML为空的情况
+        //处理IE6-8解析HTML5新标签的情况，及<br>等半闭合标签outerHTML为空的情况
         if (html.slice(0, 2) === "</" || !html.trim()) {
             return []
         }
         var str = html.match(rtag)[0]
         var attributes = [],
-            match,
-            k, v
+                match,
+                k, v
         var ret = attrPool.get(str)
         if (ret) {
             return ret
@@ -3207,17 +3253,16 @@ function scanNodeArray(nodes, vmodels) {
                             name: "widget"
                         })
                         if (avalon.components[fullName]) {
-                            avalon.clearHTML(elem)
+                            //   avalon.clearHTML(elem)
                             avalon.component(fullName)
                         }
                     }
                 }
-                if (renderedCallbacks.length) {
-                    while (fn = renderedCallbacks.pop()) {
-                        fn.call(node)
-                    }
+                if (node.msHasEvent) {
+                    avalon.fireDom(node, "datasetchanged", {
+                        bubble: node.msHasEvent
+                    })
                 }
-
                 break
             case 3:
                 if (rexpr.test(node.nodeValue)) {
@@ -3257,6 +3302,8 @@ avalon.component = function (name, opts) {
             i--;
 
             (function (host, hooks, elem, widget) {
+
+
                 var dependencies = 1
                 var library = host.library
                 var global = avalon.libraries[library]
@@ -3282,10 +3329,40 @@ avalon.component = function (name, opts) {
                 //==========构建VM=========
                 var vmodel = avalon.define(componentDefinition) || {}
                 elem.msResolved = 1
-
                 vmodel.$init(vmodel)
                 global.$init(vmodel)
+                var nodes = elem.childNodes
+                //收集插入点
+                var slots = {}, snode
+                for (var s = 0, el; el = nodes[s++]; ) {
+                    var type = el.nodeType === 1 && el.getAttribute("slot") || componentDefinition.$slot
+                    if (type) {
+                        if (slots[type]) {
+                            slots[type].push(el)
+                        } else {
+                            slots[type] = [el]
+                        }
+                    }
+                }
                 elem.innerHTML = vmodel.$$template(vmodel.$template)
+                for (s in slots) {
+                    if (vmodel.hasOwnProperty(s)) {
+                        var ss = slots[s]
+                        if (ss.length === 1 && ss[0].nodeType === 1) {
+                            var fragment = avalonFragment.cloneNode(true)
+                            fragment.appendChild(ss[0])
+                            vmodel[s] = fragment
+                        } else if (ss.length > 1) {
+                            fragment = avalonFragment.cloneNode(true)
+                            for (s = 0; snode = ss[s++]; ) {
+                                fragment.appendChild(snode)
+                            }
+                            vmodel[s] = fragment
+                        }
+                    }
+                    slots[s] = null
+                }
+                slots = null
                 var child = elem.firstChild
                 if (vmodel.$replace) {
                     child = elem.firstChild
@@ -3301,8 +3378,9 @@ avalon.component = function (name, opts) {
                     if (isFinite(e.dependency) && e.library === library) {
                         dependencies += e.dependency
                         if (vmodel !== e.vm) {
-                            vmodel.$childReady(vmodel, e)
-                            global.$childReady(vmodel, e)
+                            vmodel.$refs[e.vm.$id] = e.vm
+                            vmodel.$childReady(vmodel)
+                            global.$childReady(vmodel)
                             e.stopPropagation()
                         }
                     }
@@ -3332,7 +3410,6 @@ avalon.component = function (name, opts) {
                 avalon.scan(elem, [vmodel].concat(host.vmodels))
 
                 avalon.vmodels[vmodel.$id] = vmodel
-
                 if (!elem.childNodes.length) {
                     avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
                 } else {
@@ -3546,7 +3623,7 @@ Buffer.prototype = {
         for (var i = 0, sub; sub = this.queue[i++]; ) {
             sub.update()
         }
-        this.queue.length = this.locked = 0
+        this.locked = 0
         this.queue = []
     }
 }
@@ -3849,7 +3926,7 @@ var duplexBinding = avalon.directive("duplex", {
                 binding.bound(W3C ? "change" : "click", function () {
                     if (avalon(elem).data("duplexObserve") !== false) {
                         var method = elem.checked ? "ensure" : "remove"
-                        var array = binding.evaluator()
+                        var array = binding.getter()
                         if (!Array.isArray(array)) {
                             log("ms-duplex应用于checkbox上要对应一个数组")
                             array = [array]
@@ -3961,13 +4038,18 @@ var duplexBinding = avalon.directive("duplex", {
             case "select":
                 //必须变成字符串后才能比较
                 binding._value = value
-                renderedCallbacks.push(function () {
-                    var value = binding._value
-                    var curValue = Array.isArray(value) ? value.map(String) : value + ""
-                    avalon(elem).val(curValue)
-                    elem.oldValue = curValue + ""
-                    binding.changed.call(elem, curValue)
+                elem.msHasEvent = "selectDuplex"
+                //必须等到其孩子准备好才触发
+                avalon.bind(elem, "datasetchanged", function (e) {
+                    if (e.bubble === "selectDuplex") {
+                        var value = binding._value
+                        var curValue = Array.isArray(value) ? value.map(String) : value + ""
+                        avalon(elem).val(curValue)
+                        elem.oldValue = curValue + ""
+                        binding.changed.call(elem, curValue)
+                    }
                 })
+
                 break
         }
         if (binding.xtype !== "select") {
@@ -4745,7 +4827,7 @@ var onDir = avalon.directive("on", {
         var binding = this
         var elem = this.element
         callback = function (e) {
-            var fn = binding.evaluator || noop
+            var fn = binding.getter || noop
             return fn.apply(this, binding.args.concat(e))
         }
         var eventType = binding.param.replace(/-\d+$/, "") // ms-on-mousemove-10
@@ -4780,7 +4862,9 @@ avalon.directive("repeat", {
             effectBinding(elem, binding)
             binding.param = binding.param || "el"
             binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", binding.vmodels)
-            binding.renderedCallback = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
+            // binding.renderedCallback = 
+            var rendered = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
+
             var signature = generateID(type)
             var start = DOC.createComment(signature + ":start")
             var end = binding.element = DOC.createComment(signature + ":end")
@@ -4798,8 +4882,17 @@ avalon.directive("repeat", {
                 }
                 elem.appendChild(start)
                 elem.appendChild(end)
+                parent = elem
             }
             binding.element = end
+
+            if (rendered) {
+                var removeFn = avalon.bind(parent, "datasetchanged", function () {
+                    rendered.apply(parent, parent.args)
+                    avalon.unbind(parent, "datasetchanged", removeFn)
+                    parent.msRendered = rendered
+                })
+            }
         }
     },
     update: function (value, oldValue) {
@@ -4808,7 +4901,6 @@ avalon.directive("repeat", {
 
         this.enterCount += 1
         var init = !oldValue
-        var now = new Date()
         if (init) {
             binding.$outer = {}
             var check0 = "$key"
@@ -4839,7 +4931,6 @@ avalon.directive("repeat", {
         var proxies = []
         var param = this.param
         var retain = avalon.mix({}, this.cache)
-
         var elem = this.element
         var length = track.length
 
@@ -4854,6 +4945,7 @@ avalon.directive("repeat", {
                 if (xtype === "array") {
                     action = "add"
                     proxy.$id = keyOrId
+
                     proxy[param] = value[i] //index
 
                 } else {
@@ -4867,6 +4959,9 @@ avalon.directive("repeat", {
                 shimController(binding, transation, proxy, fragments, init && !binding.effectDriver)
                 decorateProxy(proxy, binding, xtype)
             } else {
+//                if (xtype === "array") {
+//                    proxy[param] = value[i]
+//                }
                 fragments.push({})
                 retain[keyOrId] = true
             }
@@ -4877,11 +4972,13 @@ avalon.directive("repeat", {
                 proxy.$oldIndex = proxy.$index
                 proxy.$active = true
                 proxy.$index = i
+
             }
 
             if (xtype === "array") {
                 proxy.$first = i === 0
                 proxy.$last = i === length - 1
+                // proxy[param] = value[i]
             } else {
                 proxy.$val = toJson(value[keyOrId]) // 这里是处理vm.object = newObject的情况 
             }
@@ -4953,29 +5050,21 @@ avalon.directive("repeat", {
 
         }
 
-
-//repeat --> duplex
-        var callback = binding.renderedCallback
-        if (callback) {
-            (function (fn, args) {
-                // console.log("+++++")
-                renderedCallbacks.push(function () {
-                    fn.call(parent, args)
-                    avalon.log("耗时 ", new Date() - now)
-                    if (parent.oldValue && parent.tagName === "SELECT") { //fix #503
-
-                        avalon(parent).val(parent.oldValue.split(","))
-                    }
-
-                })//兼容早期的传参方式
-                if (!(init && !binding.effectDriver) && renderedCallbacks.length) {
-                    renderedCallbacks.pop().call(parent)
-                }
-            })(callback, kernel.newWatch ? arguments : action)
-
-        }
+        //repeat --> duplex
+        (function (args) {
+            parent.args = args
+            if (parent.msRendered) {//第一次事件触发,以后直接调用
+                parent.msRendered.apply(parent, args)
+            }
+        })(kernel.newWatch ? arguments : [action]);
+        var id = setTimeout(function () {
+            clearTimeout(id)
+            //触发上层的select回调及自己的rendered回调
+            avalon.fireDom(parent, "datasetchanged", {
+                bubble: parent.msHasEvent
+            })
+        })
         this.enterCount -= 1
-        //  avalon.log("耗时 ", new Date() - now)
 
     }
 
@@ -5094,13 +5183,15 @@ function eachProxyFactory(itemName) {
     }
     source[itemName] = NaN
 
-    var second = {
+    var force = {
         $last: 1,
         $first: 1,
         $index: 1
     }
-    second[itemName] = 1
-    var proxy = modelFactory(source, second)
+    force[itemName] = 1
+    var proxy = modelFactory(source, {
+        force: force
+    })
     proxy.$id = generateID("$proxy$each")
     return proxy
 }
@@ -5140,9 +5231,11 @@ function withProxyFactory() {
         $outer: {},
         $anchor: null
     }, {
-        $key: 1,
-        $val: 1,
-        $index: 1
+        force: {
+            $key: 1,
+            $val: 1,
+            $index: 1
+        }
     })
     proxy.$id = generateID("$proxy$with")
     return proxy

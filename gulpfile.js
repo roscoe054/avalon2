@@ -57,12 +57,10 @@ gulp.task('combo', function () {
             "08 modelFactory": "08 modelFactory.modern",
             "15 HTML": "15 HTML.modern",
             "16 dom": "16 dom.modern",
-            "17 parser": "17 parser.modern",
             "18 scanAttr": "18 scanAttr.modern",
             "18 scanTag": "18 scanTag.modern",
             "21 loader": "21 loader.modern",
             "text": "text.modern",
-            "duplex.2": "duplex.2.modern",
             "22 domReady": "22 domReady.modern"
         })
 
@@ -79,7 +77,7 @@ gulp.task('combo', function () {
                 .pipe(uglify())
                 .pipe(rename('avalon.modern.min.js'))
                 .pipe(gulp.dest('./dist/'))
-     
+
     })
 
 

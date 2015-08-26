@@ -28,13 +28,13 @@ function scanNodeArray(nodes, vmodels) {
                             name: "widget"
                         })
                         if (avalon.components[fullName]) {
-                            avalon.clearHTML(elem)
+                            //   avalon.clearHTML(elem)
                             avalon.component(fullName)
                         }
                     }
                 }
-                if(node.msHasEvent){
-                    avalon.fireDom(node, "datasetchanged",{
+                if (node.msHasEvent) {
+                    avalon.fireDom(node, "datasetchanged", {
                         bubble: node.msHasEvent
                     })
                 }
@@ -77,6 +77,8 @@ avalon.component = function (name, opts) {
             i--;
 
             (function (host, hooks, elem, widget) {
+
+
                 var dependencies = 1
                 var library = host.library
                 var global = avalon.libraries[library]
@@ -102,10 +104,40 @@ avalon.component = function (name, opts) {
                 //==========构建VM=========
                 var vmodel = avalon.define(componentDefinition) || {}
                 elem.msResolved = 1
-
                 vmodel.$init(vmodel)
                 global.$init(vmodel)
+                var nodes = elem.childNodes
+                //收集插入点
+                var slots = {}, snode
+                for (var s = 0, el; el = nodes[s++]; ) {
+                    var type = el.nodeType === 1 && el.getAttribute("slot") || componentDefinition.$slot
+                    if (type) {
+                        if (slots[type]) {
+                            slots[type].push(el)
+                        } else {
+                            slots[type] = [el]
+                        }
+                    }
+                }
                 elem.innerHTML = vmodel.$$template(vmodel.$template)
+                for (s in slots) {
+                    if (vmodel.hasOwnProperty(s)) {
+                        var ss = slots[s]
+                        if (ss.length === 1 && ss[0].nodeType === 1) {
+                            var fragment = avalonFragment.cloneNode(true)
+                            fragment.appendChild(ss[0])
+                            vmodel[s] = fragment
+                        } else if (ss.length > 1) {
+                            fragment = avalonFragment.cloneNode(true)
+                            for (s = 0; snode = ss[s++]; ) {
+                                fragment.appendChild(snode)
+                            }
+                            vmodel[s] = fragment
+                        }
+                    }
+                    slots[s] = null
+                }
+                slots = null
                 var child = elem.firstChild
                 if (vmodel.$replace) {
                     child = elem.firstChild
@@ -121,8 +153,9 @@ avalon.component = function (name, opts) {
                     if (isFinite(e.dependency) && e.library === library) {
                         dependencies += e.dependency
                         if (vmodel !== e.vm) {
-                            vmodel.$childReady(vmodel, e)
-                            global.$childReady(vmodel, e)
+                            vmodel.$refs[e.vm.$id] = e.vm
+                            vmodel.$childReady(vmodel)
+                            global.$childReady(vmodel)
                             e.stopPropagation()
                         }
                     }
@@ -152,7 +185,6 @@ avalon.component = function (name, opts) {
                 avalon.scan(elem, [vmodel].concat(host.vmodels))
 
                 avalon.vmodels[vmodel.$id] = vmodel
-
                 if (!elem.childNodes.length) {
                     avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
                 } else {
