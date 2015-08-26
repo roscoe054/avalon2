@@ -29,6 +29,9 @@ function Component() {
 }
 
 function observeObject(source, options) {
+    if (!source || (source.$id && source.$accessors)) {
+        return source
+    }
     //source为原对象,不能是元素节点或null
     //options,可选,配置对象,里面有old, force, watch这三个属性
     options = options || nullObject
@@ -79,10 +82,11 @@ function observeObject(source, options) {
         var value = source[name]
         if (!$$skipArray[name])
             hasOwn[name] = true
-        if (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
-                typeof value === "function" || (value && value.nodeType))) {
+        var xtype = avalon.type(value)
+        if (xtype === "function" || (value && value.nodeType) ||
+                (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name]))) {
             skip.push(name)
-        } else if (value && Object.keys(value).length <= 2 && typeof value.get === "function") {
+        } else if (xtype === "object" && typeof value.get === "function" && Object.keys(value).length <= 2) {
             log("warning:计算属性建议放在$computed对象中统一定义");
             (function (key, value) {
                 var old
@@ -250,8 +254,9 @@ function observeArray(array, old, watch) {
 
         array._ = observeObject({
             length: NaN
+        }, {
+            watch: true
         })
-        array._.$watch = $watch
         array._.length = array.length
         array._.$watch("length", function (a, b) {
             $emit.call(array.$up, array.$pathname + ".length", [a, b])

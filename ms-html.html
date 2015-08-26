@@ -5,31 +5,45 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width">
         <script src="avalon.js" ></script>
-        <script>
 
-            var vm = avalon.define({
-                $id: "test",
-                aaa: "111",
-                html: "<span>11</span><strong>{{aaa}}</strong><span>333</span><strong>444</strong><span>555</span><strong>666</strong>",
-                change1: function () {
-                    console.log("change1")
-                    vm.html = "<span><b>AA</b></span><strong>{{aaa}}</strong><span>BB</span><strong>444</strong><span>555</span><strong>666</strong>end"
-                },
-                change2: function () {
-                    vm.html = "<span><b>加入</b></span><em>2343</em><br><em>2343</em><br><span>11</span>"
-                },
-                change3: function () {
-                    vm.html = "<span>2343</span>"
-                }
-            });
-console.log(vm)
-        </script>
     </head>
-    <body ms-controller="test">
-        <div>%%%%{{html|html}}%%%%</div>
-        <p><button ms-click="change1" type="button">click 1</button></p>
-        <p><button ms-click="change2" type="button">click 2</button></p>
-        <p><button ms-click="change3" type="button">click 3</button></p>
+    <body>
+        <script>
+            function expect(a) {
+                return {
+                    to: {
+                        be: function (b) {
+                            console.log(a, b, a === b)
+                        }
+                    }
+                }
+            }
+            function heredoc(fn) {
+                return fn.toString().replace(/^[^\/]+\/\*!?\s?/, '').replace(/\*\/[^\/]+$/, '')
+            }
+            var model = avalon.define({
+                $id: "ms-duplex-regexp",
+                aaa: {
+                    xxx: "444",
+                    yyy: "555"
+                },
+                bbb: "yyy",
+                ccc: "text"
+            })
+            var body = document.body
+            var div = document.createElement("div")
+            div.innerHTML = heredoc(function () {
+                /*
+            
+                 <input ms-duplex="aaa[bbb]">
+                 
+                 */
+            })
+            body.appendChild(div)
+            avalon.scan(div, model)
+
+      
+        </script>
 
     </body>
 </html>

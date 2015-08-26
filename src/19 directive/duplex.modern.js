@@ -71,34 +71,28 @@ var duplexBinding = avalon.directive("duplex", {
                 return
             var val = elem.oldValue = elem.value //防止递归调用形成死循环
             var lastValue = binding.pipe(val, binding, "get")
-            if (avalon(elem).data("duplexObserve") !== false) {
-                binding.setter(lastValue)
-                callback.call(elem, lastValue)
-            }
+            binding.setter(lastValue)
+            callback.call(elem, lastValue)
         }
         switch (binding.xtype) {
             case "radio":
                 binding.bound("click", function () {
-                    if (avalon(elem).data("duplexObserve") !== false) {
-                        var lastValue = binding.pipe(elem.value, binding, "get")
-                        binding.setter(lastValue)
-                        callback.call(elem, lastValue)
-                    }
+                    var lastValue = binding.pipe(elem.value, binding, "get")
+                    binding.setter(lastValue)
+                    callback.call(elem, lastValue)
                 })
                 break
             case "checkbox":
                 binding.bound("change", function () {
-                    if (avalon(elem).data("duplexObserve") !== false) {
-                        var method = elem.checked ? "ensure" : "remove"
-                        var array = binding.getter()
-                        if (!Array.isArray(array)) {
-                            log("ms-duplex应用于checkbox上要对应一个数组")
-                            array = [array]
-                        }
-                        var val = binding.pipe(elem.value, binding, "get")
-                        avalon.Array[method](array, val)
-                        callback.call(elem, array)
+                    var method = elem.checked ? "ensure" : "remove"
+                    var array = binding.getter()
+                    if (!Array.isArray(array)) {
+                        log("ms-duplex应用于checkbox上要对应一个数组")
+                        array = [array]
                     }
+                    var val = binding.pipe(elem.value, binding, "get")
+                    avalon.Array[method](array, val)
+                    callback.call(elem, array)
                 })
                 break
             case "change":
@@ -121,18 +115,16 @@ var duplexBinding = avalon.directive("duplex", {
                 break
             case "select":
                 binding.bound("change", function () {
-                    if (avalon(elem).data("duplexObserve") !== false) {
-                        var val = avalon(elem).val() //字符串或字符串数组
-                        if (Array.isArray(val)) {
-                            val = val.map(function (v) {
-                                return binding.pipe(v, binding, "get")
-                            })
-                        } else {
-                            val = binding.pipe(val, binding, "get")
-                        }
-                        if (val + "" !== binding.oldValue) {
-                            avalon.setter(val)
-                        }
+                    var val = avalon(elem).val() //字符串或字符串数组
+                    if (Array.isArray(val)) {
+                        val = val.map(function (v) {
+                            return binding.pipe(v, binding, "get")
+                        })
+                    } else {
+                        val = binding.pipe(val, binding, "get")
+                    }
+                    if (val + "" !== binding.oldValue) {
+                        avalon.setter(val)
                         callback.call(elem, val)
                     }
                 })

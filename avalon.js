@@ -1125,6 +1125,9 @@ function Component() {
 }
 
 function observeObject(source, options) {
+    if (!source || (source.$id && source.$accessors)) {
+        return source
+    }
     //source为原对象,不能是元素节点或null
     //options,可选,配置对象,里面有old, force, watch这三个属性
     options = options || nullObject
@@ -1175,10 +1178,11 @@ function observeObject(source, options) {
         var value = source[name]
         if (!$$skipArray[name])
             hasOwn[name] = true
-        if (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
-                typeof value === "function" || (value && value.nodeType))) {
+        var xtype = avalon.type(value)
+        if (xtype === "function" || (value && value.nodeType) ||
+                (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name]))) {
             skip.push(name)
-        } else if (value && typeof value === "object" && typeof value.get === "function"  && Object.keys(value).length <= 2 ) {
+        } else if (xtype === "object" && typeof value.get === "function" && Object.keys(value).length <= 2) {
             log("warning:计算属性建议放在$computed对象中统一定义");
             (function (key, value) {
                 var old
@@ -1270,7 +1274,8 @@ function observeObject(source, options) {
  */
 
 function makeGetSet(key, value) {
-    var childVm, value = NaN
+    var childVm
+    value = NaN
     return {
         get: function () {
             if (this.$active) {
@@ -1308,8 +1313,8 @@ function observe(obj, old, hasReturn, watch) {
         return observeArray(obj, old, watch)
     } else if (avalon.isPlainObject(obj)) {
         if (old) {
-            var keys = Object.keys(obj)
-            var keys2 = Object.keys(old)
+            var keys = getKeys(obj)
+            var keys2 = getKeys(old)
             if (keys.join(";") === keys2.join(";")) {
                 for (var i in obj) {
                     if (obj.hasOwnProperty(i)) {
@@ -1329,7 +1334,15 @@ function observe(obj, old, hasReturn, watch) {
         return obj
     }
 }
-
+var getKeys = rnative.test(Object.key) ? Object.key : function (a) {
+    var ret = []
+    for (var i in a) {
+        if (a.hasOwnProperty(i) && !$$skipArray[i]) {
+            ret.push(i)
+        }
+    }
+    return ret
+}
 function observeArray(array, old, watch) {
     if (old) {
         var args = [0, old.length].concat(array)
@@ -1346,8 +1359,9 @@ function observeArray(array, old, watch) {
 
         array._ = observeObject({
             length: NaN
+        }, {
+            watch: true
         })
-        array._.$watch = $watch
         array._.length = array.length
         array._.$watch("length", function (a, b) {
             $emit.call(array.$up, array.$pathname + ".length", [a, b])
@@ -3307,7 +3321,6 @@ avalon.component = function (name, opts) {
 
             (function (host, hooks, elem, widget) {
 
-
                 var dependencies = 1
                 var library = host.library
                 var global = avalon.libraries[library]
@@ -3351,7 +3364,7 @@ avalon.component = function (name, opts) {
                 avalon.clearHTML(elem)
                 elem.innerHTML = vmodel.$$template(vmodel.$template)
 
-                for (var s in slots) {
+                for (s in slots) {
                     if (vmodel.hasOwnProperty(s)) {
                         var ss = slots[s]
                         if (ss.length) {
@@ -3435,7 +3448,7 @@ avalon.fireDom = function (elem, type, opts) {
         avalon.mix(hackEvent, opts)
 
         elem.dispatchEvent(hackEvent)
-    } else {
+    } else if(root.contains(elem)){//IE6-8触发事件必须保证在DOM树中,否则报"SCRIPT16389: 未指明的错误"
         hackEvent = DOC.createEventObject()
         avalon.mix(hackEvent, opts)
         elem.fireEvent("on" + type, hackEvent)
@@ -3904,39 +3917,41 @@ var duplexBinding = avalon.directive("duplex", {
         function compositionEnd() {
             composing = false
         }
-        var updateVModel = function (e) {
+        var updateVModel = function () {
             if (composing) //处理中文输入法在minlengh下引发的BUG
                 return
             var val = elem.value //防止递归调用形成死循环
             var lastValue = binding.pipe(val, binding, "get")
-            if (avalon(elem).data("duplexObserve") !== false) {
+            try {
                 binding.setter(lastValue)
                 callback.call(elem, lastValue)
+            } catch (ex) {
+                log(ex)
             }
         }
         switch (binding.xtype) {
             case "radio":
                 binding.bound("click", function () {
-                    if (avalon(elem).data("duplexObserve") !== false) {
-                        var lastValue = binding.pipe(elem.value, binding, "get")
+                    var lastValue = binding.pipe(elem.value, binding, "get")
+                    try {
                         binding.setter(lastValue)
                         callback.call(elem, lastValue)
+                    } catch (ex) {
+                        log(ex)
                     }
                 })
                 break
             case "checkbox":
                 binding.bound(W3C ? "change" : "click", function () {
-                    if (avalon(elem).data("duplexObserve") !== false) {
-                        var method = elem.checked ? "ensure" : "remove"
-                        var array = binding.getter()
-                        if (!Array.isArray(array)) {
-                            log("ms-duplex应用于checkbox上要对应一个数组")
-                            array = [array]
-                        }
-                        var val = binding.pipe(elem.value, binding, "get")
-                        avalon.Array[method](array, val)
-                        callback.call(elem, array)
+                    var method = elem.checked ? "ensure" : "remove"
+                    var array = binding.getter()
+                    if (!Array.isArray(array)) {
+                        log("ms-duplex应用于checkbox上要对应一个数组")
+                        array = [array]
                     }
+                    var val = binding.pipe(elem.value, binding, "get")
+                    avalon.Array[method](array, val)
+                    callback.call(elem, array)
                 })
                 break
             case "change":
@@ -3960,10 +3975,10 @@ var duplexBinding = avalon.directive("duplex", {
                             }
                         })
                     }
-                    binding.bound("dragend", function (e) {
+                    binding.bound("dragend", function () {
                         setTimeout(function () {
-                            updateVModel(e)
-                        })
+                            updateVModel()
+                        }, 17)
                     })
                     //http://www.cnblogs.com/rubylouvre/archive/2013/02/17/2914604.html
                     //http://www.matts411.com/post/internet-explorer-9-oninput/
@@ -3971,19 +3986,21 @@ var duplexBinding = avalon.directive("duplex", {
                 break
             case "select":
                 binding.bound("change", function () {
-                    if (avalon(elem).data("duplexObserve") !== false) {
-                        var val = avalon(elem).val() //字符串或字符串数组
-                        if (Array.isArray(val)) {
-                            val = val.map(function (v) {
-                                return binding.pipe(v, binding, "get")
-                            })
-                        } else {
-                            val = binding.pipe(val, binding, "get")
-                        }
-                        if (val + "" !== binding.oldValue) {
+                    var val = avalon(elem).val() //字符串或字符串数组
+                    if (Array.isArray(val)) {
+                        val = val.map(function (v) {
+                            return binding.pipe(v, binding, "get")
+                        })
+                    } else {
+                        val = binding.pipe(val, binding, "get")
+                    }
+                    if (val + "" !== binding.oldValue) {
+                        try {
                             binding.setter(val)
+                            callback.call(elem, val)
+                        } catch (ex) {
+                            log(ex)
                         }
-                        callback.call(elem, val)
                     }
                 })
                 break

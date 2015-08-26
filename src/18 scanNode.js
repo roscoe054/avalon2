@@ -78,7 +78,6 @@ avalon.component = function (name, opts) {
 
             (function (host, hooks, elem, widget) {
 
-
                 var dependencies = 1
                 var library = host.library
                 var global = avalon.libraries[library]
@@ -122,7 +121,7 @@ avalon.component = function (name, opts) {
                 avalon.clearHTML(elem)
                 elem.innerHTML = vmodel.$$template(vmodel.$template)
 
-                for (var s in slots) {
+                for (s in slots) {
                     if (vmodel.hasOwnProperty(s)) {
                         var ss = slots[s]
                         if (ss.length) {
@@ -206,7 +205,7 @@ avalon.fireDom = function (elem, type, opts) {
         avalon.mix(hackEvent, opts)
 
         elem.dispatchEvent(hackEvent)
-    } else {
+    } else if(root.contains(elem)){//IE6-8触发事件必须保证在DOM树中,否则报"SCRIPT16389: 未指明的错误"
         hackEvent = DOC.createEventObject()
         avalon.mix(hackEvent, opts)
         elem.fireEvent("on" + type, hackEvent)

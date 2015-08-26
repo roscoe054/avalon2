@@ -38,6 +38,9 @@ function Component() {
 }
 
 function observeObject(source, options) {
+    if (!source || (source.$id && source.$accessors)) {
+        return source
+    }
     //source为原对象,不能是元素节点或null
     //options,可选,配置对象,里面有old, force, watch这三个属性
     options = options || nullObject
@@ -88,10 +91,11 @@ function observeObject(source, options) {
         var value = source[name]
         if (!$$skipArray[name])
             hasOwn[name] = true
-        if (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
-                typeof value === "function" || (value && value.nodeType))) {
+        var xtype = avalon.type(value)
+        if (xtype === "function" || (value && value.nodeType) ||
+                (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name]))) {
             skip.push(name)
-        } else if (value && typeof value === "object" && typeof value.get === "function"  && Object.keys(value).length <= 2 ) {
+        } else if (xtype === "object" && typeof value.get === "function" && Object.keys(value).length <= 2) {
             log("warning:计算属性建议放在$computed对象中统一定义");
             (function (key, value) {
                 var old
@@ -183,7 +187,8 @@ function observeObject(source, options) {
  */
 
 function makeGetSet(key, value) {
-    var childVm, value = NaN
+    var childVm
+    value = NaN
     return {
         get: function () {
             if (this.$active) {
@@ -221,8 +226,8 @@ function observe(obj, old, hasReturn, watch) {
         return observeArray(obj, old, watch)
     } else if (avalon.isPlainObject(obj)) {
         if (old) {
-            var keys = Object.keys(obj)
-            var keys2 = Object.keys(old)
+            var keys = getKeys(obj)
+            var keys2 = getKeys(old)
             if (keys.join(";") === keys2.join(";")) {
                 for (var i in obj) {
                     if (obj.hasOwnProperty(i)) {
@@ -242,7 +247,15 @@ function observe(obj, old, hasReturn, watch) {
         return obj
     }
 }
-
+var getKeys = rnative.test(Object.key) ? Object.key : function (a) {
+    var ret = []
+    for (var i in a) {
+        if (a.hasOwnProperty(i) && !$$skipArray[i]) {
+            ret.push(i)
+        }
+    }
+    return ret
+}
 function observeArray(array, old, watch) {
     if (old) {
         var args = [0, old.length].concat(array)
@@ -259,8 +272,9 @@ function observeArray(array, old, watch) {
 
         array._ = observeObject({
             length: NaN
+        }, {
+            watch: true
         })
-        array._.$watch = $watch
         array._.length = array.length
         array._.$watch("length", function (a, b) {
             $emit.call(array.$up, array.$pathname + ".length", [a, b])

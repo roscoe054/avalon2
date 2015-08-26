@@ -8,38 +8,76 @@
     </head>
     <body>
         <script>
-            var vm = avalon.define({
-                $id: "test"
-            })
-            avalon.libraries.ms.$childReady = function (vm, e) {
-                var child = e.vm
-                vm.$refs[child.$id] = vm
+            function expect(a) {
+                return {
+                    to: {
+                        be: function (b) {
+                            console.log(a, b, a === b)
+                        }
+                    }
+                }
             }
+            function heredoc(fn) {
+                return fn.toString().replace(/^[^\/]+\/\*!?\s?/, '').replace(/\*\/[^\/]+$/, '')
+            }
+            var body = document.body
+            var div = document.createElement("div")
+            var str = heredoc(function () {
+                /*
+                 <select id="select1">
+                 <option ms-repeat="data" ms-if-loop="(el.id.indexOf(filter) > -1) || (el.name.indexOf(filter) > -1)">{{ el.name }}</option>
+                 </select>
+                 <select id="select2">
+                 <option ms-repeat="data" ms-if-loop="el.id.indexOf(filter) > -1">{{ el.name }}</option>
+                 </select>
+               
+                 <input type="text" ms-duplex="filter"/>
+                 */
+            })
+            div.innerHTML = str
+            body.appendChild(div)
+            var vm = avalon.define({
+                $id: "shortcircuit",
+                filter: "",
+                data: [{
+                        id: "47",
+                        name: "111"
+                    }, {
+                        id: "58",
+                        name: "222"
+                    }, {
+                        id: "69",
+                        name: "333"
+                    }]
+            });
+            avalon.scan(div, vm)
+            setTimeout(function () {
+                var s = div.getElementsByTagName("select")
+                expect(avalon(s[0]).val()).to.be("111")
+                expect(avalon(s[1]).val()).to.be("111")
+            //    expect(avalon(s[2]).val()).to.be("111")
+                vm.filter = "22"
+                setTimeout(function () {
+                    var s = div.getElementsByTagName("select")
+                    expect(avalon(s[0]).val()).to.be("222")
+                    expect(avalon(s[1]).val() || "").to.be("")
+                 //   expect(avalon(s[2]).val()).to.be("222")
+//                    vm.filter = "5"
+//                    setTimeout(function () {
+//                        var s = div.getElementsByTagName("select")
+//                        expect(avalon(s[0]).val()).to.be("222")
+//                        expect(avalon(s[1]).val()).to.be("222")
+//                        expect(avalon(s[2]).val() || "").to.be("")
+//                        vm.filter = "5"
+//                       // clearTest(vm, div, done)
+//                    }, 150)
 
-            avalon.component("ms:ancestor", {
-                a: 111,
-                $ready: function () {
-                    console.log("ancestor构建完成")
-                },
-                $template: "<div><ms:parent></ms:parent>{{a}}<ms:parent></ms:parent></div>"
-            })
-            avalon.component("ms:parent", {
-                p: 222,
-                $ready: function () {
-                    console.log("parent构建完成")
-                },
-                $template: "<div><ms:son></ms:son>{{p}}<ms:son></ms:son></div>"
-            })
-            avalon.component("ms:son", {
-                s: 333,
-                $ready: function () {
-                    console.log("son构建完成")
-                },
-                $template: "<strong>{{s}}</strong>"
-            })
+                }, 450)
+                /*     <select id="select3">
+                 <option ms-repeat="data" ms-if-loop="el.name.indexOf(filter) > -1">{{ el.name }}</option>
+                 </select>  */
+            }, 150)
         </script>
-        <div ms-controller="test">
-            <ms:ancestor identifier="pope"/>
-        </div>
+
     </body>
 </html>
