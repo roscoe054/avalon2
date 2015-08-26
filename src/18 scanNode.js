@@ -119,23 +119,21 @@ avalon.component = function (name, opts) {
                         }
                     }
                 }
+                avalon.clearHTML(elem)
                 elem.innerHTML = vmodel.$$template(vmodel.$template)
-                for (s in slots) {
+
+                for (var s in slots) {
                     if (vmodel.hasOwnProperty(s)) {
                         var ss = slots[s]
-                        if (ss.length === 1 && ss[0].nodeType === 1) {
+                        if (ss.length) {
                             var fragment = avalonFragment.cloneNode(true)
-                            fragment.appendChild(ss[0])
-                            vmodel[s] = fragment
-                        } else if (ss.length > 1) {
-                            fragment = avalonFragment.cloneNode(true)
-                            for (s = 0; snode = ss[s++]; ) {
+                            for (var ns = 0; snode = ss[ns++]; ) {
                                 fragment.appendChild(snode)
                             }
                             vmodel[s] = fragment
                         }
+                        slots[s] = null
                     }
-                    slots[s] = null
                 }
                 slots = null
                 var child = elem.firstChild
@@ -233,7 +231,7 @@ function getOptionsFromVM(vmodels, pre) {
 avalon.libraries = []
 avalon.library = function (name, opts) {
     if (DOC.namespaces) {
-        DOC.namespaces.add(name, 'http://www.w3.org/1999/xlink');
+        DOC.namespaces.add(name, 'http://www.w3.org/1999/xhtml');
     }
     avalon.libraries[name] = avalon.mix({
         $init: noop,

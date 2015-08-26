@@ -1178,7 +1178,7 @@ function observeObject(source, options) {
         if (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
                 typeof value === "function" || (value && value.nodeType))) {
             skip.push(name)
-        } else if (value && Object.keys(value).length <= 2 && typeof value.get === "function") {
+        } else if (value && typeof value === "object" && typeof value.get === "function"  && Object.keys(value).length <= 2 ) {
             log("warning:计算属性建议放在$computed对象中统一定义");
             (function (key, value) {
                 var old
@@ -1466,19 +1466,11 @@ if (!canHideOwn) {
                     "\t\tSet [__const__] = Me", //链式调用
                     "\tEnd Function")
             //添加普通属性,因为VBScript对象不能像JS那样随意增删属性，必须在这里预先定义好
-            for (name in properties) {
-                if (!accessors.hasOwnProperty(name)) {
-                    buffer.push("\tPublic [" + name + "]")
-                }
-            }
-            $$skipArray.forEach(function (name) {
-                if (!accessors.hasOwnProperty(name)) {
-                    buffer.push("\tPublic [" + name + "]")
-                }
-            })
-            buffer.push("\tPublic [" + 'hasOwnProperty' + "]")
+            var uniq = {}
+
             //添加访问器属性 
             for (name in accessors) {
+                uniq[name] = true
                 buffer.push(
                         //由于不知对方会传入什么,因此set, let都用上
                         "\tPublic Property Let [" + name + "](val" + expose + ")", //setter
@@ -1497,7 +1489,19 @@ if (!canHideOwn) {
                         "\tEnd Property")
 
             }
-
+            for (name in properties) {
+                if (uniq[name] !== true) {
+                    uniq[name] = true
+                    buffer.push("\tPublic [" + name + "]")
+                }
+            }
+            for (name in $$skipArray) {
+                if (uniq[name] !== true) {
+                    uniq[name] = true
+                    buffer.push("\tPublic [" + name + "]")
+                }
+            }
+            buffer.push("\tPublic [" + 'hasOwnProperty' + "]")
             buffer.push("End Class")
             var body = buffer.join("\r\n")
             var className = VBClassPool[body]
@@ -3344,23 +3348,21 @@ avalon.component = function (name, opts) {
                         }
                     }
                 }
+                avalon.clearHTML(elem)
                 elem.innerHTML = vmodel.$$template(vmodel.$template)
-                for (s in slots) {
+
+                for (var s in slots) {
                     if (vmodel.hasOwnProperty(s)) {
                         var ss = slots[s]
-                        if (ss.length === 1 && ss[0].nodeType === 1) {
+                        if (ss.length) {
                             var fragment = avalonFragment.cloneNode(true)
-                            fragment.appendChild(ss[0])
-                            vmodel[s] = fragment
-                        } else if (ss.length > 1) {
-                            fragment = avalonFragment.cloneNode(true)
-                            for (s = 0; snode = ss[s++]; ) {
+                            for (var ns = 0; snode = ss[ns++]; ) {
                                 fragment.appendChild(snode)
                             }
                             vmodel[s] = fragment
                         }
+                        slots[s] = null
                     }
-                    slots[s] = null
                 }
                 slots = null
                 var child = elem.firstChild
@@ -3458,7 +3460,7 @@ function getOptionsFromVM(vmodels, pre) {
 avalon.libraries = []
 avalon.library = function (name, opts) {
     if (DOC.namespaces) {
-        DOC.namespaces.add(name, 'http://www.w3.org/1999/xlink');
+        DOC.namespaces.add(name, 'http://www.w3.org/1999/xhtml');
     }
     avalon.libraries[name] = avalon.mix({
         $init: noop,

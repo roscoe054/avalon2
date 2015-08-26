@@ -1,29 +1,60 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>静态依赖分析器</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="avalon.js" ></script>
-
+<!DOCTYPE html> 
+<html> 
+    <head> 
+        <meta charset="UTF-8"> 
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+        <script src="avalon.js"></script>
         <script>
-            avalon.define({
-                $id: "test",
-                aaa: 222,
-                bbb: 111,
-                ccc: false,
-                ddd: false,
-                eee: false
+            function heredoc(fn) {
+                return fn.toString()
+                        .replace(/^[^\/]+\/\*!?\s?/, '')
+                        .replace(/\*\/[^\/]+$/, '')
+            }
+            avalon.component("ms:dialog", {
+                header: "",
+                footer: "",
+                content: "",
+                onClick: function () {
+                    console.log(this)
+                },
+                $template: heredoc(function (vm) {
+                    /* 
+                     <div class="dialog"> 
+                     {{header|html}} 
+                     {{content|html}} 
+                     {{footer|html}}   
+                     </div> 
+                     */
+                })
             })
-
-        </script>
-    </head>
-    <body ms-controller="test">
-        <p>类型转换</p>
-        <input ms-duplex="aaa" id="aa"/>{{aaa}}
-        <input ms-duplex-number="bbb" />{{bbb}}
-        <p><input ms-duplex-checked='ccc' type='radio'>{{ccc}}</p>
-        <p><input ms-duplex='ddd' type='radio'>{{ddd}}</p>
-        <p><input ms-duplex-checked='eee' type='checkbox'>{{eee}}</p>
-    </body>
-</html>
+            avalon.component("ms:button", {
+                $slot: "content",
+                content: "",
+                onClick: function () {
+                    console.log(this)
+                },
+                $template: heredoc(function (vm) {
+                    /* 
+                     <button class="ui-button">{{content|html}}</button> 
+                     */
+                })
+            })
+            var vm = avalon.define({
+                $id: "test",
+                a: "这是内容"
+            })
+   
+        </script> 
+    </head> 
+    <body ms-controller="test"> 
+    <ms:dialog id="aaa"> 
+        <div slot="header">弹出层的头部</div> 
+        <div slot="content"> 
+            {{a}} 
+          
+        </div> 
+        <div slot="footer">弹出层的底部</div> 
+    </ms:dialog> 
+      <ms:button>确定</ms:button>
+</body> 
+</html> 

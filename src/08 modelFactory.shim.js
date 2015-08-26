@@ -47,19 +47,11 @@ if (!canHideOwn) {
                     "\t\tSet [__const__] = Me", //链式调用
                     "\tEnd Function")
             //添加普通属性,因为VBScript对象不能像JS那样随意增删属性，必须在这里预先定义好
-            for (name in properties) {
-                if (!accessors.hasOwnProperty(name)) {
-                    buffer.push("\tPublic [" + name + "]")
-                }
-            }
-            $$skipArray.forEach(function (name) {
-                if (!accessors.hasOwnProperty(name)) {
-                    buffer.push("\tPublic [" + name + "]")
-                }
-            })
-            buffer.push("\tPublic [" + 'hasOwnProperty' + "]")
+            var uniq = {}
+
             //添加访问器属性 
             for (name in accessors) {
+                uniq[name] = true
                 buffer.push(
                         //由于不知对方会传入什么,因此set, let都用上
                         "\tPublic Property Let [" + name + "](val" + expose + ")", //setter
@@ -78,7 +70,19 @@ if (!canHideOwn) {
                         "\tEnd Property")
 
             }
-
+            for (name in properties) {
+                if (uniq[name] !== true) {
+                    uniq[name] = true
+                    buffer.push("\tPublic [" + name + "]")
+                }
+            }
+            for (name in $$skipArray) {
+                if (uniq[name] !== true) {
+                    uniq[name] = true
+                    buffer.push("\tPublic [" + name + "]")
+                }
+            }
+            buffer.push("\tPublic [" + 'hasOwnProperty' + "]")
             buffer.push("End Class")
             var body = buffer.join("\r\n")
             var className = VBClassPool[body]

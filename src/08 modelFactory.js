@@ -91,7 +91,7 @@ function observeObject(source, options) {
         if (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name] ||
                 typeof value === "function" || (value && value.nodeType))) {
             skip.push(name)
-        } else if (value && Object.keys(value).length <= 2 && typeof value.get === "function") {
+        } else if (value && typeof value === "object" && typeof value.get === "function"  && Object.keys(value).length <= 2 ) {
             log("warning:计算属性建议放在$computed对象中统一定义");
             (function (key, value) {
                 var old
