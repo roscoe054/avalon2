@@ -1178,11 +1178,10 @@ function observeObject(source, options) {
         var value = source[name]
         if (!$$skipArray[name])
             hasOwn[name] = true
-        var xtype = avalon.type(value)
-        if (xtype === "function" || (value && value.nodeType) ||
+        if (typeof value === "function" || (value && value.nodeType) ||
                 (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name]))) {
             skip.push(name)
-        } else if (xtype === "object" && typeof value.get === "function" && Object.keys(value).length <= 2) {
+        } else if (isComputed(value)) {
             log("warning:计算属性建议放在$computed对象中统一定义");
             (function (key, value) {
                 var old
@@ -1272,7 +1271,16 @@ function observeObject(source, options) {
  =============================
  $skipArray:用于指定不可监听的属性,但VM生成是没有此属性的
  */
-
+function isComputed(val) {//speed up!
+    if (val && typeof val === "object") {
+        for (var i in val) {
+            if (i !== "get" && i !== "set") {
+                return false
+            }
+        }
+        return  typeof val.get === "function"
+    }
+}
 function makeGetSet(key, value) {
     var childVm
     value = NaN
@@ -4206,7 +4214,7 @@ avalon.directive("effect", {
             rightExpr = text.slice(colonIndex + 1)
         }
         if (!rexpr.test(text)) {
-            className = JSON.stringify(className)
+            className = quote(className)
         } else {
             className = stringifyExpr(className)
         }

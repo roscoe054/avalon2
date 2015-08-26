@@ -15,7 +15,7 @@ avalon.directive("effect", {
             rightExpr = text.slice(colonIndex + 1)
         }
         if (!rexpr.test(text)) {
-            className = JSON.stringify(className)
+            className = quote(className)
         } else {
             className = stringifyExpr(className)
         }
