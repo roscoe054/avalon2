@@ -8,13 +8,13 @@ function scanNodeArray(nodes, vmodels) {
     for (var i = 0, node; node = nodes[i++]; ) {
         switch (node.nodeType) {
             case 1:
-                scanTag(node, vmodels) //扫描元素节点
+                var library = isWidget(node)
+                if (!library)
+                    scanTag(node, vmodels) //扫描元素节点
 
-                var elem = node
+                var elem = node, fn
 
                 if (!elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1) {
-
-                    var library = isWidget(elem)
 
                     if (library && avalon.libraries[library]) {
                         var widget = elem.localName ? elem.localName.replace(library + ":", "") : elem.nodeName
@@ -28,7 +28,6 @@ function scanNodeArray(nodes, vmodels) {
                             name: "widget"
                         })
                         if (avalon.components[fullName]) {
-                            //   avalon.clearHTML(elem)
                             avalon.component(fullName)
                         }
                     }
@@ -37,6 +36,11 @@ function scanNodeArray(nodes, vmodels) {
                     avalon.fireDom(node, "datasetchanged", {
                         bubble: node.msHasEvent
                     })
+                }
+                if (renderedCallbacks.length) {
+                    while (fn = renderedCallbacks.pop()) {
+                        fn.call(node)
+                    }
                 }
                 break
             case 3:
@@ -106,6 +110,8 @@ avalon.component = function (name, opts) {
                 vmodel.$init(vmodel)
                 global.$init(vmodel)
                 var nodes = elem.childNodes
+
+                log("扫描原有节点")
                 //收集插入点
                 var slots = {}, snode
                 for (var s = 0, el; el = nodes[s++]; ) {
@@ -118,6 +124,7 @@ avalon.component = function (name, opts) {
                         }
                     }
                 }
+
                 avalon.clearHTML(elem)
                 elem.innerHTML = vmodel.$$template(vmodel.$template)
 
@@ -156,8 +163,9 @@ avalon.component = function (name, opts) {
                             e.stopPropagation()
                         }
                     }
-
+                    
                     if (dependencies === 0) {
+
                         vmodel.$ready(vmodel)
                         global.$ready(vmodel)
                         avalon.unbind(elem, "datasetchanged", removeFn)
@@ -179,13 +187,14 @@ avalon.component = function (name, opts) {
 
                     }
                 })
-                avalon.scan(elem, [vmodel].concat(host.vmodels))
-
+                scanTag(elem, [vmodel].concat(host.vmodels))
                 avalon.vmodels[vmodel.$id] = vmodel
                 if (!elem.childNodes.length) {
+                    console.log("立即减1")
                     avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
                 } else {
                     renderedCallbacks.push(function () {
+                        console.log("延迟减1")
                         avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
                     })
                 }
@@ -205,7 +214,7 @@ avalon.fireDom = function (elem, type, opts) {
         avalon.mix(hackEvent, opts)
 
         elem.dispatchEvent(hackEvent)
-    } else if(root.contains(elem)){//IE6-8触发事件必须保证在DOM树中,否则报"SCRIPT16389: 未指明的错误"
+    } else if (root.contains(elem)) {//IE6-8触发事件必须保证在DOM树中,否则报"SCRIPT16389: 未指明的错误"
         hackEvent = DOC.createEventObject()
         avalon.mix(hackEvent, opts)
         elem.fireEvent("on" + type, hackEvent)

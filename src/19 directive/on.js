@@ -23,6 +23,7 @@ var onDir = avalon.directive("on", {
             var fn = binding.getter || noop
             return fn.apply(this, binding.args.concat(e))
         }
+        
         var eventType = binding.param.replace(/-\d+$/, "") // ms-on-mousemove-10
         if (eventType === "scan") {
             callback.call(elem, {

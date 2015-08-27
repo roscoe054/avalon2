@@ -12,10 +12,10 @@
                 $id: "test",
                 array: [1, 2, 3],
                 arr: [{a: 1}, {a: 2}, {a: 3}],
-//                obj: {
-//                    a: 1,
-//                    b: 2
-//                },
+                obj: {
+                    a: 1,
+                    b: 2
+                },
                 a: {
                     b: {
                         c: {
@@ -30,19 +30,19 @@
             vm.$watch("arr.*.a", function (a, b) {
                 console.log(a, b)
             })
-//            vm.$watch("obj.*", function (a, b, c) {
-//                console.log(a, b, c)
-//            })
+            vm.$watch("obj.*", function (a, b, c) {
+                console.log(a, b, c)
+            })
             vm.$watch("a.*.c.d", function (a, b, c) {
                 console.log(a, b, c)
             })
             setTimeout(function () {
                 vm.arr.sort()
-            
-               // vm.arr[0].a = 99
-                //  vm.array.set(1, 6)
-//                vm.obj.a = 111
-                // vm.a.b.c.d = 88
+
+                vm.arr[0].a = 99
+                vm.array.set(1, 6)
+                vm.obj.a = 111
+                vm.a.b.c.d = 88
             }, 1000)
 
 

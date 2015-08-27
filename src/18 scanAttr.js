@@ -88,9 +88,10 @@ function scanAttr(elem, vmodels, match) {
                 if (rnoscanAttrBinding.test(type)) {
                     return executeBindings(bindings.slice(0, i + 1), vmodels)
                 } else if (scanNode) {
-                    scanNode = !rnoscanNodeBinding.test(type)
+                    scanNode = !rnoscanNodeBinding.test(type) 
                 }
             }
+           
             executeBindings(bindings, vmodels)
         }
     }
