@@ -3183,7 +3183,7 @@ function scanAttr(elem, vmodels, match) {
             }
             for (i = 0; binding = bindings[i]; i++) {
                 type = binding.type
-                if (rnoscanAttrBinding.test(type)) {
+                if (rnoscanAttrBinding.test(type) ) {
                     return executeBindings(bindings.slice(0, i + 1), vmodels)
                 } else if (scanNode) {
                     scanNode = !rnoscanNodeBinding.test(type) 
@@ -3193,7 +3193,7 @@ function scanAttr(elem, vmodels, match) {
             executeBindings(bindings, vmodels)
         }
     }
-    if (scanNode && !stopScan[elem.tagName]) {
+    if (scanNode && !stopScan[elem.tagName] && (isWidget(elem) ? elem.msResolved : 1)) {
         mergeTextNodes && mergeTextNodes(elem)
         scanNodeList(elem, vmodels) //扫描子孙元素
 
@@ -3260,14 +3260,12 @@ function scanNodeArray(nodes, vmodels) {
     for (var i = 0, node; node = nodes[i++]; ) {
         switch (node.nodeType) {
             case 1:
-                var library = isWidget(node)
-                if (!library)
-                    scanTag(node, vmodels) //扫描元素节点
-
                 var elem = node, fn
 
-                if (!elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1) {
+                scanTag(node, vmodels) //扫描元素节点
 
+                if (!elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1) {
+                    var library = isWidget(elem)
                     if (library && avalon.libraries[library]) {
                         var widget = elem.localName ? elem.localName.replace(library + ":", "") : elem.nodeName
                         var fullName = library + ":" + camelize(widget)
@@ -3337,6 +3335,7 @@ avalon.component = function (name, opts) {
                 var dependencies = 1
                 var library = host.library
                 var global = avalon.libraries[library]
+
                 //===========收集各种配置=======
                 //从vmodels中得到业务数据
                 var vmOpts = getOptionsFromVM(host.vmodels, elem.getAttribute("configs") || host.fullName)
@@ -3355,19 +3354,26 @@ avalon.component = function (name, opts) {
                 componentDefinition.$refs = {}
                 componentDefinition.$id = elem.getAttribute("identifier") || generateID(widget)
 
-
                 //==========构建VM=========
+                var keepSolt = componentDefinition.$slot
+                var keepReplace = componentDefinition.$replace
+                var keepContainer = componentDefinition.$container
+                var keepTemplate = componentDefinition.$template
+                delete componentDefinition.$slot
+                delete componentDefinition.$replace
+                delete componentDefinition.$container
+                delete componentDefinition.$template
+                delete componentDefinition.$construct
                 var vmodel = avalon.define(componentDefinition) || {}
                 elem.msResolved = 1
                 vmodel.$init(vmodel)
                 global.$init(vmodel)
                 var nodes = elem.childNodes
-
-                log("扫描原有节点")
                 //收集插入点
                 var slots = {}, snode
+
                 for (var s = 0, el; el = nodes[s++]; ) {
-                    var type = el.nodeType === 1 && el.getAttribute("slot") || componentDefinition.$slot
+                    var type = el.nodeType === 1 && el.getAttribute("slot") || keepSolt
                     if (type) {
                         if (slots[type]) {
                             slots[type].push(el)
@@ -3378,7 +3384,7 @@ avalon.component = function (name, opts) {
                 }
 
                 avalon.clearHTML(elem)
-                elem.innerHTML = vmodel.$$template(vmodel.$template)
+                elem.innerHTML = vmodel.$$template(keepTemplate)
 
                 for (s in slots) {
                     if (vmodel.hasOwnProperty(s)) {
@@ -3395,27 +3401,28 @@ avalon.component = function (name, opts) {
                 }
                 slots = null
                 var child = elem.firstChild
-                if (vmodel.$replace) {
+                if (keepReplace) {
                     child = elem.firstChild
                     elem.parentNode.replaceChild(child, elem)
                     child.msResolved = 1
                     elem = host.element = child
                 }
-                if (vmodel.$container) {
-                    vmodel.$container.appendChild(elem)
+                if (keepContainer) {
+                    keepContainer.appendChild(elem)
                 }
-                avalon.fireDom(elem.parentNode, "datasetchanged", {dependency: 1, library: library, vm: vmodel})
+                avalon.fireDom(elem.parentNode, "datasetchanged",
+                        {dependency: 1, library: library, vm: vmodel})
                 var removeFn = avalon.bind(elem, "datasetchanged", function (e) {
                     if (isFinite(e.dependency) && e.library === library) {
                         dependencies += e.dependency
                         if (vmodel !== e.vm) {
                             vmodel.$refs[e.vm.$id] = e.vm
-                            vmodel.$childReady(vmodel)
-                            global.$childReady(vmodel)
+                            vmodel.$childReady(vmodel, e)
+                            global.$childReady(vmodel, e)
                             e.stopPropagation()
                         }
                     }
-                    
+
                     if (dependencies === 0) {
 
                         vmodel.$ready(vmodel)
@@ -3440,13 +3447,12 @@ avalon.component = function (name, opts) {
                     }
                 })
                 scanTag(elem, [vmodel].concat(host.vmodels))
+
                 avalon.vmodels[vmodel.$id] = vmodel
                 if (!elem.childNodes.length) {
-                    console.log("立即减1")
                     avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
                 } else {
                     renderedCallbacks.push(function () {
-                        console.log("延迟减1")
                         avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
                     })
                 }

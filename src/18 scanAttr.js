@@ -85,7 +85,7 @@ function scanAttr(elem, vmodels, match) {
             }
             for (i = 0; binding = bindings[i]; i++) {
                 type = binding.type
-                if (rnoscanAttrBinding.test(type)) {
+                if (rnoscanAttrBinding.test(type) ) {
                     return executeBindings(bindings.slice(0, i + 1), vmodels)
                 } else if (scanNode) {
                     scanNode = !rnoscanNodeBinding.test(type) 
@@ -95,7 +95,7 @@ function scanAttr(elem, vmodels, match) {
             executeBindings(bindings, vmodels)
         }
     }
-    if (scanNode && !stopScan[elem.tagName]) {
+    if (scanNode && !stopScan[elem.tagName] && (isWidget(elem) ? elem.msResolved : 1)) {
         mergeTextNodes && mergeTextNodes(elem)
         scanNodeList(elem, vmodels) //扫描子孙元素
 
