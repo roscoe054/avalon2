@@ -18,18 +18,20 @@ function parseDisplay(nodeName, val) {
 avalon.parseDisplay = parseDisplay
 
 avalon.directive("visible", {
+    init: function (binding) {
+    },
     update: function (val) {
         var elem = this.element,
-            binding = this,
-            init = typeof arguments[1] === "undefined",
-            stamp = binding.stamp = + new Date()
+                binding = this,
+                stamp = binding.stamp = +new Date()
         if (val) {
             elem.style.display = "none"
             avalon.effect.apply(elem, 1, function () {
-                if(stamp !== binding.stamp) return
+                if (stamp !== binding.stamp)
+                    return
                 var data = elem.getAttribute("data-effect-driver") || "a"
                 if (/^[atn]/.test(data)) {
-                 //   elem.style.display = ""//这里jQuery会自动处理
+                    //   elem.style.display = ""//这里jQuery会自动处理
                     if (avalon(elem).css("display") === "none") {
                         elem.style.display = parseDisplay(elem.nodeName)
                     }
@@ -37,7 +39,8 @@ avalon.directive("visible", {
             })
         } else {
             avalon.effect.apply(elem, 0, function () {
-                if(stamp !== binding.stamp) return
+                if (stamp !== binding.stamp)
+                    return
                 elem.style.display = "none"
             })
 

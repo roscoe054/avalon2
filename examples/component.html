@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="../avalon.js"></script>
+        <script>
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            /*
+             
+             */
+            avalon.define({
+                $id: "test",
+                txt: "pager控件"
+            })
+            require(["./component/pager/avalon.pager"], function () {
+                avalon.log("组件加载回来了")
+            })
+        </script>
+    </head>
+    <body ms-controller="test">
+        <p>{{txt}}</p>
+    <oni:pager></oni:pager>
+</body>
+</html>

@@ -139,10 +139,14 @@ function parser(input) {
             }
         }
     };
+    var total = input.length
     do {
         var ch = input.charCodeAt(i)
         if (ch !== ch) { //void 0 --> NaN
             getWordContent()
+            break
+        }
+        if (total-- === 0) {
             break
         }
         var cw = input.charAt(i)
@@ -210,7 +214,7 @@ function addAssign(vars, vmodel, name, binding) {
         while (a = arr.shift()) {
             if (vmodel.hasOwnProperty(a)) {
                 ret.push(first + prefix + first)
-             
+
                 binding.observers.push({
                     v: vmodel,
                     p: prop
@@ -241,9 +245,9 @@ function parseExpr(expr, vmodels, binding) {
     if (binding.filters && !binding._filters) {
         binding._filters = parseFilter(binding.filters)
     }
-
+    
     var vars = getVars(expr)
-   
+
     var expose = new Date() - 0
     var assigns = []
     var names = []
@@ -270,7 +274,7 @@ function parseExpr(expr, vmodels, binding) {
         }
         return binding.getter = getter
     }
-    
+
     if (!assigns.length) {
         assigns.push("fix" + expose)
     }

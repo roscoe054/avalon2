@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+        <script>
+
+
+        </script>
+    </head>
+    <body >
+        <script>
+            function heredoc(fn) {
+                return fn.toString().replace(/^[^\/]+\/\*!?\s?/, '').replace(/\*\/[^\/]+$/, '')
+            }
+            var endIndex = 0
+            var vm = avalon.define({
+                $id: "callback",
+                array: [1, 2, 3, 4],
+                object: {
+                    a: 1,
+                    b: 2,
+                    c: 3
+                },
+                sort: function () {
+                    return ["b", "a", "c"]
+                },
+                callback: function (a) {
+                    console.log("callback")
+                },
+                callback2: function (a) {
+                    console.log("callback2")
+                },
+                callback3: function (a) {
+                    console.log("callback3")
+                }
+            })
+            var body = document.body
+            var div = document.createElement("div")
+            div.innerHTML = heredoc(function () {
+                /*
+                 <div>
+                 <ul ms-each="array" data-each-rendered="callback">
+                 <li>{{el}}</li>
+                 </ul>
+                 <ol>
+                 <li ms-repeat="array" data-repeat-rendered="callback2">{{el}}</li>
+                 </ol>
+                 <table border="1">
+                 <tr ms-with="object" data-with-sorted="sort" data-with-rendered="callback3"><td>{{$key}}:{{$val}}</td></tr>
+                 </table>
+                 </div>
+                 */
+            })
+            body.appendChild(div)
+            avalon.scan(div, vm)
+
+        </script>
+    </body>
+</html>

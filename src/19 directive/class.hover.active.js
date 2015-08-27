@@ -3,6 +3,7 @@
 avalon.directive("class", {
     init: function (binding) {
         var oldStyle = binding.param
+        var method = binding.type
         if (!oldStyle || isFinite(oldStyle)) {
             binding.param = "" //去掉数字
             directives.effect.init(binding)
@@ -11,8 +12,6 @@ avalon.directive("class", {
             binding.expr = '[' + quote(oldStyle) + "," + binding.expr + "]"
             binding.oldStyle = oldStyle
         }
-
-        var method = binding.type
         if (method === "hover" || method === "active") { //确保只绑定一次
             if (!binding.hasBindEvent) {
                 var elem = binding.element

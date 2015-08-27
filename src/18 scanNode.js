@@ -5,6 +5,7 @@ function scanNodeList(parent, vmodels) {
 var renderedCallbacks = []
 
 function scanNodeArray(nodes, vmodels) {
+    // console.log("scanNodeArray Start")
     for (var i = 0, node; node = nodes[i++]; ) {
         switch (node.nodeType) {
             case 1:
@@ -35,11 +36,7 @@ function scanNodeArray(nodes, vmodels) {
                         bubble: node.msHasEvent
                     })
                 }
-                if (renderedCallbacks.length) {
-                    while (fn = renderedCallbacks.pop()) {
-                        fn.call(node)
-                    }
-                }
+
                 break
             case 3:
                 if (rexpr.test(node.nodeValue)) {
@@ -47,7 +44,13 @@ function scanNodeArray(nodes, vmodels) {
                 }
                 break
         }
+//        if (renderedCallbacks.length) {
+//            while (fn = renderedCallbacks.pop()) {
+//                fn.call(node)
+//            }
+//        }
     }
+    //console.log("scanNodeArray end")
 }
 
 var componentQueue = []
@@ -112,10 +115,11 @@ avalon.component = function (name, opts) {
                 delete componentDefinition.$container
                 delete componentDefinition.$template
                 delete componentDefinition.$construct
+
                 var vmodel = avalon.define(componentDefinition) || {}
                 elem.msResolved = 1
-                vmodel.$init(vmodel)
-                global.$init(vmodel)
+                vmodel.$init(vmodel, elem)
+                global.$init(vmodel, elem)
                 var nodes = elem.childNodes
                 //收集插入点
                 var slots = {}, snode
@@ -160,27 +164,28 @@ avalon.component = function (name, opts) {
                 }
                 avalon.fireDom(elem.parentNode, "datasetchanged",
                         {dependency: 1, library: library, vm: vmodel})
+
                 var removeFn = avalon.bind(elem, "datasetchanged", function (e) {
                     if (isFinite(e.dependency) && e.library === library) {
                         dependencies += e.dependency
                         if (vmodel !== e.vm) {
                             vmodel.$refs[e.vm.$id] = e.vm
-                            vmodel.$childReady(vmodel, e)
-                            global.$childReady(vmodel, e)
+                            vmodel.$childReady(vmodel, elem, e)
+                            global.$childReady(vmodel, elem, e)
                             e.stopPropagation()
                         }
                     }
 
                     if (dependencies === 0) {
 
-                        vmodel.$ready(vmodel)
-                        global.$ready(vmodel)
+                        vmodel.$ready(vmodel, elem)
+                        global.$ready(vmodel, elem)
                         avalon.unbind(elem, "datasetchanged", removeFn)
                         //==================
                         host.rollback = function () {
                             try {
-                                vmodel.$dispose(vmodel)
-                                global.$dispose(vmodel)
+                                vmodel.$dispose(vmodel, elem)
+                                global.$dispose(vmodel, elem)
                             } catch (e) {
                             }
                             delete avalon.vmodels[vmodel.$id]
@@ -194,15 +199,15 @@ avalon.component = function (name, opts) {
 
                     }
                 })
-                scanTag(elem, [vmodel].concat(host.vmodels))
 
+                scanTag(elem, [vmodel].concat(host.vmodels))
                 avalon.vmodels[vmodel.$id] = vmodel
                 if (!elem.childNodes.length) {
                     avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
                 } else {
-                    renderedCallbacks.push(function () {
+                    setTimeout(function () {
                         avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
-                    })
+                    }, 17)
                 }
 
 

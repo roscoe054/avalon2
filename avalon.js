@@ -2762,10 +2762,14 @@ function parser(input) {
             }
         }
     };
+    var total = input.length
     do {
         var ch = input.charCodeAt(i)
         if (ch !== ch) { //void 0 --> NaN
             getWordContent()
+            break
+        }
+        if (total-- === 0) {
             break
         }
         var cw = input.charAt(i)
@@ -2833,7 +2837,7 @@ function addAssign(vars, vmodel, name, binding) {
         while (a = arr.shift()) {
             if (vmodel.hasOwnProperty(a)) {
                 ret.push(first + prefix + first)
-             
+
                 binding.observers.push({
                     v: vmodel,
                     p: prop
@@ -2864,9 +2868,9 @@ function parseExpr(expr, vmodels, binding) {
     if (binding.filters && !binding._filters) {
         binding._filters = parseFilter(binding.filters)
     }
-
+    
     var vars = getVars(expr)
-   
+
     var expose = new Date() - 0
     var assigns = []
     var names = []
@@ -2893,7 +2897,7 @@ function parseExpr(expr, vmodels, binding) {
         }
         return binding.getter = getter
     }
-    
+
     if (!assigns.length) {
         assigns.push("fix" + expose)
     }
@@ -3257,6 +3261,7 @@ function scanNodeList(parent, vmodels) {
 var renderedCallbacks = []
 
 function scanNodeArray(nodes, vmodels) {
+    // console.log("scanNodeArray Start")
     for (var i = 0, node; node = nodes[i++]; ) {
         switch (node.nodeType) {
             case 1:
@@ -3287,11 +3292,7 @@ function scanNodeArray(nodes, vmodels) {
                         bubble: node.msHasEvent
                     })
                 }
-                if (renderedCallbacks.length) {
-                    while (fn = renderedCallbacks.pop()) {
-                        fn.call(node)
-                    }
-                }
+
                 break
             case 3:
                 if (rexpr.test(node.nodeValue)) {
@@ -3299,7 +3300,13 @@ function scanNodeArray(nodes, vmodels) {
                 }
                 break
         }
+//        if (renderedCallbacks.length) {
+//            while (fn = renderedCallbacks.pop()) {
+//                fn.call(node)
+//            }
+//        }
     }
+    //console.log("scanNodeArray end")
 }
 
 var componentQueue = []
@@ -3364,10 +3371,11 @@ avalon.component = function (name, opts) {
                 delete componentDefinition.$container
                 delete componentDefinition.$template
                 delete componentDefinition.$construct
+
                 var vmodel = avalon.define(componentDefinition) || {}
                 elem.msResolved = 1
-                vmodel.$init(vmodel)
-                global.$init(vmodel)
+                vmodel.$init(vmodel, elem)
+                global.$init(vmodel, elem)
                 var nodes = elem.childNodes
                 //收集插入点
                 var slots = {}, snode
@@ -3412,27 +3420,28 @@ avalon.component = function (name, opts) {
                 }
                 avalon.fireDom(elem.parentNode, "datasetchanged",
                         {dependency: 1, library: library, vm: vmodel})
+
                 var removeFn = avalon.bind(elem, "datasetchanged", function (e) {
                     if (isFinite(e.dependency) && e.library === library) {
                         dependencies += e.dependency
                         if (vmodel !== e.vm) {
                             vmodel.$refs[e.vm.$id] = e.vm
-                            vmodel.$childReady(vmodel, e)
-                            global.$childReady(vmodel, e)
+                            vmodel.$childReady(vmodel, elem, e)
+                            global.$childReady(vmodel, elem, e)
                             e.stopPropagation()
                         }
                     }
 
                     if (dependencies === 0) {
 
-                        vmodel.$ready(vmodel)
-                        global.$ready(vmodel)
+                        vmodel.$ready(vmodel, elem)
+                        global.$ready(vmodel, elem)
                         avalon.unbind(elem, "datasetchanged", removeFn)
                         //==================
                         host.rollback = function () {
                             try {
-                                vmodel.$dispose(vmodel)
-                                global.$dispose(vmodel)
+                                vmodel.$dispose(vmodel, elem)
+                                global.$dispose(vmodel, elem)
                             } catch (e) {
                             }
                             delete avalon.vmodels[vmodel.$id]
@@ -3446,15 +3455,15 @@ avalon.component = function (name, opts) {
 
                     }
                 })
-                scanTag(elem, [vmodel].concat(host.vmodels))
 
+                scanTag(elem, [vmodel].concat(host.vmodels))
                 avalon.vmodels[vmodel.$id] = vmodel
                 if (!elem.childNodes.length) {
                     avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
                 } else {
-                    renderedCallbacks.push(function () {
+                    setTimeout(function () {
                         avalon.fireDom(elem, "datasetchanged", {dependency: -1, library: library, vm: vmodel})
-                    })
+                    }, 17)
                 }
 
 
@@ -3779,6 +3788,7 @@ var attrDir = avalon.directive("attr", {
 avalon.directive("class", {
     init: function (binding) {
         var oldStyle = binding.param
+        var method = binding.type
         if (!oldStyle || isFinite(oldStyle)) {
             binding.param = "" //去掉数字
             directives.effect.init(binding)
@@ -3787,8 +3797,6 @@ avalon.directive("class", {
             binding.expr = '[' + quote(oldStyle) + "," + binding.expr + "]"
             binding.oldStyle = oldStyle
         }
-
-        var method = binding.type
         if (method === "hover" || method === "active") { //确保只绑定一次
             if (!binding.hasBindEvent) {
                 var elem = binding.element
@@ -5353,18 +5361,20 @@ function parseDisplay(nodeName, val) {
 avalon.parseDisplay = parseDisplay
 
 avalon.directive("visible", {
+    init: function (binding) {
+    },
     update: function (val) {
         var elem = this.element,
-            binding = this,
-            init = typeof arguments[1] === "undefined",
-            stamp = binding.stamp = + new Date()
+                binding = this,
+                stamp = binding.stamp = +new Date()
         if (val) {
             elem.style.display = "none"
             avalon.effect.apply(elem, 1, function () {
-                if(stamp !== binding.stamp) return
+                if (stamp !== binding.stamp)
+                    return
                 var data = elem.getAttribute("data-effect-driver") || "a"
                 if (/^[atn]/.test(data)) {
-                 //   elem.style.display = ""//这里jQuery会自动处理
+                    //   elem.style.display = ""//这里jQuery会自动处理
                     if (avalon(elem).css("display") === "none") {
                         elem.style.display = parseDisplay(elem.nodeName)
                     }
@@ -5372,7 +5382,8 @@ avalon.directive("visible", {
             })
         } else {
             avalon.effect.apply(elem, 0, function () {
-                if(stamp !== binding.stamp) return
+                if (stamp !== binding.stamp)
+                    return
                 elem.style.display = "none"
             })
 
