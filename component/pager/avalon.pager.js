@@ -59,6 +59,7 @@ define(["avalon",
         onJump: _interface,
         isShowPrev: _interface,
         isShowNext: _interface,
+        _getTotalPages: _interface,
         changeCurrentPage: _interface,
         getTotalPages: _interface,
         jumpPage: _interface,
@@ -124,7 +125,8 @@ define(["avalon",
             })
             vm.jumpPage = function (event, page) {
                 event.preventDefault()
-                var enabled = this.className.indexOf("state-disabled") === -1
+               
+                var enabled = this.nodeType ==1 ? this.className.indexOf("state-disabled") === -1 : true
                 if (enabled && page !== vm.currentPage) {
                     switch (page) {
                         case "first":
