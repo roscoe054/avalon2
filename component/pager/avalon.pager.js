@@ -10,30 +10,11 @@ define(["avalon",
     "css!./oniui-common.css",
     "css!./avalon.pager.css"
 ], function (avalon, template) {
-    
-    
-      //默认语言包为中文简体
-    var regional = {}
-    regional["zh-CN"] = {
-        prevText: "上一页",
-        nextText: "下一页",
-        confirmText: "确定",
-        totalText: "共",
-        pagesText: "页",
-        pageText: "页",
-        toText: "到",
-        jumpToText: "跳转到",
-        currentText: "当前页",
-        firstText: "第一页",
-        lastText: "最后一页",
-        numberText: "第"
-    }
 
-    //设置默认语言包
     var _interface = function () {
     }
     avalon.component("oni:pager", {
-        regional: regional["zh-CN"],
+        regional: {}, //@config {Object} 默认语言包
         perPages: 10, //@config {Number} 每页包含多少条目
         showPages: 10, //@config {Number} 中间部分一共要显示多少页(如果两边出现省略号,即它们之间的页数) 
         currentPage: 1, //@config {Number} 当前选中的页面 (按照人们日常习惯,是从1开始)，它会被高亮 
@@ -111,7 +92,7 @@ define(["avalon",
             elem.innerHTML = elem.textContent = ""
         },
         $init: function (vm, elem) {
-       
+
             vm.$watch("totalItems", function () {
                 efficientChangePages(vm.pages, getPages(vm))
             })
@@ -125,8 +106,8 @@ define(["avalon",
             })
             vm.jumpPage = function (event, page) {
                 event.preventDefault()
-               
-                var enabled = this.nodeType ==1 ? this.className.indexOf("state-disabled") === -1 : true
+
+                var enabled = this.nodeType == 1 ? this.className.indexOf("state-disabled") === -1 : true
                 if (enabled && page !== vm.currentPage) {
                     switch (page) {
                         case "first":
@@ -280,8 +261,23 @@ define(["avalon",
             }
         }
     })
+    var widget = avalon.components["oni:pager"]
+    widget.regionals = {}
 
-
+    widget.regional = widget.regionals['zh-CN'] = {
+        prevText: "上一页",
+        nextText: "下一页",
+        confirmText: "确定",
+        totalText: "共",
+        pagesText: "页",
+        pageText: "页",
+        toText: "到",
+        jumpToText: "跳转到",
+        currentText: "当前页",
+        firstText: "第一页",
+        lastText: "最后一页",
+        numberText: "第"
+    }
     return avalon
 })
 /**
