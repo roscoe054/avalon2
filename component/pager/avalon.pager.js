@@ -23,6 +23,8 @@ define(["avalon",
         totalPages: 0, //@config {Number} 总页数,通过Math.ceil(vm.totalItems / vm.perPages)求得
         pages: [], //@config {Array} 要显示的页面组成的数字数组，如[1,2,3,4,5,6,7]
         ellipseText: "…", //@config {String} 省略的页数用什么文字表示 
+        prevText: "<", //@config {String} “下一页”分页按钮上显示的文字 
+        nextText: ">", //@config {String} “上一页”分页按钮上显示的文字 
         firstPage: 0, //@config {Number} 当前可显示的最小页码，不能小于1
         lastPage: 0, //@config {Number} 当前可显示的最大页码，不能大于totalPages
         alwaysShowNext: false, //@config {Boolean} 总是显示向后按钮
@@ -52,19 +54,7 @@ define(["avalon",
          * @returns {String}
          */
         getTitle: _interface,
-        //===============语言包需要重写的文本属性============
-        prevText: "上一页", //@config {String} “下一页”分页按钮上显示的文字 
-        nextText: "下一页", //@config {String} “上一页”分页按钮上显示的文字 
-        confirmText: "确定",
-        totalText: "共",
-        pagesText: "页",
-        pageText: "页",
-        toText: "到",
-        jumpToText: "跳转到",
-        currentText: "当前页",
-        firstText: "第一页",
-        lastText: "最后一页",
-        numberText: "第",
+
         //==============================
         $skipArray: ["showPages", "rootElement", "widgetElement", "template", "ellipseText", "alwaysShowPrev", "alwaysShowNext"],
         $construct: function (empty, hooks, vmOpts, elemOpts) {
