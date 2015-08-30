@@ -37,15 +37,17 @@ avalon.component = function (name, opts) {
                 var vmOpts = getOptionsFromVM(host.vmodels, elem.getAttribute("configs") || host.fullName)
                 //从element的data-pager-xxx辅助指令中得到该组件的专有数据
                 var elemOpts = avalon.getWidgetData(elem, widget)
-                var parentDefinition
-                if (hooks.$extends) {
-                    var parentHooks = avalon.components[hooks.$extends]
-                    if (parentHooks) {
-                        parentDefinition = parentHooks.$construct({}, hooks, vmOpts)
-                    }
+                var componentDefinition = {}
+
+               
+                var parentHooks = avalon.components[hooks.$extends]
+                if (parentHooks) {
+                    avalon.mix(true, componentDefinition, parentHooks)
+                    componentDefinition = parentHooks.$construct.call(elem, componentDefinition, {}, {})
+                } else {
+                    avalon.mix(true, componentDefinition, hooks)
                 }
-                var componentDefinition = avalon.components[name].$construct({},
-                        parentDefinition || hooks, vmOpts, elemOpts)
+                componentDefinition = avalon.components[name].$construct.call(elem, componentDefinition, vmOpts, elemOpts)
 
                 componentDefinition.$refs = {}
                 componentDefinition.$id = elem.getAttribute("identifier") || generateID(widget)
@@ -130,7 +132,7 @@ avalon.component = function (name, opts) {
                             clearTimeout(id1)
                             vmodel.$ready(vmodel, elem)
                             global.$ready(vmodel, elem)
-                        }, children? Math.max(children*17,100):17)
+                        }, children ? Math.max(children * 17, 100) : 17)
                         avalon.unbind(elem, "datasetchanged", removeFn)
                         //==================
                         host.rollback = function () {

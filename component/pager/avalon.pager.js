@@ -57,7 +57,7 @@ define(["avalon",
 
         //==============================
         $skipArray: ["showPages", "rootElement", "widgetElement", "template", "ellipseText", "alwaysShowPrev", "alwaysShowNext"],
-        $construct: function (empty, hooks, vmOpts, elemOpts) {
+        $construct: function ( hooks, vmOpts, elemOpts) {
             var pageOptions = vmOpts.options
             if (Array.isArray(pageOptions)) {
                 vmOpts.options = pageOptions.map(function (el) {
@@ -73,7 +73,7 @@ define(["avalon",
                     }
                 })
             }
-            var options = avalon.mix(empty, hooks, vmOpts, elemOpts)
+            var options = avalon.mix( hooks, vmOpts, elemOpts)
             options._currentPage = options.currentPage
             return options //返回VM的定义对象
         },

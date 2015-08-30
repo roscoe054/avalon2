@@ -127,7 +127,7 @@ define(["avalon", "css!./oniui-common.css", "css!./avalon.button.css"], function
         $init: function (options, element) {
             var data = options.data
             var buttons = ""
-            options.$buttons = []
+            options.corner = typeof options.corner === "boolean" ? options.corner : true
             data.forEach(function (button, index) {
                 var buttonStr = "<oni:button"
                 if (button.type !== void 0) {
@@ -165,15 +165,15 @@ define(["avalon", "css!./oniui-common.css", "css!./avalon.button.css"], function
         $buttons: [],
         monospace: true,
         direction: "",
-        corner: "",
+        corner: void 0,
         width: NaN,
         $childReady: function (options, element, e) {
             var button = e.target
             options.$buttons.push(button)
             var $button = avalon(button)
-            if (!options.corner) {//如果buttonset设置了没有圆角,那么它的孩子也没有圆角
-                $button.removeClass("oni-corner-all")
-            }
+
+            $button.removeClass("oni-corner-all")
+
 
             if (options.$$template && isFinite(options.width)) {
                 button.style.width = (~~options.width -
@@ -194,11 +194,10 @@ define(["avalon", "css!./oniui-common.css", "css!./avalon.button.css"], function
                     direction = options.direction,
                     $element = avalon(element)
 
-            buttonsetCorner = buttonsetCorner !== void 0 ? buttonsetCorner : true
+
 
             elementClass.push("oni-buttonset")
             avalon(buttons[0]).addClass("oni-button-first")
-
             if (n && buttonsetCorner) {
 
                 if (direction === "vertical") {
