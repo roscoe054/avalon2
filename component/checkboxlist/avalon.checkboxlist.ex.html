@@ -4,17 +4,18 @@
         <meta http-equiv="content-type" content="text/html;charset=utf-8" />
         <meta http-equiv="x-ua-compatible" content="ie=edge" />
         <title>checkboxlist demo</title>
-        <!-- <link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/>
+      <link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/>
         <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/>
-        <script src="../highlight/shCore.js"></script> -->
-        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
-            <script src="../avalon.js"></script>
+        <script src="../../avalon.js">
+
+        </script>
+   
     </head>
     <body class="ms-controller" ms-controller="demo">
 
         <fieldset>
             <legend>普通绑定</legend>
-            <oni:checkboxlist 
+            <oni:checkboxlist
                 data-checkboxlist-on-select="selectCallback" 
                 data-checkboxlist-duplex="val" 
                 data-checkboxlist-alltext="全部">
@@ -27,7 +28,7 @@
 
         {{ val }}
 
-        <fieldset>
+<!--        <fieldset>
             <legend>内置类型：周</legend>
             <ul  data-checkboxlist-duplex="val2" data-checkboxlist-type="week" data-checkboxlist-alltext="全部"></ul>
         </fieldset>
@@ -40,10 +41,11 @@
                 <li><input type="checkbox" /></li>
             </ul>
         </fieldset>
-        {{ val3 }}
+        {{ val3 }}-->
 
 
         <script>
+            avalon.library("oni",{})
         require(["./component/checkboxlist/avalon.checkboxlist"], function () {
             var sss = avalon.define({
                 $id: "demo",
