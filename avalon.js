@@ -1820,6 +1820,9 @@ function injectDependency(list, binding) {
         return
     if (list && avalon.Array.ensure(list, binding) && binding.element) {
         injectDisposeQueue(binding, list)
+        if (new Date() - beginTime > 444) {
+            rejectDisposeQueue()
+        }
     }
 }
 
