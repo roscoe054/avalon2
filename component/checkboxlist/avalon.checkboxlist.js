@@ -1,6 +1,6 @@
 // avalon 1.3.6
 /**
- * 
+ *
  * @cnName 复选框列表
  * @enName checkboxlist
  * @introduce
@@ -8,7 +8,7 @@
  */
 define(["avalon",
     "text!./avalon.checkboxlist.html",
-    "css!./oniui-common.css",
+    "css!../style/oniui-common.css",
     "css!./avalon.checkboxlist.css"
 ], function (avalon, template) {
     var _interface = function () {
@@ -35,13 +35,14 @@ define(["avalon",
          * @config {Function} 组件面板展开后的回调函数
          * @param data {Array} checkboxlist的选项集合
          * @param checkStatus {Boolean} 选中或者未选中的状态
-         * @param target {ElementObj} 触发事件的dom对象的引用 
+         * @param target {ElementObj} 触发事件的dom对象的引用
          */
         onSelect: _interface,
         vertical: true, //@config 如果希望选框水平排列则设置vertical为false，默认垂直排列
+        duplex: "",
         $construct: function (aaa, bbb, ccc) {
             var options = avalon.mix(aaa, bbb, ccc)
-            console.log(options.data.length)
+
             if (!options.data.length) {
 
                 var fragment = document.createElement("div");
@@ -67,8 +68,8 @@ define(["avalon",
                         var data = [];
                         for (var i = 0; i < inputs.length; i++) {
                             var input = inputs[i],
-                                    li = input.parentNode,
-                                    txt = "";
+                                li = input.parentNode,
+                                txt = "";
                             // 获取离input最近的父级li元素
                             while (li) {
                                 if (li.tagName === "LI") {
@@ -88,16 +89,16 @@ define(["avalon",
                         }
                 }
 
+                options.data = data
             }
+
             options.$template = template.replace("MS_OPTIONS_DUPLEX", options.duplex);
-            options.data = data
+
             return options
         },
         _clickOne: _interface,
         _clickAll: _interface,
         $init: function (vm, elem) {
-
-
 
         },
         $ready: function (vm, elem) {
