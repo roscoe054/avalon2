@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.8.29
+ avalon.js 1.5 built in 2015.9.2
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1244,7 +1244,7 @@ function observeObject(source, options) {
     //必须设置了$active,$events
     simple.forEach(function (name) {
         var val = $vmodel[name] = source[name]
-        if (typeof val === "object") {
+        if (val && typeof val === "object") {
             val.$up = $vmodel
             val.$pathname = name
         }
@@ -3494,11 +3494,11 @@ avalon.component = function (name, opts) {
                 var parentHooks = avalon.components[hooks.$extends]
                 if (parentHooks) {
                     avalon.mix(true, componentDefinition, parentHooks)
-                    componentDefinition = parentHooks.$construct(componentDefinition, {}, {})
+                    componentDefinition = parentHooks.$construct.call(elem, componentDefinition, {}, {})
                 } else {
                     avalon.mix(true, componentDefinition, hooks)
                 }
-                componentDefinition = avalon.components[name].$construct(componentDefinition, vmOpts, elemOpts)
+                componentDefinition = avalon.components[name].$construct.call(elem, componentDefinition, vmOpts, elemOpts)
 
                 componentDefinition.$refs = {}
                 componentDefinition.$id = elem.getAttribute("identifier") || generateID(widget)
@@ -3979,7 +3979,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "checkbox":
                 binding.bound(W3C ? "change" : "click", function () {
                     var method = elem.checked ? "ensure" : "remove"
-                    var array = binding.getter()
+                    var array = binding.getter.apply(0, binding.vmodels)
                     if (!Array.isArray(array)) {
                         log("ms-duplex应用于checkbox上要对应一个数组")
                         array = [array]

@@ -157,7 +157,7 @@ function observeObject(source, options) {
     //必须设置了$active,$events
     simple.forEach(function (name) {
         var val = $vmodel[name] = source[name]
-        if (typeof val === "object") {
+        if (val && typeof val === "object") {
             val.$up = $vmodel
             val.$pathname = name
         }

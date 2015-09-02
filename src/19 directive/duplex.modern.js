@@ -85,7 +85,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "checkbox":
                 binding.bound("change", function () {
                     var method = elem.checked ? "ensure" : "remove"
-                    var array = binding.getter()
+                    var array = binding.getter.apply(0, binding.vmodels)
                     if (!Array.isArray(array)) {
                         log("ms-duplex应用于checkbox上要对应一个数组")
                         array = [array]
