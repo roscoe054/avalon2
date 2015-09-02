@@ -100,11 +100,42 @@ define(["avalon",
         _clickAll: _interface,
         $init: function (vm, elem) {
 
+
+
         },
         $ready: function (vm, elem) {
-            console.log(elem)
-            var ul = elem.getElementsByTagName("ul")[0]
+            var ul = elem.getElementsByTagName("ul")[0],
+                lis = ul.children
+
             ul.className += " oni-checkboxlist oni-checkboxlist-list oni-helper-clearfix";
+
+            vm._clickAll = function(){
+                var someInputsChecked = false,
+                    allInputsChecked = true
+
+                avalon.each(lis, function(i, li){
+                    if(i !== 0){
+                        var input = li.getElementsByTagName("input")[0]
+                        if(input.checked){
+                            someInputsChecked = true
+                        } else{
+                            allInputsChecked = false
+                        }
+                    }
+                })
+
+                if(!someInputsChecked || (someInputsChecked && !allInputsChecked)){
+                    avalon.each(lis, function(i, li){
+                        var input = li.getElementsByTagName("input")[0]
+                        input.checked = true
+                    })
+                } else{
+                    avalon.each(lis, function(i, li){
+                        var input = li.getElementsByTagName("input")[0]
+                        input.checked = false
+                    })
+                }
+            }
         }
 
     })

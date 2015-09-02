@@ -17,12 +17,11 @@
         <label>
             <input type="checkbox"
                    ms-click="_clickOne($event, $index)"
-                   ms-duplex="MS_OPTIONS_DUPLEX"
-                   ms-value="{{el.value||el.text}}"
+                   ms-duplex-string="MS_OPTIONS_DUPLEX"
+                   ms-attr-value="{{el.value||el.text}}"
                    class="checkbox" />
             {{el.text|html}}
         </label>
     </li>
-    <input ms-duplex="MS_OPTIONS_DUPLEX" />
 </ul>
 

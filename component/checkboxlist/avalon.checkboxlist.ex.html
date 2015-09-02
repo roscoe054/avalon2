@@ -9,6 +9,9 @@
     <script src="../style/highlight/shCore.js"></script>
 
     <script>
+        avalon.config({
+            debug: false
+        })
         avalon.library("oni", {
             $ready: function () {
                 avalon.log("控件已经构建完毕")
@@ -18,7 +21,6 @@
             avalon.define({
                 $id: "demo",
                 val: ['w1', 'w2'],
-                aaa: "val",
                 opts: {
                     data: [
                         { text : '文字1' , value : 'w1' } ,
