@@ -13,7 +13,7 @@ function getToken(value) {
         if (index > -1) {
             return {
                 type: "text",
-                filters: value.slice(index),
+                filters: value.slice(index).trim(),
                 expr: value.slice(0, index)
             }
         }
