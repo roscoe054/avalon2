@@ -17,7 +17,6 @@
             require(["./component/button/avalon.button"], function () {
                 avalon.define({
                     $id: "demo"
-
                 })
                 avalon.scan()
             })
@@ -39,20 +38,20 @@
             <legend>button type and iconPosition 、 icon 、corner、label config</legend>
             <div>
                 <oni:button>input元素</oni:button>
-                <oni:button data-button-type="icon" data-button-icon-position="left" data-button-icon="\&\#xf015;">button元素</oni:button>
-                <oni:button data-button-type="icon" data-button-icon-position="left-right" data-button-icon="\&\#xf001;-\&\#xf06b;">button元素</oni:button>
-                <oni:button data-button-type="labeledIcon" data-button-icon-position="left" data-button-icon="\&\#xf001;">a元素</oni:button>
-                <oni:button data-button-type="labeledIcon" data-button-icon-position="right" data-button-icon="\&\#xf06b;">div元素</oni:button>
-                <oni:button data-button-type="labeledIcon" data-button-icon-position="left-right" data-button-icon="\&\#xf001;-\&\#xf06b;">a元素</oni:button>
+                <oni:button type="icon" icon-position="left" icon="\&\#xf015;">button元素</oni:button>
+                <oni:button type="icon" icon-position="left-right" icon="\&\#xf001;-\&\#xf06b;">button元素</oni:button>
+                <oni:button type="labeledIcon" icon-position="left" icon="\&\#xf001;">a元素</oni:button>
+                <oni:button type="labeledIcon" icon-position="right" icon="\&\#xf06b;">div元素</oni:button>
+                <oni:button type="labeledIcon" icon-position="left-right" icon="\&\#xf001;-\&\#xf06b;">a元素</oni:button>
             </div>
             <div>
 
-                <oni:button data-button-corner="4"/>input元素</oni:button>
-                <oni:button data-button-type="icon" data-button-icon-position="left" data-button-icon="\&\#xf015;" data-button-corner="4">button元素</oni:button>
-                <oni:button data-button-type="icon" data-button-icon-position="left-right" data-button-icon="\&\#xf001;-\&\#xf06b;" data-button-corner="4">button元素</oni:button>
-                <oni:button data-button-type="labeledIcon" data-button-icon-position="left" data-button-icon="\&\#xf001;" data-button-corner="4">a元素</oni:button>
-                <oni:button data-button-type="labeledIcon" data-button-icon-position="right" data-button-icon="\&\#xf06b;" data-button-corner="4" data-button-label="icon right">div元素</oni:button>
-                <oni:button data-button-type="labeledIcon" data-button-icon-position="left-right" data-button-icon="\&\#xf001;-\&\#xf06b;" data-button-corner="4">a元素</oni:button>
+                <oni:button corner="4"/>input元素</oni:button>
+                <oni:button type="icon" icon-position="left" icon="\&\#xf015;" corner="4">button元素</oni:button>
+                <oni:button type="icon" icon-position="left-right" icon="\&\#xf001;-\&\#xf06b;" corner="4">button元素</oni:button>
+                <oni:button type="labeledIcon" icon-position="left" icon="\&\#xf001;" corner="4">a元素</oni:button>
+                <oni:button type="labeledIcon" icon-position="right" icon="\&\#xf06b;" corner="4" label="icon right">div元素</oni:button>
+                <oni:button type="labeledIcon" icon-position="left-right" icon="\&\#xf001;-\&\#xf06b;" corner="4">a元素</oni:button>
 
             </div>
         </fieldset>
@@ -104,20 +103,20 @@
             &lt;legend&gt;button type and iconPosition 、 icon 、corner、label config&lt;/legend&gt;
             &lt;div&gt;
                 &lt;oni:button&gt;input元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="icon" data-button-icon-position="left" data-button-icon="\&\#xf015;"&gt;button元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="icon" data-button-icon-position="left-right" data-button-icon="\&\#xf001;-\&\#xf06b;"&gt;button元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="labeledIcon" data-button-icon-position="left" data-button-icon="\&\#xf001;"&gt;a元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="labeledIcon" data-button-icon-position="right" data-button-icon="\&\#xf06b;"&gt;div元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="labeledIcon" data-button-icon-position="left-right" data-button-icon="\&\#xf001;-\&\#xf06b;"&gt;a元素&lt;/oni:button&gt;
+                &lt;oni:button type="icon" icon-position="left" icon="\&\#xf015;"&gt;button元素&lt;/oni:button&gt;
+                &lt;oni:button type="icon" icon-position="left-right" icon="\&\#xf001;-\&\#xf06b;"&gt;button元素&lt;/oni:button&gt;
+                &lt;oni:button type="labeledIcon" icon-position="left" icon="\&\#xf001;"&gt;a元素&lt;/oni:button&gt;
+                &lt;oni:button type="labeledIcon" icon-position="right" icon="\&\#xf06b;"&gt;div元素&lt;/oni:button&gt;
+                &lt;oni:button type="labeledIcon" icon-position="left-right" icon="\&\#xf001;-\&\#xf06b;"&gt;a元素&lt;/oni:button&gt;
             &lt;/div&gt;
             &lt;div&gt;
 
-                &lt;oni:button data-button-corner="4"/&gt;input元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="icon" data-button-icon-position="left" data-button-icon="\&\#xf015;" data-button-corner="4"&gt;button元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="icon" data-button-icon-position="left-right" data-button-icon="\&\#xf001;-\&\#xf06b;" data-button-corner="4"&gt;button元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="labeledIcon" data-button-icon-position="left" data-button-icon="\&\#xf001;" data-button-corner="4"&gt;a元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="labeledIcon" data-button-icon-position="right" data-button-icon="\&\#xf06b;" data-button-corner="4" data-button-label="icon right"&gt;div元素&lt;/oni:button&gt;
-                &lt;oni:button data-button-type="labeledIcon" data-button-icon-position="left-right" data-button-icon="\&\#xf001;-\&\#xf06b;" data-button-corner="4"&gt;a元素&lt;/oni:button&gt;
+                &lt;oni:button corner="4"/&gt;input元素&lt;/oni:button&gt;
+                &lt;oni:button type="icon" icon-position="left" icon="\&\#xf015;" corner="4"&gt;button元素&lt;/oni:button&gt;
+                &lt;oni:button type="icon" icon-position="left-right" icon="\&\#xf001;-\&\#xf06b;" corner="4"&gt;button元素&lt;/oni:button&gt;
+                &lt;oni:button type="labeledIcon" icon-position="left" icon="\&\#xf001;" corner="4"&gt;a元素&lt;/oni:button&gt;
+                &lt;oni:button type="labeledIcon" icon-position="right" icon="\&\#xf06b;" corner="4" label="icon right"&gt;div元素&lt;/oni:button&gt;
+                &lt;oni:button type="labeledIcon" icon-position="left-right" icon="\&\#xf001;-\&\#xf06b;" corner="4"&gt;a元素&lt;/oni:button&gt;
 
             &lt;/div&gt;
         &lt;/fieldset&gt;

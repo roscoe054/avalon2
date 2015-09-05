@@ -23,7 +23,7 @@
             <fieldset>  
                 <legend>可自定义回调操作的dialog</legend>
                     <button ms-click="show('aa')">打开对话框</button>
-                    <oni:dialog identifier="aa" configs="$aaOpts" >
+                    <oni:dialog $id="aa" configs="$aaOpts" title="可自定义回调操作的dialog">
                         呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
                     </oni:dialog>
             </fieldset>
@@ -34,7 +34,7 @@
                         show: function( id ){
                             avalon.vmodels[id].toggle = true;
                         },
-                        title: "可自定义回调操作的dialog",
+            
                         $aaOpts: {
                             $slot:"content",
                             onOpen: function() {
@@ -75,7 +75,7 @@
                 &lt;fieldset&gt;  
                     &lt;legend&gt;可自定义回调操作的dialog&lt;/legend&gt;
                     &lt;button ms-click="show('aa')"&gt;打开对话框&lt;/button&gt;
-                    &lt;oni:dialog identifier="aa" configs="$aaOpts" &gt;
+                    &lt;oni:dialog $id="aa" configs="$aaOpts" title="可自定义回调操作的dialog" &gt;
                         呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
                     &lt;/oni:dialog&gt;
                 &lt;/fieldset&gt;
@@ -86,7 +86,6 @@
                             show: function (id) {
                                 avalon.vmodels[id].toggle = true;
                             },
-                            title: "可自定义回调操作的dialog",
                             $aaOpts: {
                                 $slot: "content", //   让&lt;oni:dialog&gt;内部的所有节点都变成组件的content属性
                                 onOpen: function () {

@@ -103,7 +103,7 @@ define([
             avalon(element).addClass("oni-dialog")
             element.setAttribute("ms-visible", "toggle")
             element.setAttribute("ms-css-position", "position")
-
+            element.setAttribute("ms-css-width", "width")
             // 当窗口尺寸发生变化时重新调整dialog的位置，始终使其水平垂直居中
             element.resizeCallback = avalon(window).bind("resize", throttle(resetCenter, 50, 100, [vm, element]))
             element.scrollCallback = avalon(window).bind("scroll", throttle(resetCenter, 50, 100, [vm, element]))
@@ -140,12 +140,13 @@ define([
             }
 
             // 隐藏dialog
-            vm._close = function (e) {
+            vm._close = function () {
+                if(vm.toggle === false)
+                    return
                 avalon.Array.remove(dialogShows, vm)
                 var len = dialogShows.length
                 var topShowDialog = len && dialogShows[len - 1]
                 vm.toggle = false
-
                 /* 处理层上层的情况，因为maskLayer公用，所以需要其以将要显示的dialog的toggle状态为准 */
                 if (topShowDialog && topShowDialog.modal) {
                     var topElement = topShowDialog.widgetElement
@@ -210,7 +211,8 @@ define([
             element.parentNode.insertBefore(maskLayer, element)
             adjustZIndex(element)
 
-            vm.$watch("toggle", function (val) {
+            vm.$watch("toggle", function (val, oldValue) {
+
                 if (val) {
                     vm._open()
                 } else {

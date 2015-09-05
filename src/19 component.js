@@ -33,13 +33,15 @@ avalon.component = function (name, opts) {
                 var global = avalon.libraries[library] || componentHooks
 
                 //===========收集各种配置=======
-                //从vmodels中得到业务数据
-                var vmOpts = getOptionsFromVM(host.vmodels, elem.getAttribute("configs") || host.fullName)
-                //从element的data-pager-xxx辅助指令中得到该组件的专有数据
-                var elemOpts = avalon.getWidgetData(elem, widget)
+
+                var elemOpts = getOptionsFromTag(elem)
+                var vmOpts = getOptionsFromVM(host.vmodels, elemOpts.configs || host.fullName)
+                var $id = elemOpts.$id || elemOpts.identifier || generateID(widget)
+                delete elemOpts.configs
+                delete elemOpts.$id
+                delete elemOpts.identifier
                 var componentDefinition = {}
 
-               
                 var parentHooks = avalon.components[hooks.$extends]
                 if (parentHooks) {
                     avalon.mix(true, componentDefinition, parentHooks)
@@ -50,7 +52,7 @@ avalon.component = function (name, opts) {
                 componentDefinition = avalon.components[name].$construct.call(elem, componentDefinition, vmOpts, elemOpts)
 
                 componentDefinition.$refs = {}
-                componentDefinition.$id = elem.getAttribute("identifier") || generateID(widget)
+                componentDefinition.$id = $id
 
                 //==========构建VM=========
                 var keepSolt = componentDefinition.$slot
@@ -199,6 +201,7 @@ function getOptionsFromVM(vmodels, pre) {
     }
     return {}
 }
+
 
 
 avalon.libraries = []
