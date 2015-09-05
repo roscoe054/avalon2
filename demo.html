@@ -1,22 +1,30 @@
 <!DOCTYPE html>
 <html>
-    <head lang="en">
+    <head>
         <meta charset="UTF-8">
-        <title></title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="avalon.js"></script>
         <script>
             var vm = avalon.define({
-                $id: "demo",
-                aa: "yes",
-                cc: function () {
-                    vm.aa = vm.aa === "no" ? "yes" : "no"
-                }
+                $id: "test",
+                a: 1,
+                $b: 2,
+                $skipArray: ["a"],
+                c: 3
             })
-
+            setTimeout(function () {
+                vm.a = 100
+                vm.$b = 100
+                vm.c = 100
+            }, 3000)
         </script>
     </head>
-    <body ms-controller="demo">
-        <input type="button" value="click" ms-click="cc">
-        <h1>{{aa}}</h1>
+    <body>
+        <div ms-controller="test">
+            <p>{{a}}不会变</p>
+            <p>{{$b}}不会变</p>
+            <p>{{::c}}不会变</p>
+            <p>{{c}}会变</p>
+        </div>
     </body>
 </html>
