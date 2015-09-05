@@ -30,7 +30,7 @@ avalon.component = function (name, opts) {
 
                 var dependencies = 1
                 var library = host.library
-                var global = avalon.libraries[library]
+                var global = avalon.libraries[library] || componentHooks
 
                 //===========收集各种配置=======
                 //从vmodels中得到业务数据

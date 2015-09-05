@@ -57,7 +57,7 @@ function scanAttr(elem, vmodels, match) {
                                 binding.type = "html"
                                 binding.group = 1
                                 return ""
-                            }).tirm() // jshint ignore:line
+                            }).trim() // jshint ignore:line
                         } else if (type === "duplex") {
                             var hasDuplex = name
                         } else if (name === "ms-if-loop") {

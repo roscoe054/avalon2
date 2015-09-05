@@ -5,8 +5,12 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width">
         <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
-        <script src="../../avalon.js"></script>
-        <script src="./shCore.js"></script>
+        <script src="../../avalon.js">
+
+        </script>
+        <script src="../highlight/shCore.js">
+
+        </script>
         <script>
             avalon.library("oni", {
                 $ready: function () {
@@ -29,8 +33,8 @@
     </head>
     <body ms-controller="test">
         <h1>指定上一页,下一页的文本</h1>
-        <oni:pager configs="$pager"></oni:pager>
-        <pre class="brush:html;gutter:false;toolbar:false">
+    <oni:pager configs="$pager"></oni:pager>
+    <pre class="brush:html;gutter:false;toolbar:false">
 &lt;!DOCTYPE html&gt;
 &lt;html&gt;
     &lt;head&gt;
@@ -66,6 +70,6 @@
 
     &lt;/body&gt;
 &lt;/html&gt;
-        </pre>
-    </body>
+    </pre>
+</body>
 </html>
