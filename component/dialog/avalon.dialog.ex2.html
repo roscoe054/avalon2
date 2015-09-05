@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+<meta http-equiv="x-ua-compatible" content="ie=edge" />
+<title>dialog demo 2</title>
+<link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/>
+<link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/>
+<script src="../highlight/shCore.js"></script>
+<script src="../../avalon.js"></script>
+</head>
+<body>
+    <div class="wrapper">
+        <h1>dialog demo 2</h1>
+        <p class="example">通过事件接口配置用户的回调操作</p>
+        <p><span class="useDescription">说明：</span>
+            我们可以将所有dialog的配置而都集成到现有的一个VM的对象,为了防止此对象转换为一个子VM,<br>
+            我们最好让它以$ 开头,或名字放到$skipArray数组中.<br>
+            然后在标签内通过configs属性引用<br>
+            onOpen属性定义open dialog时的回调，onConfirm定义点击确定按钮之后的回调，<br>
+            onClose定义点击“close”时的回调，onCancel定义点击“取消”按钮时的回调。</p>
+           <div class="demo-show" ms-controller="demo">
+            <fieldset>  
+                <legend>可自定义回调操作的dialog</legend>
+                    <button ms-click="show('aa')">打开对话框</button>
+                    <oni:dialog identifier="aa" configs="$aaOpts" >
+                        呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                    </oni:dialog>
+            </fieldset>
+            <script> 
+               require(["./component/dialog/avalon.dialog"], function () {
+                    avalon.define({
+                        $id:"demo",
+                        show: function( id ){
+                            avalon.vmodels[id].toggle = true;
+                        },
+                        title: "可自定义回调操作的dialog",
+                        $aaOpts: {
+                            $slot:"content",
+                            onOpen: function() {
+                                alert("open dialog");
+                            },
+                            onConfirm: function(){
+                                alert('success')
+                            },
+                            onClose: function(){
+                                alert('fail')
+                            },
+                            onCancel: function() {
+                                alert("cancel");
+                            }
+                        }
+                    })
+                    avalon.scan();
+                })
+            </script>
+        </div>
+        <div ms-skip>
+            <pre class="brush: js; html-script: true; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;meta http-equiv="content-type" content="text/html;charset=utf-8" /&gt;
+        &lt;meta http-equiv="x-ua-compatible" content="ie=edge" /&gt;
+        &lt;title&gt;dialog demo 2&lt;/title&gt;
+        &lt;link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/&gt;
+        &lt;script src="../highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;div class="wrapper"&gt;
+
+            &lt;div class="demo-show" ms-controller="demo"&gt;
+                &lt;fieldset&gt;  
+                    &lt;legend&gt;可自定义回调操作的dialog&lt;/legend&gt;
+                    &lt;button ms-click="show('aa')"&gt;打开对话框&lt;/button&gt;
+                    &lt;oni:dialog identifier="aa" configs="$aaOpts" &gt;
+                        呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                    &lt;/oni:dialog&gt;
+                &lt;/fieldset&gt;
+                &lt;script&gt;
+                    require(["./component/dialog/avalon.dialog"], function () {
+                        avalon.define({
+                            $id: "demo",
+                            show: function (id) {
+                                avalon.vmodels[id].toggle = true;
+                            },
+                            title: "可自定义回调操作的dialog",
+                            $aaOpts: {
+                                $slot: "content", //   让&lt;oni:dialog&gt;内部的所有节点都变成组件的content属性
+                                onOpen: function () {
+                                    alert("open dialog");
+                                },
+                                onConfirm: function () {
+                                    alert('success')
+                                },
+                                onClose: function () {
+                                    alert('fail')
+                                },
+                                onCancel: function () {
+                                    alert("cancel");
+                                }
+                            }
+                        })
+                        avalon.scan();
+                    })
+                &lt;/script&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+            </pre>
+        </div>
+     
+    </div>
+</body>
+</html>
+
