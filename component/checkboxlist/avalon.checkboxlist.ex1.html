@@ -20,7 +20,7 @@
                     $id: "demo",
                     checkedInputs: [],
                     checkedIndex: "",
-                    opts: {
+                    $opts: {
                         data: [
                             { text : '文字1' , value : 'w1' } ,
                             { text : '文字2' , value : 'w2' } ,
@@ -41,7 +41,7 @@
     <body ms-controller="demo">
         <fieldset>
             <legend>checkboxlist默认配置，利用onSelect回调获取组件状态</legend>
-            <oni:checkboxlist configs="opts"></oni:checkboxlist>
+            <oni:checkboxlist configs="$opts"></oni:checkboxlist>
             <p>刚刚点击的选项index是: {{checkedIndex}}</p>
             <p>onSelect获取values:
                 <span ms-repeat="checkedInputs">{{el}}&nbsp;</span>
@@ -71,7 +71,7 @@
                     $id: "demo",
                     checkedInputs: [],
                     checkedIndex: "",
-                    opts: {
+                    $opts: {
                         data: [
                             { text : '文字1' , value : 'w1' } ,
                             { text : '文字2' , value : 'w2' } ,
@@ -92,7 +92,7 @@
     &lt;body ms-controller="demo"&gt;
         &lt;fieldset&gt;
             &lt;legend&gt;checkboxlist默认配置，利用onSelect回调获取组件状态&lt;/legend&gt;
-            &lt;oni:checkboxlist configs="opts"&gt;&lt;/oni:checkboxlist&gt;
+            &lt;oni:checkboxlist configs="$opts"&gt;&lt;/oni:checkboxlist&gt;
             &lt;p&gt;刚刚点击的选项index是: {{checkedIndex}}&lt;/p&gt;
             &lt;p&gt;onSelect获取values:
                 &lt;span ms-repeat="checkedInputs"&gt;{{el}}&nbsp;&lt;/span&gt;
