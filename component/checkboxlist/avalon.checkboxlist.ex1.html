@@ -1,53 +1,109 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>checkboxlist demo 1</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width">
-    <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/>
-    <script src="../../avalon.js"></script>
-    <script src="../style/highlight/shCore.js"></script>
-
-    <script>
-        avalon.library("oni", {
-            $ready: function () {
-                avalon.log("控件已经构建完毕")
-            }
-        })
-        require(["./component/checkboxlist/avalon.checkboxlist"], function () {
-            var demoVM = avalon.define({
-                $id: "demo",
-                checkedInputs: [],
-                checkedIndex: "",
-                opts: {
-                    data: [
-                        { text : '文字1' , value : 'w1' } ,
-                        { text : '文字2' , value : 'w2' } ,
-                        { text : '文字3' , value : 'w3' } ,
-                        { text : '文字4' , value : 'w4' }
-                    ],
-                    onSelect: function(e, checkedData, index){
-                        demoVM.checkedInputs = checkedData
-                        demoVM.checkedIndex = index
-                    }
+    
+    <head>
+        <title>checkboxlist demo 1</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"
+        />
+        <script src="../../avalon.js"></script>
+        <script src="../style/highlight/shCore.js"></script>
+        <script>
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
                 }
             })
-            avalon.scan()
-        })
-    </script>
-</head>
-<body ms-controller="demo">
-    <fieldset>
-        <legend>checkboxlist默认配置，利用onSelect回调获取组件状态</legend>
-        <oni:checkboxlist configs="opts"></oni:checkboxlist>
+            require(["./component/checkboxlist/avalon.checkboxlist"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo",
+                    checkedInputs: [],
+                    checkedIndex: "",
+                    opts: {
+                        data: [
+                            { text : '文字1' , value : 'w1' } ,
+                            { text : '文字2' , value : 'w2' } ,
+                            { text : '文字3' , value : 'w3' } ,
+                            { text : '文字4' , value : 'w4' }
+                        ],
+                        onSelect: function(e, checkedData, index){
+                            demoVM.checkedInputs = checkedData
+                            demoVM.checkedIndex = index
+                        }
+                    }
+                })
+                avalon.scan()
+            })
+        </script>
+    </head>
+    
+    <body ms-controller="demo">
+        <fieldset>
+            <legend>checkboxlist默认配置，利用onSelect回调获取组件状态</legend>
+            <oni:checkboxlist configs="opts"></oni:checkboxlist>
+            <p>刚刚点击的选项index是: {{checkedIndex}}</p>
+            <p>onSelect获取values:
+                <span ms-repeat="checkedInputs">{{el}}&nbsp;</span>
+            </p>
+        </fieldset>
+        <div ms-skip>
+            <pre class="brush:html; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    
+    &lt;head&gt;
+        &lt;title&gt;checkboxlist demo 1&lt;/title&gt;
+        &lt;meta charset="UTF-8"&gt;
+        &lt;meta name="viewport" content="width=device-width"&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"
+        /&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+        &lt;script src="../style/highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script&gt;
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/checkboxlist/avalon.checkboxlist"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo",
+                    checkedInputs: [],
+                    checkedIndex: "",
+                    opts: {
+                        data: [
+                            { text : '文字1' , value : 'w1' } ,
+                            { text : '文字2' , value : 'w2' } ,
+                            { text : '文字3' , value : 'w3' } ,
+                            { text : '文字4' , value : 'w4' }
+                        ],
+                        onSelect: function(e, checkedData, index){
+                            demoVM.checkedInputs = checkedData
+                            demoVM.checkedIndex = index
+                        }
+                    }
+                })
+                avalon.scan()
+            })
+        &lt;/script&gt;
+    &lt;/head&gt;
+    
+    &lt;body ms-controller="demo"&gt;
+        &lt;fieldset&gt;
+            &lt;legend&gt;checkboxlist默认配置，利用onSelect回调获取组件状态&lt;/legend&gt;
+            &lt;oni:checkboxlist configs="opts"&gt;&lt;/oni:checkboxlist&gt;
+            &lt;p&gt;刚刚点击的选项index是: {{checkedIndex}}&lt;/p&gt;
+            &lt;p&gt;onSelect获取values:
+                &lt;span ms-repeat="checkedInputs"&gt;{{el}}&nbsp;&lt;/span&gt;
+            &lt;/p&gt;
+        &lt;/fieldset&gt;
+        &lt;div ms-skip&gt;&lt;/div&gt;
+    &lt;/body&gt;
 
-        <p>刚刚点击的选项index是: {{checkedIndex}}</p>
-        <p>选中的values: {{checkedInputs}}</p>
-    </fieldset>
+&lt;/html&gt;
+</pre>
+        </div>
+    </body>
 
-    <div ms-skip>
-        <pre class="brush: html; gutter: false; toolbar: false">
-        </pre>
-    </div>
-</body>
 </html>

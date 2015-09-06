@@ -7,9 +7,10 @@
  */
 
 define(["avalon",
+    "text!./avalon.checkboxlist.html",
     "css!../style/oniui-common.css",
     "css!./avalon.checkboxlist.css"
-], function (avalon) {
+], function (avalon, template) {
 
     var _interface = function () {}
 
@@ -29,12 +30,7 @@ define(["avalon",
         onSelect: _interface,
 
         // 模板
-        template_all: getTemplateString("checkAll"),
-        template_item: getTemplateString("checkItem"),
-        $template: "<ul class='oni-checkboxlist oni-checkboxlist-list oni-helper-clearfix'>"
-        + "{{template_all|html}}"
-        + "{{template_item|html}}"
-        + "</ul>",
+        $template: template,
 
         $construct: function (aaa, bbb, ccc) {
             var options = avalon.mix(aaa, bbb, ccc)
@@ -64,16 +60,32 @@ define(["avalon",
         },
 
         $init: function (vm) {
+            // data重置时同步val
+            vm.$watch("data", function(newData){
+                var val = vm.$model.val,
+                    newVal = []
 
+                avalon.each(newData, function(i, newItem){
+                    var itemData = newItem.$model
+
+                    if(val.indexOf(itemData.value) !== -1){
+                        newVal.push(itemData.value)
+                    }
+                })
+
+                vm.val = newVal
+            })
         },
 
         $ready: function (vm) {
-            var listData = vm.$model.data
 
             vm._clickAll = function(e){
-                var selectedLen = vm.val.length
+                var listData = vm.$model.data,
+                    selectedLen = vm.val.length
 
                 if(selectedLen < listData.length){
+                    vm.val = []
+
                     avalon.each(listData, function(i, listItem){
                         vm.val.push(listItem.value)
                     })
@@ -82,50 +94,21 @@ define(["avalon",
                 }
 
                 setTimeout(function(){
-                    vm.onSelect(e, vm.val.$model)
+                    vm.onSelect(e, vm.$model.val)
                 }, 0)
             }
 
             vm._clickOne = function(e, index){
+                var listData = vm.$model.data
+
                 setTimeout(function(){
                     vm.all = vm.val.length === listData.length
-                    vm.onSelect(e, vm.val.$model, index)
+                    vm.onSelect(e, vm.$model.val, index)
                 }, 0)
             }
+
         }
     })
-
-    function getTemplateString(key){
-
-        var tplStr_checkAll = '';
-        tplStr_checkAll += '<li class="oni-checkboxlist-item oni-checkboxlist-all" ms-if="!!alltext">';
-        tplStr_checkAll += '        <label ms-if="data.size()">';
-        tplStr_checkAll += '            <input type="checkbox"';
-        tplStr_checkAll += '                   ms-click="_clickAll($event)"';
-        tplStr_checkAll += '                   ms-duplex-checked="all"';
-        tplStr_checkAll += '                   \/> {{alltext}}';
-        tplStr_checkAll += '        <\/label>';
-        tplStr_checkAll += '    <\/li>';
-
-        var tplStr_checkItem = '';
-        tplStr_checkItem += '<li ms-repeat="data" class="oni-checkboxlist-item">';
-        tplStr_checkItem += '        <label>';
-        tplStr_checkItem += '            <input type="checkbox"';
-        tplStr_checkItem += '                   ms-click="_clickOne($event, $index)"';
-        tplStr_checkItem += '                   ms-duplex-string="val"';
-        tplStr_checkItem += '                   ms-attr-value="{{el.value||el.text}}"';
-        tplStr_checkItem += '                    \/>';
-        tplStr_checkItem += '            {{el.text|html}}';
-        tplStr_checkItem += '        <\/label>';
-        tplStr_checkItem += '    <\/li>';
-
-        var templateString = {
-            checkAll: tplStr_checkAll,
-            checkItem: tplStr_checkItem
-        }
-
-        return templateString[key]
-    }
 
     return avalon;
 });
