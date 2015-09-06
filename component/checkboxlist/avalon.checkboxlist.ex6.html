@@ -1,157 +1,117 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta http-equiv="content-type" content="text/html;charset=utf-8" />
-<meta http-equiv="x-ua-compatible" content="ie=edge" />
-<title>checkboxlist demo 6</title>
-<link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/>
-<link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/>
-<script src="../highlight/shCore.js"></script>
-<script src="../avalon.js"></script>
-</head>
-<body>
-    <div class="wrapper">
-        <h1>checkboxlist demo 6</h1>
-        <p class="example">可以直接配置data属性来渲染组件， 当然也可以先什么也不配置，等取得数据的合适时机再动态的设置</p>
-        <p>注意： 当初始配置了data且同时设置了fetch，并且绑定元素列出了需要渲染的checkbox时，组件处理的优先级是：data  > fetch > sub element</p>
-
-        <div class="demo-show" ms-controller="demo5">
-            <fieldset>
-                <legend>初始配置data</legend>
-                <ul ms-widget="checkboxlist, $, dataConfig" data-checkboxlist-duplex="val" data-checkboxlist-alltext="全部"></ul>
-                {{ val }}
-            </fieldset>
-            <fieldset>
-                <legend>延迟配置data</legend>
-
-                <ul ms-widget="checkboxlist, c1" data-checkboxlist-duplex="v1" data-checkboxlist-alltext="全选"></ul>
-                <p>{{ v1 }}</p>
-                <button ms-click="setData">set data</button>
-            </fieldset>
-        </div>
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <title>checkboxlist demo 6</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"
+        />
+        <script src="../../avalon.js"></script>
+        <script src="../style/highlight/shCore.js"></script>
         <script>
-            require(["./checkboxlist/avalon.checkboxlist"], function(avalon) {
-                var sss = avalon.define('demo5',function(vm) {
-                    vm.$skipArray = ["dataConfig"]
-                    vm.val = ["1", "2"]
-                    vm.v1 = []
-                    vm.name = "coffee"
-                    vm.dataConfig = {
-                        data: [{
-                            text: "选项一", 
-                            value: "1"
-                        }, {
-                            text: "选项二", 
-                            value: "2"
-                        }, {
-                            text: "选项三", 
-                            value: "3"
-                        }, {
-                            text: "选项四", 
-                            value: "4"
-                        }, {
-                            text: "选项五", 
-                            value: "5"
-                        }]
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/checkboxlist/avalon.checkboxlist"], function(avalon) {
+                var demoVM = avalon.define({
+                    $id: "demo",
+                    checkedInputs: [],
+                    opts: {
+                        type: "week",
+                        data: [
+                            { text : '选项{{$index + 1}}：<i>文字1</i>' , value : 'w1' } ,
+                            { text : '选项{{$index + 1}}：<i>文字2</i>' , value : 'w2' } ,
+                            { text : '选项{{$index + 1}}：<i>文字3</i>' , value : 'w3' } ,
+                            { text : '选项{{$index + 1}}：<i>文字4</i>' , value : 'w4' }
+                        ],
+                        onSelect: function(e, inputsData){
+                            demoVM.checkedInputs = inputsData
+                        }
                     }
-                    vm.setData = function() {
-                        avalon.vmodels.c1.data = [{
-                            text: "menu一{{name}}", 
-                            value: "11"
-                        }, {
-                            text: "menu二", 
-                            value: "22"
-                        }, {
-                            text: "menu三", 
-                            value: "33"
-                        }, {
-                            text: "menu四", 
-                            value: "44"
-                        }, {
-                            text: "menu五", 
-                            value: "55"
-                        }]
-                    }
-                });
-                avalon.scan();
+                })
+                avalon.scan()
             });
         </script>
-        <div ms-skip>
-            <pre class="brush: js; html-script: true; gutter: false; toolbar: false">
-                &lt;!DOCTYPE HTML&gt;
-                &lt;html&gt;
-                &lt;head&gt;
-                    &lt;meta charset='utf-8'/&gt;
-                    &lt;title&gt;checkboxlist demo6 &lt;/title&gt;
-                    &lt;script src='avalon.js'&gt;&lt;/script&gt;
-                &lt;/head&gt;
-                &lt;body&gt;
-                    &lt;div class="demo-show" ms-controller="demo5"&gt;
-                        &lt;fieldset&gt;
-                            &lt;legend&gt;初始配置data&lt;/legend&gt;
-                            &lt;ul ms-widget="checkboxlist, $, dataConfig" data-checkboxlist-duplex="val" data-checkboxlist-alltext="全部"&gt;&lt;/ul&gt;
-                            {{ val }}
-                        &lt;/fieldset&gt;
-                        &lt;fieldset&gt;
-                            &lt;legend&gt;延迟配置data&lt;/legend&gt;
+    </head>
+    
+    <body>
+        <div class="wrapper">
+            <div class="demo-show" ms-controller="demo">
+                <fieldset>
+                    <legend>自定义选项模板</legend>
+                    <oni:checkboxlist configs="opts">
+                        <b slot="alltext">全部选项</b>
+                    </oni:checkboxlist>
+                    <p>onSelect获取values:
+                        <span ms-repeat="checkedInputs">{{el}}&nbsp;</span>
+                    </p>
+                </fieldset>
+            </div>
+            <div ms-skip>
+                <pre class="brush: js; html-script: true; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    
+    &lt;head&gt;
+        &lt;title&gt;checkboxlist demo 6&lt;/title&gt;
+        &lt;meta charset="UTF-8"&gt;
+        &lt;meta name="viewport" content="width=device-width"&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"
+        /&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+        &lt;script src="../style/highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script&gt;
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/checkboxlist/avalon.checkboxlist"], function(avalon) {
+                var demoVM = avalon.define({
+                    $id: "demo",
+                    checkedInputs: [],
+                    opts: {
+                        type: "week",
+                        data: [
+                            { text : '选项{{$index + 1}}：&lt;i&gt;文字1&lt;/i&gt;' , value : 'w1' } ,
+                            { text : '选项{{$index + 1}}：&lt;i&gt;文字2&lt;/i&gt;' , value : 'w2' } ,
+                            { text : '选项{{$index + 1}}：&lt;i&gt;文字3&lt;/i&gt;' , value : 'w3' } ,
+                            { text : '选项{{$index + 1}}：&lt;i&gt;文字4&lt;/i&gt;' , value : 'w4' }
+                        ],
+                        onSelect: function(e, inputsData){
+                            demoVM.checkedInputs = inputsData
+                        }
+                    }
+                })
+                avalon.scan()
+            });
+        &lt;/script&gt;
+    &lt;/head&gt;
+    
+    &lt;body&gt;
+        &lt;div class="wrapper"&gt;
+            &lt;div class="demo-show" ms-controller="demo"&gt;
+                &lt;fieldset&gt;
+                    &lt;legend&gt;自定义选项模板&lt;/legend&gt;
+                    &lt;oni:checkboxlist configs="opts"&gt;
+                        &lt;b slot="alltext"&gt;全部选项&lt;/b&gt;
+                    &lt;/oni:checkboxlist&gt;
+                    &lt;p&gt;onSelect获取values:
+                        &lt;span ms-repeat="checkedInputs"&gt;{{el}}&nbsp;&lt;/span&gt;
+                    &lt;/p&gt;
+                &lt;/fieldset&gt;
+            &lt;/div&gt;
+            &lt;div ms-skip&gt;&lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
 
-                            &lt;ul ms-widget="checkboxlist, c1" data-checkboxlist-duplex="v1" data-checkboxlist-alltext="全选"&gt;&lt;/ul&gt;
-                            &lt;p&gt;{{ v1 }}&lt;/p&gt;
-                            &lt;button ms-click="setData"&gt;set data&lt;/button&gt;
-                        &lt;/fieldset&gt;
-                        
-                    &lt;/div&gt;
-                    &lt;script&gt;
-                        require(["./checkboxlist/avalon.checkboxlist"], function(avalon) {
-                            var sss = avalon.define('demo5',function(vm) {
-                                vm.$skipArray = ["dataConfig"]
-                                vm.val = ["1", "2"]
-                                vm.v1 = []
-                                vm.name = "coffee"
-                                vm.dataConfig = {
-                                    data: [{
-                                        text: "选项一", 
-                                        value: "1"
-                                    }, {
-                                        text: "选项二", 
-                                        value: "2"
-                                    }, {
-                                        text: "选项三", 
-                                        value: "3"
-                                    }, {
-                                        text: "选项四", 
-                                        value: "4"
-                                    }, {
-                                        text: "选项五", 
-                                        value: "5"
-                                    }]
-                                }
-                                vm.setData = function() {
-                                    avalon.vmodels.c1.data = [{
-                                        text: "menu一{{name}}", 
-                                        value: "11"
-                                    }, {
-                                        text: "menu二", 
-                                        value: "22"
-                                    }, {
-                                        text: "menu三", 
-                                        value: "33"
-                                    }, {
-                                        text: "menu四", 
-                                        value: "44"
-                                    }, {
-                                        text: "menu五", 
-                                        value: "55"
-                                    }]
-                                }
-                            });
-                            avalon.scan();
-                        });
-                    &lt;/script&gt;
-                &lt;/body&gt;
-                &lt;/html&gt;
-            </pre>
+&lt;/html&gt;
+</pre>
+            </div>
         </div>
-    </div>
-</body>
+    </body>
+
 </html>

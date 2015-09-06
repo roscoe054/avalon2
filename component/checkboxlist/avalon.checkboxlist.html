@@ -1,0 +1,22 @@
+<ul>
+    <li class="oni-checkboxlist-item oni-checkboxlist-all"
+        ms-if="!!alltext">
+        <label ms-if="data.size()">
+            <input type="checkbox"
+                   ms-click="_clickAll($event)"
+                   ms-duplex-checked="all"
+                   value = "all"/>
+            {{alltext|html}}
+        </label>
+    </li>
+    <li ms-if="typeof data !== 'undefined'" ms-repeat="data" class="oni-checkboxlist-item">
+        <label>
+            <input type="checkbox"
+                   ms-click="_clickOne($event, $index)"
+                   ms-duplex-string="val"
+                   ms-attr-value="{{el.value||el.text}}"/>
+            {{el.text|html}}
+        </label>
+    </li>
+</ul>
+
