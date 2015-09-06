@@ -131,25 +131,25 @@ define(["avalon", "css!./oniui-common.css", "css!./avalon.button.css"], function
             data.forEach(function (button, index) {
                 var buttonStr = "<oni:button"
                 if (button.type !== void 0) {
-                    buttonStr += " data-button-type='" + button.type + "'"
+                    buttonStr += " type='" + button.type + "'"
                 }
                 if (button.iconPosition !== void 0) {
-                    buttonStr += " data-button-icon-position='" + button.iconPosition + "'"
+                    buttonStr += " icon-position='" + button.iconPosition + "'"
                 }
                 if (button.icon !== void 0) {
-                    buttonStr += " data-button-icon='" + button.icon + "'"
+                    buttonStr += " icon='" + button.icon + "'"
                 }
                 if (button.color !== void 0) {
-                    buttonStr += " data-button-color='" + button.color + "'"
+                    buttonStr += " color='" + button.color + "'"
                 }
                 if (button.size !== void 0) {
-                    buttonStr += " data-button-size='" + button.size + "'"
+                    buttonStr += " size='" + button.size + "'"
                 }
                 if (button.disabled !== void 0) {
-                    buttonStr += " data-button-disabled='" + button.disabled + "'"
+                    buttonStr += " disabled='" + button.disabled + "'"
                 }
                 if (button.label !== void 0) {
-                    buttonStr += " data-button-label='" + button.label + "'"
+                    buttonStr += " label='" + button.label + "'"
                 }
                 buttonStr += ">" + (button.text || "") + "</oni:button>"
                 buttons += buttonStr

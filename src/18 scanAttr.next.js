@@ -4,7 +4,7 @@ function scanAttr(elem, vmodels, match) {
         var attributes = elem.attributes
         var bindings = []
         var msData = {}
-        for (var i = 0, attr; attr = attributes[i++];) {
+        for (var i = 0, attr; attr = attributes[i++]; ) {
             if (match = attr.name.match(rmsAttr)) {
                 //如果是以指定前缀命名的
                 var type = match[1]
@@ -27,14 +27,14 @@ function scanAttr(elem, vmodels, match) {
                         priority: (directives[type].priority || type.charCodeAt(0) * 10) + (Number(param.replace(/\D/g, "")) || 0)
                     }
                     if (type === "html" || type === "text") {
-                        
+
                         var filters = getToken(value).filters
                         binding.expr = binding.expr.replace(filters, "")
                         binding.filters = filters.replace(rhasHtml, function () {
                             binding.type = "html"
                             binding.group = 1
                             return ""
-                        })
+                        }).trim()
                     } else if (type === "duplex") {
                         var hasDuplex = name
                     } else if (name === "ms-if-loop") {
@@ -78,3 +78,15 @@ function scanAttr(elem, vmodels, match) {
 
 var rnoscanAttrBinding = /^if|widget|repeat$/
 var rnoscanNodeBinding = /^each|with|html|include$/
+
+var hlmlOne = /^(ms-\S+|on[a-z]+|id|style|class|tabindex)$/
+function getOptionsFromTag(elem) {
+    var attributes = elem.attributes
+    var ret = {}
+    for (var i = 0, attr; attr = attributes[i++]; ) {
+        if (attr.specified && !hlmlOne.test(attr.name)) {
+            ret[camelize(attr.name)] = parseData(attr.value)
+        }
+    }
+    return ret
+}

@@ -14,7 +14,7 @@ function scanNodeArray(nodes, vmodels) {
 
                 if (!elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1) {
                     var library = isWidget(elem)
-                    if (library && avalon.libraries[library]) {
+                    if (library) {
                         var widget = elem.localName ? elem.localName.replace(library + ":", "") : elem.nodeName
                         var fullName = library + ":" + camelize(widget)
                         componentQueue.push({

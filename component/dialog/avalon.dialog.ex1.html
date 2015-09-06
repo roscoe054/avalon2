@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html class="overflow">
+    <head>
+        <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <title>dialog demo 1</title>
+        <link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/>
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/>
+        <script src="../highlight/shCore.js"></script>
+        <script src="../../avalon.js"></script>
+
+        <style>
+            /*    .overflow {
+                    overflow: hidden;
+                }
+                .overflow body {
+                    overflow: hidden;
+                }*/
+        </style>
+    </head>
+    <body>
+        <div class="wrapper">
+            <h1>dialog demo 1</h1>
+            <p class="example">最基本的dialog组件（<span class="statement">&lt;oni:dialog&gt;&lt;/oni:dialog&gt;</span>）</p>
+            <p><span class="useDescription">说明：</span>
+                oni:dialog自定义标签可以identifier属性来设置其$id,然后我们就可以通过avalon.vmodels[ $id ]来操作它<br/>
+                组件默认有确定和取消按钮，点击任意按钮都会关闭弹窗<br/>
+                当然弹窗右上角也会显示关闭按钮，点击关闭弹窗<br/>
+                我们也可以方便地在其子元素上通过slot属性标记它为弹窗的某个部分(如content, title)
+            </p>
+
+            <div class="demo-show" ms-important="demo">
+                <fieldset>  
+                    <legend>基本的dialog组件</legend>
+                    <button ms-click="show('aa')">打开对话框</button>
+                    <oni:dialog $id="aa">
+                        <div slot="content">
+                            呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                            <p>{{message}}</p>
+                        </div>
+                    </oni:dialog>
+                    <button ms-click="show('bb')">打开对话框</button>
+                    <oni:dialog $id="bb" $slot="content">
+                            呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                            <p>{{message}}</p>
+                    </oni:dialog>
+                </fieldset>
+                <script>
+//avalon.library("oni", {})
+require(["./component/dialog/avalon.dialog"], function () {
+    avalon.define({
+        $id: "demo",
+        show: function (id) {
+            avalon.vmodels[id].toggle = true;
+        },
+        message: "笑傻了吧！！",
+        name: "shirly",
+        check1: ["1"]
+    })
+    avalon.scan();
+})
+                </script>
+            </div>
+
+
+
+
+            <div ms-skip>
+                <pre class="brush:html; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;meta http-equiv="content-type" content="text/html;charset=utf-8" /&gt;
+        &lt;meta http-equiv="x-ua-compatible" content="ie=edge" /&gt;
+        &lt;title&gt;dialog demo 1&lt;/title&gt;
+        &lt;link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/&gt;
+        &lt;script src="../highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+        &lt;script&gt;
+            avalon.library("oni", {})
+            require(["./component/dialog/avalon.dialog"], function () {
+                avalon.define({
+                    $id: "demo",
+                    show: function (id) {
+                        avalon.vmodels[id].toggle = true;
+                    },
+                    message: "笑傻了吧！！",
+                    name: "shirly",
+                    check1: ["1"]
+                })
+                avalon.scan();
+            })
+        &lt;/script&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;div class="demo-show" ms-important="demo"&gt;
+            &lt;button ms-click="show('aa')"&gt;打开对话框&lt;/button&gt;
+            &lt;oni:dialog $id="aa"&gt;
+                &lt;div slot="content"&gt;
+                    呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                    &lt;p&gt;{{message}}&lt;/p&gt;
+                &lt;/div&gt;
+            &lt;/oni:dialog&gt;
+        &lt;button ms-click="show('bb')"&gt;打开对话框&lt;/button&gt;
+            &lt;oni:dialog $id="aa" $slot="content" &gt;
+                    呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                    &lt;p&gt;{{message}}&lt;/p&gt;
+            &lt;/oni:dialog&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+                </pre>
+            </div>
+
+        </div>
+    </body>
+</html>

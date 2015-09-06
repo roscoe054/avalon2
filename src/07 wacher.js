@@ -14,7 +14,7 @@ function $watch(expr, binding) {
         }
         binding.wildcard = /\*/.test(expr)
     }
-
+   
     if (!binding.update) {
         if (/\w\.*\B/.test(expr)) {
             binding.getter = noop
@@ -33,7 +33,7 @@ function $watch(expr, binding) {
         if (backup) {
             binding.handler = backup
         }
-    } else {
+    } else if (!binding.oneTime) {
         avalon.Array.ensure(queue, binding)
     }
     return function () {

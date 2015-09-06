@@ -48,7 +48,7 @@ function scanAttr(elem, vmodels, match) {
                                 binding.type = "html"
                                 binding.group = 1
                                 return ""
-                            }) // jshint ignore:line
+                            }).trim() // jshint ignore:line
                         } else if (type === "duplex") {
                             var hasDuplex = name
                         } else if (name === "ms-if-loop") {
@@ -69,7 +69,7 @@ function scanAttr(elem, vmodels, match) {
                 elem.removeAttribute(arr[0])
                 elem.setAttribute(arr[1], arr[2])
             })
-            if (hasDuplex && msData["ms-attr-value"] &&  elem.type === "text") {
+            if (hasDuplex && msData["ms-attr-value"] && elem.type === "text") {
                 log("warning!一个控件不能同时定义ms-attr-value与" + hasDuplex)
             }
 
@@ -92,3 +92,15 @@ function scanAttr(elem, vmodels, match) {
 
 var rnoscanAttrBinding = /^if|widget|repeat$/
 var rnoscanNodeBinding = /^each|with|html|include$/
+
+var hlmlOne = /^(ms-\S+|on[a-z]+|id|style|class|tabindex)$/
+function getOptionsFromTag(elem) {
+    var attributes = elem.attributes
+    var ret = {}
+    for (var i = 0, attr; attr = attributes[i++]; ) {
+        if (attr.specified && !hlmlOne.test(attr.name)) {
+            ret[camelize(attr.name)] = parseData(attr.value)
+        }
+    }
+    return ret
+}

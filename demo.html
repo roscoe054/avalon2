@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="avalon.js"></script>
+        <script>
+            var vm = avalon.define({
+                $id: "test",
+                a: 1,
+                $b: 2,
+                $skipArray: ["a"],
+                c: 3
+            })
+            setTimeout(function () {
+                vm.a = 100
+                vm.$b = 100
+                vm.c = 100
+            }, 3000)
+        </script>
+    </head>
+    <body>
+        <div ms-controller="test">
+            <p>{{a}}不会变</p>
+            <p>{{$b}}不会变</p>
+            <p>{{::c}}不会变</p>
+            <p>{{c}}会变</p>
+        </div>
+    </body>
+</html>

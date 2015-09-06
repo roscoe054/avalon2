@@ -7,7 +7,7 @@
 
 define(["avalon",
     "text!./avalon.pager.html",
-    "css!./oniui-common.css",
+    "css!../chameleon/oniui-common.css",
     "css!./avalon.pager.css"
 ], function (avalon, template) {
 

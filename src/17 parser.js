@@ -242,8 +242,9 @@ function getVars(expr) {
 }
 
 function parseExpr(expr, vmodels, binding) {
-    if (binding.filters && !binding._filters) {
-        binding._filters = parseFilter(binding.filters)
+    var filters = binding.filters
+    if (typeof filters === "string" && filters.trim() && !binding._filters) {
+        binding._filters = parseFilter(filters.trim())
     }
     
     var vars = getVars(expr)
