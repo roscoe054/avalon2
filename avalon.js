@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.9.5
+ avalon.js 1.5 built in 2015.9.7
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -935,6 +935,8 @@ var plugins = {
             }
             cinerator.innerHTML = ""
         }
+         kernel.openTag = openTag
+            kernel.closeTag = closeTag
         var o = escapeRegExp(openTag),
                 c = escapeRegExp(closeTag)
         rexpr = new RegExp(o + "(.*?)" + c)
@@ -3124,7 +3126,6 @@ function scanAttr(elem, vmodels, match) {
                         continue
                     }
                     uniq[name] = 1
-
                     if (events[type]) {
                         param = type
                         type = "on"
@@ -3211,7 +3212,7 @@ var rnoscanAttrBinding = /^if|widget|repeat$/
 var rnoscanNodeBinding = /^each|with|html|include$/
 //IE67下，在循环绑定中，一个节点如果是通过cloneNode得到，自定义属性的specified为false，无法进入里面的分支，
 //但如果我们去掉scanAttr中的attr.specified检测，一个元素会有80+个特性节点（因为它不区分固有属性与自定义属性），很容易卡死页面
-if (!"1" [0]) {
+if (!W3C) {
     var attrPool = new Cache(512)
     var rattrs = /\s+([^=\s]+)(?:=("[^"]*"|'[^']*'|[^\s>]+))?/g,
             rquote = /^['"]/,
@@ -3257,12 +3258,12 @@ if (!"1" [0]) {
     }
 }
 
-var hlmlOne = /^(ms-\S+|on[a-z]+|id|style|class|tabindex)$/
+var rnoCollect = /^(ms-\S+|data-\S+|on[a-z]+|id|style|class|tabindex)$/
 function getOptionsFromTag(elem) {
     var attributes = getAttributes ? getAttributes(elem) : elem.attributes
     var ret = {}
     for (var i = 0, attr; attr = attributes[i++]; ) {
-        if (attr.specified && !hlmlOne.test(attr.name)) {
+        if (attr.specified && !rnoCollect.test(attr.name)) {
             ret[camelize(attr.name)] = parseData(attr.value)
         }
     }

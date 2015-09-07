@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.modern.js 1.5 built in 2015.9.5
+ avalon.modern.js 1.5 built in 2015.9.7
  support IE10+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -688,6 +688,8 @@ var plugins = {
             }
             cinerator.innerHTML = ""
         }
+         kernel.openTag = openTag
+            kernel.closeTag = closeTag
         var o = escapeRegExp(openTag),
                 c = escapeRegExp(closeTag)
         rexpr = new RegExp(o + "(.*?)" + c)
@@ -2267,12 +2269,12 @@ function scanAttr(elem, vmodels, match) {
 var rnoscanAttrBinding = /^if|widget|repeat$/
 var rnoscanNodeBinding = /^each|with|html|include$/
 
-var hlmlOne = /^(ms-\S+|on[a-z]+|id|style|class|tabindex)$/
+var rnoCollect = /^(ms-\S+|data-\S+|on[a-z]+|id|style|class|tabindex)$/
 function getOptionsFromTag(elem) {
     var attributes = elem.attributes
     var ret = {}
     for (var i = 0, attr; attr = attributes[i++]; ) {
-        if (attr.specified && !hlmlOne.test(attr.name)) {
+        if (attr.specified && !rnoCollect.test(attr.name)) {
             ret[camelize(attr.name)] = parseData(attr.value)
         }
     }
