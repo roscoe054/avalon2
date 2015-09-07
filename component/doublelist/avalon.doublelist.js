@@ -40,6 +40,7 @@ define(["avalon", "text!./avalon.doublelist.html", "css!./avalon.doublelist.css"
             vm._initLeftItems = function(){
                 if(vm.data && vm.data.length > 0){
                     vm._leftItems = []
+                    vm._rightItems = []
 
                     avalon.each(vm.data, function(index, dataItem){
                         vm._leftItems.push({

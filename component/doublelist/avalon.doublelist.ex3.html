@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <title>doublelist demo 3</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"
+        />
+        <script src="../../avalon.js"></script>
+        <script src="../style/highlight/shCore.js"></script>
+        <script>
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/doublelist/avalon.doublelist"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo",
+                    $opts: {
+                        data: [
+                            {name: "Lily", value: 1},
+                            {name: "Lucy", value: 2},
+                            {name: "Tom", value: 3},
+                            {name: "Harry", value: 4},
+                            {name: "Jim", value: 5}
+                        ],
+                        hideSelect: true
+                    }
+                })
+    
+                avalon.scan()
+            })
+        </script>
+    </head>
+    
+    <body ms-controller="demo">
+        <fieldset>
+            <legend>doublelist 隐藏选中项</legend>
+            <p>隐藏掉移到右边的项</p>
+            <oni:doublelist configs="$opts"></oni:doublelist>
+        </fieldset>
+        <div ms-skip>
+            <pre class="brush:html; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    
+    &lt;head&gt;
+        &lt;title&gt;doublelist demo 3&lt;/title&gt;
+        &lt;meta charset="UTF-8"&gt;
+        &lt;meta name="viewport" content="width=device-width"&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"
+        /&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+        &lt;script src="../style/highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script&gt;
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/doublelist/avalon.doublelist"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo",
+                    $opts: {
+                        data: [
+                            {name: "Lily", value: 1},
+                            {name: "Lucy", value: 2},
+                            {name: "Tom", value: 3},
+                            {name: "Harry", value: 4},
+                            {name: "Jim", value: 5}
+                        ],
+                        hideSelect: true
+                    }
+                })
+    
+                avalon.scan()
+            })
+        &lt;/script&gt;
+    &lt;/head&gt;
+    
+    &lt;body ms-controller="demo"&gt;
+        &lt;fieldset&gt;
+            &lt;legend&gt;doublelist 隐藏选中项&lt;/legend&gt;
+            &lt;p&gt;隐藏掉移到右边的项&lt;/p&gt;
+            &lt;oni:doublelist configs="$opts"&gt;&lt;/oni:doublelist&gt;
+        &lt;/fieldset&gt;
+        &lt;div ms-skip&gt;&lt;/div&gt;
+    &lt;/body&gt;
+
+&lt;/html&gt;
+</pre>
+        </div>
+    </body>
+
+</html>
