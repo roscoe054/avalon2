@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>doublelist demo 1</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"
+            />
+    <script src="../../avalon.js"></script>
+    <script src="../style/highlight/shCore.js"></script>
+    <script>
+        avalon.library("oni", {
+            $ready: function () {
+                avalon.log("控件已经构建完毕")
+            }
+        })
+        require(["./component/doublelist/avalon.doublelist"], function () {
+            var demoVM = avalon.define({
+                $id: "demo",
+                $opts: {
+                    data: [
+                        {name: "Lily", value: 1},
+                        {name: "Lucy", value: 2},
+                        {name: "Tom", value: 3},
+                        {name: "Harry", value: 4},
+                        {name: "Jim", value: 5}
+                    ]
+                }
+            })
+            avalon.scan()
+        })
+    </script>
+</head>
+
+<body ms-controller="demo">
+<fieldset>
+    <legend>doublelist</legend>
+    <oni:doublelist configs="$opts"></oni:doublelist>
+</fieldset>
+<div ms-skip>
+
+</div>
+</body>
+
+</html>

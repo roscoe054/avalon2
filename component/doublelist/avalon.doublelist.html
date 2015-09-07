@@ -1,0 +1,31 @@
+<div class="oni-doublelist oni-helper-reset oni-helper-clearfix oni-widget oni-helper-noselect"
+	 ms-visible="toggle">
+	<div class="oni-doublelist-data oni-doublelist-menu oni-widget-content">
+		<ul class="oni-helper-reset oni-scrollbar-scroller" ms-each-item="data" data-each-rendered="updateScrollbar">
+			<li class="oni-doublelist-item"
+				ms-hover="oni-state-hover"
+                ms-click="_leftToggleActive($event, item)" >
+				{{item.name | html}}
+			</li>
+		</ul>
+	</div>
+	<div class="oni-doublelist-option">
+		<div class="oni-dbl-button" ms-click="_moveToRight()"
+			ms-class-101="oni-state-disabled:dataTmpSelect.size()==0">
+			<span>&nbsp;添加&nbsp;&gt;</span>
+		</div>
+		<div class="oni-dbl-button" ms-click="_moveToLeft()"
+			ms-class-101="oni-state-disabled:selectTmpSelect.size()==0">
+			<span>&lt;&nbsp;删除&nbsp;</span>
+		</div>
+	</div>
+	<div class="oni-doublelist-select oni-doublelist-menu oni-widget-content">
+		<ul class="oni-helper-reset oni-scrollbar-scroller" ms-each-item="_rightItems" data-each-rendered="updateScrollbar">
+            <li class="oni-doublelist-item"
+                ms-hover="oni-state-hover"
+                ms-click="_rightToggleActive($event, item)" >
+				{{item.name | html}}
+            </li>
+		</ul>
+	</div>
+</div>
