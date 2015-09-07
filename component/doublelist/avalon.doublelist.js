@@ -9,8 +9,7 @@ define(["avalon", "text!./avalon.doublelist.html", "css!./avalon.doublelist.css"
 
     avalon.component("oni:doublelist", {
         // 内部变量
-        _leftActiveItems: [],
-        _rightActiveItems: [],
+        _leftItems: [],
         _rightItems: [],
 
         // 内部方法
@@ -18,139 +17,168 @@ define(["avalon", "text!./avalon.doublelist.html", "css!./avalon.doublelist.css"
         _rightToggleActive: _interface,
         _moveToRight: _interface,
         _moveToLeft: _interface,
+        _initLeftItems: _interface,
+        _initSelected: _interface,
 
         // 配置项
         data: [],
+        selected: [],
+        hideSelect: false,
 
         // 回调方法
-
+        onChange: _interface,
 
         // 模板
         $template: template,
 
         $construct: function (aaa, bbb, ccc) {
             var options = avalon.mix(aaa, bbb, ccc)
-
             return options
         },
 
-        $init: function (vm, ele) {
+        $init: function (vm) {
+            vm._initLeftItems = function(){
+                if(vm.data && vm.data.length > 0){
+                    vm._leftItems = []
 
-        },
-
-        $ready: function (vm, ele) {
-            // 操作待添加区域列表项
-            vm._leftToggleActive = function(e, item){
-                var ele = avalon(this)
-
-                if(ele.hasClass("oni-state-disabled")){
-                    return
-                } else if(ele.hasClass("oni-state-active")) {
-                    ele.removeClass("oni-state-active")
-
-                    var itemPosition = ""
-
-                    avalon.each(vm._leftActiveItems, function(i, listItem){
-                        if(listItem.value === item.value){
-                            itemPosition = i
-                        }
+                    avalon.each(vm.data, function(index, dataItem){
+                        vm._leftItems.push({
+                            name: dataItem.name,
+                            value: dataItem.value,
+                            active: false,
+                            disabled: false,
+                            visible: true
+                        })
                     })
-
-                    vm._leftActiveItems.splice(itemPosition, 1)
-
-                } else {
-                    avalon.each(vm._leftActiveItems, function(i, listItem){
-                        if(listItem.value === item.value){
-                            return
-                        }
-                    })
-
-                    ele.addClass("oni-state-active")
-                    vm._leftActiveItems.push(item)
                 }
-
-                //console.log(vm.$model._leftActiveItems)
             }
 
-            vm._rightToggleActive = function(e, item){
-                var ele = avalon(this)
+            vm._initSelected = function(){
+                if(vm.data && vm.data.length > 0){
+                    for(var i = 0, len = vm._leftItems.length; i < len; i++){
+                        vm._leftItems[i].active = false
+                    }
 
-                if(ele.hasClass("oni-state-active")) {
-                    ele.removeClass("oni-state-active")
-
-                    var itemPosition = ""
-
-                    avalon.each(vm._rightActiveItems, function(i, listItem){
-                        if(listItem.value === item.value){
-                            itemPosition = i
+                    avalon.each(vm.selected, function(index, selectedItem){
+                        for(var i = 0, len = vm._leftItems.length; i < len; i++){
+                            if(selectedItem === vm._leftItems[i]['value']){
+                                vm._leftItems[i].active = true
+                            }
                         }
                     })
-
-                    vm._rightActiveItems.splice(itemPosition, 1)
-                } else if(!ele.hasClass("oni-state-disabled")){
-
-                    avalon.each(vm._rightActiveItems, function(i, listItem){
-                        if(listItem.value === item.value){
-                            return
-                        }
-                    })
-
-                    ele.addClass("oni-state-active")
-                    vm._rightActiveItems.push(item)
                 }
+            }
+
+            if(vm.data && vm.data.length > 0){
+                vm._initLeftItems()
+            }
+
+            if(vm.selected && vm.selected.length > 0){
+                vm._initSelected()
+            }
+        },
+
+        $ready: function (vm) {
+            vm._leftToggleActive = function(index){
+                var currentItem = vm._leftItems[index]
+
+                if(currentItem.disabled){
+                    return
+                } else{
+                    currentItem.active = !currentItem.active
+                }
+            }
+
+            vm._rightToggleActive = function(index){
+                var currentItem = vm._rightItems[index]
+                currentItem.active = !currentItem.active
             }
 
             vm._moveToRight = function(){
-                debugger
-                var activeItems = vm.$model._rightItems.concat(vm.$model._leftActiveItems)
+                moveToAnotherSide(vm._leftItems, vm._rightItems)
+                removeActiveItems(vm._leftItems, vm.hideSelect)
 
-                // copy to right
-                vm._rightItems = avalon.mix(true, [], activeItems)
-
-                // delete left
-                var notDeletedItems = []
-                avalon.each(vm.data, function(i, leftItem){
-                    var pos = findObjWithAttr(leftItem, "value", activeItems)
-
-                    if(pos === -1){
-                        notDeletedItems.push(leftItem)
-                    }
-                })
-
-                vm.data = notDeletedItems
-                vm._leftActiveItems = []
+                setTimeout(function(){
+                    vm.onChange(getCurrentData(vm.$model._rightItems))
+                }, 0)
             }
 
             vm._moveToLeft = function(){
-                var activeItems = vm.$model.data.concat(vm.$model._rightActiveItems)
+                if(vm.hideSelect){
+                    moveToAnotherSide(vm._rightItems, vm._leftItems)
+                } else{
+                    unDisabledItems(vm._rightItems, vm._leftItems)
+                }
 
-                // copy to left
-                vm.data = avalon.mix(true, [], activeItems)
+                setTimeout(function(){
+                    vm.onChange(getCurrentData(vm.$model._rightItems))
+                }, 0)
 
-                // delete right
-                var notDeletedItems = []
-                avalon.each(vm._rightItems, function(i, rightItem){
-                    var pos = findObjWithAttr(rightItem, "value", activeItems)
-
-                    if(pos === -1){
-                        notDeletedItems.push(rightItem)
-                    }
-                })
-
-                vm._rightItems = notDeletedItems
-                vm._rightActiveItems = []
+                // always remove active
+                removeActiveItems(vm._rightItems, true)
             }
+
+            vm.$watch("data", function(){
+                vm._initLeftItems()
+            })
+
+            vm.$watch("selected", function(v){
+                vm._initSelected()
+            })
         }
     })
 
-    function findObjWithAttr(obj, attr, arr){
-        for(var i = 0, len = arr.length; i < len; i++){
-            if(obj[attr] === arr[i][attr]){
-                return i
+    function moveToAnotherSide(origin, target){
+        avalon.each(origin.$model, function(index, originItem){
+            if(originItem.active){
+                var targetItem = avalon.mix(true, {}, originItem)
+                targetItem.active = false
+                target.push(targetItem)
+            }
+        })
+    }
+
+    function unDisabledItems(origin, target){
+        avalon.each(origin, function(index, originItem){
+            if(originItem.active){
+                avalon.each(target, function(targetIndex, targetItem){
+                    if(originItem.value === targetItem.value){
+                        target[targetIndex].disabled = false
+                    }
+                })
+            }
+        })
+    }
+
+    function removeActiveItems(activeItems, hideSelect){
+        var activePositions = []
+
+        avalon.each(activeItems, function(index, item){
+            if(item.active){
+                if(!hideSelect){
+                    item.disabled = true
+                } else{
+                    activePositions.unshift(index)
+                }
+                item.active = false
+            }
+        })
+
+        if(hideSelect) {
+            for (var i in activePositions) {
+                activeItems.splice(activePositions[i], 1)
             }
         }
+    }
 
-        return -1
+    function getCurrentData(rightItems){
+        var currentData = []
+
+        avalon.each(rightItems, function(index, item){
+            currentData.push(item.value)
+        })
+
+        return currentData
     }
 
     return avalon;
