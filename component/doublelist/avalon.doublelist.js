@@ -30,6 +30,8 @@ define(["avalon", "text!./avalon.doublelist.html", "css!./avalon.doublelist.css"
 
         // 模板
         $template: template,
+        tpl_addBtnText:"&nbsp;添加&nbsp;&gt;",
+        tpl_removeBtnText:"&lt;&nbsp;删除&nbsp;",
 
         $construct: function (aaa, bbb, ccc) {
             var options = avalon.mix(aaa, bbb, ccc)
