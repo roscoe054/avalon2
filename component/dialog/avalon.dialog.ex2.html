@@ -16,14 +16,14 @@
         <p><span class="useDescription">说明：</span>
             我们可以将所有dialog的配置而都集成到现有的一个VM的对象,为了防止此对象转换为一个子VM,<br>
             我们最好让它以$ 开头,或名字放到$skipArray数组中.<br>
-            然后在标签内通过configs属性引用<br>
+            然后在标签内通过config属性引用<br>
             onOpen属性定义open dialog时的回调，onConfirm定义点击确定按钮之后的回调，<br>
             onClose定义点击“close”时的回调，onCancel定义点击“取消”按钮时的回调。</p>
            <div class="demo-show" ms-controller="demo">
             <fieldset>  
                 <legend>可自定义回调操作的dialog</legend>
                     <button ms-click="show('aa')">打开对话框</button>
-                    <oni:dialog $id="aa" configs="$aaOpts" title="可自定义回调操作的dialog">
+                    <oni:dialog $id="aa" config="$aaOpts" title="可自定义回调操作的dialog">
                         呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
                     </oni:dialog>
             </fieldset>
@@ -75,7 +75,7 @@
                 &lt;fieldset&gt;  
                     &lt;legend&gt;可自定义回调操作的dialog&lt;/legend&gt;
                     &lt;button ms-click="show('aa')"&gt;打开对话框&lt;/button&gt;
-                    &lt;oni:dialog $id="aa" configs="$aaOpts" title="可自定义回调操作的dialog" &gt;
+                    &lt;oni:dialog $id="aa" config="$aaOpts" title="可自定义回调操作的dialog" &gt;
                         呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
                     &lt;/oni:dialog&gt;
                 &lt;/fieldset&gt;

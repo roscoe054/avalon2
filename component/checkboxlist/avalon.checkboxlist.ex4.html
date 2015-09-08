@@ -36,7 +36,7 @@
             <div class="demo-show" ms-controller="demo">
                 <fieldset>
                     <legend>设置type为week展示周一到周日的选项</legend>
-                    <oni:checkboxlist configs="$opts"></oni:checkboxlist>
+                    <oni:checkboxlist config="$opts"></oni:checkboxlist>
                     <p>onSelect获取values:
                         <span ms-repeat="checkedInputs">{{el}}&nbsp;</span>
                     </p>
@@ -82,7 +82,7 @@
             &lt;div class="demo-show" ms-controller="demo"&gt;
                 &lt;fieldset&gt;
                     &lt;legend&gt;设置type为week展示周一到周日的选项&lt;/legend&gt;
-                    &lt;oni:checkboxlist configs="$opts"&gt;&lt;/oni:checkboxlist&gt;
+                    &lt;oni:checkboxlist config="$opts"&gt;&lt;/oni:checkboxlist&gt;
                     &lt;p&gt;onSelect获取values:
                         &lt;span ms-repeat="checkedInputs"&gt;{{el}}&nbsp;&lt;/span&gt;
                     &lt;/p&gt;
