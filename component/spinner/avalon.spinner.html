@@ -1,18 +1,20 @@
 <div class="oni-spinner oni-widget">
-    <button type="button" class="oni-btn" 
+    <button type="button" class="oni-btn oni-spinner-btn-left"
             ms-click="_sub"
-            ms-attr-disabled="min==value || disabled"
-            ms-class="oni-state-disabled:min==value || disabled">
+            ms-attr-disabled="min===value || disabled || !_valueIsValid"
+            ms-class="oni-state-disabled:min>=value || disabled || !_valueIsValid">
         <i class="oni-icon oni-icon-minus">&#xf085;</i>
     </button>
     <input class="oni-textbox oni-widget-content"
-           ms-class="oni-state-disabled:disabled"
-           ms-duplex-limit="value"
+           ms-class-1="oni-state-disabled:disabled"
+           ms-class-2="oni-value-not-valid:!_valueIsValid"
+           ms-blur="_correct($event)"
+           <!--ms-duplex-limit="value"-->
            ms-attr-disabled="disabled"/>
-    <button type="button" class="oni-btn"
+    <button type="button" class="oni-btn oni-spinner-btn-right"
             ms-click="_add"
-            ms-attr-disabled="max==value || disabled"
-            ms-class="oni-state-disabled:max==value || disabled">
+            ms-attr-disabled="max===value || disabled || !_valueIsValid"
+            ms-class="oni-state-disabled:max<=value || disabled || !_valueIsValid">
         <i class="oni-icon oni-icon-plus">&#xf016;</i>
     </button>
 </div>

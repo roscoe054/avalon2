@@ -9,16 +9,23 @@ define(["avalon", "text!./avalon.spinner.html", "css!../chameleon/oniui-common.c
     var _interface = function () {}
 
     avalon.component("oni:spinner", {
+        // 内部变量
+        _valueIsValid: true,
+        _correctValue: 0,
+
         // 内部方法
         _add: _interface,
         _sub: _interface,
+        _stepTowards: _interface,
+        _validate: _interface,
+        _correct: _interface,
 
         // 配置项
         value: 0,
-        min: null,
-        max: null,
         step: 1,
         disabled: false,
+        min: Number.NEGATIVE_INFINITY,
+        max: Number.POSITIVE_INFINITY,
 
         // 回调方法
         onChange: _interface,
@@ -32,13 +39,14 @@ define(["avalon", "text!./avalon.spinner.html", "css!../chameleon/oniui-common.c
         },
 
         $init: function (vm) {
-            vm.min = parseInt(vm.min, 10)
-            vm.max = parseInt(vm.max, 10)
+            vm.min = Number(vm.min)
+            vm.max = Number(vm.max)
 
             // init value
             if(vm.min > vm.max){
                 console.log("ERROR: 配置项min应小于max")
-                vm.value = NaN
+                vm.value = ""
+                vm.disabled = true
                 return
             }
 
@@ -52,42 +60,101 @@ define(["avalon", "text!./avalon.spinner.html", "css!../chameleon/oniui-common.c
 
             // init operation
             vm._add = function(){
-                vm.value = parseInt(vm.value, 10)
-                vm.value += 1
+                vm._stepTowards(1)
             }
+            
             vm._sub = function(){
-                vm.value = parseInt(vm.value, 10)
-                vm.value -= 1
+                vm._stepTowards(-1)
+            }
+
+            // 步进 & 验证
+            vm._stepTowards = function(orientation){
+                vm.value = Number(vm.value)
+
+                var calCulatedValue = vm.value + vm.step * orientation,
+                    maxNumLength = getMaxNumLength(vm.step, vm.value)
+
+                // 修复js小数不精确
+                calCulatedValue = parseFloat(calCulatedValue.toPrecision(maxNumLength))
+
+                // 验证是否在范围内
+                var lessThanMin = Number.isFinite(vm.min) && calCulatedValue < vm.min,
+                    moreThanMax = Number.isFinite(vm.max) && calCulatedValue > vm.max
+
+                if(lessThanMin){
+                    vm.value = vm.min
+                } else if(moreThanMax){
+                    vm.value = vm.max
+                } else{
+                    vm.value = calCulatedValue
+                }
+            }
+
+            vm._validate = function(val) {
+
+                vm._valueIsValid = true
+
+                // 验证是否是负号或没有内容
+                if(val === "-" || String(val).trim() === ""){
+
+                    vm._valueIsValid = false
+
+                } else{ // 验证是否是数字 & 是否超出边界
+
+                    val = Number(val)
+
+                    var notNumber = isNaN(val),
+                        lessThanMin = Number.isFinite(vm.min) && val < vm.min,
+                        moreThanMax = Number.isFinite(vm.max) && val > vm.max
+
+                    if(notNumber){
+                        vm._valueIsValid = false
+                        vm._correctValue = Number.isFinite(vm.min) ? vm.min : 0
+                    } else if(lessThanMin){
+                        vm._valueIsValid = false
+                        vm._correctValue = vm.min
+                    } else if(moreThanMax){
+                        vm._valueIsValid = false
+                        vm._correctValue = vm.max
+                    }
+                }
             }
         },
 
         $ready: function (vm) {
-            // 输入验证（负号、数字、在边界范围内）
-            avalon.duplexHooks.limit = {
-                get: function(str, data) {
-                    if(str === "-"){
-                        return str
-                    }
 
-                    var result = str = parseInt(str, 10)
+            // 验证改变值是否有效，有效时触发onChange
+            vm.$watch("value", function(v){
+                vm._validate(v)
 
-                    if(isNaN(str)){
-                        result = data.element.value = 0
-                    }
+                if(vm._valueIsValid){
+                    setTimeout(function(){
+                        vm.onChange(v)
+                    }, 0)
+                }
+            })
 
-                    if(vm.min && str < vm.min){
-                        result = data.element.value = vm.min
-                    }
-                    if(vm.max && str > vm.max){
-                        result = data.element.value = vm.max
-                    }
-
-                    vm.onChange(result)
-                    return result
+            // input blur时对value进行修正
+            vm._correct = function(e){
+                if(!vm._valueIsValid){
+                    var input = e.target
+                    input.value = vm._correctValue
                 }
             }
         }
     })
+
+    function getMaxNumLength(){
+        var maxLen = 0
+        avalon.each(arguments, function(i, item){
+            var decimalPart = String(item)
+
+            if(decimalPart && decimalPart.length > maxLen){
+                maxLen = decimalPart.length
+            }
+        })
+        return maxLen
+    }
 
     return avalon;
 })

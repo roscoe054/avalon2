@@ -18,6 +18,7 @@
     font-size: 0;
     outline: 0;
     vertical-align: middle;
+    cursor: pointer;
     -webkit-border-radius: 2px;
     -moz-border-radius: 2px;
     -ms-border-radius: 2px;
@@ -26,19 +27,25 @@
     color: #333333;
     background-color: #f8f8f8;
     border: 1px solid #cccccc; }
-    .oni-spinner .oni-btn:active {
-      border-color: #fff; }
     .oni-spinner .oni-btn:hover {
       box-shadow: 1px 1px 0 0 rgba(0, 0, 0, 0.1);
       background-color: #f8f8f8;
       border-color: #bbbbbb;
       color: #333333; }
+    .oni-spinner .oni-btn:active {
+      background-color: #f0f0f0; }
+    .oni-spinner .oni-btn.oni-spinner-btn-left {
+      border-right: 0 none; }
+    .oni-spinner .oni-btn.oni-spinner-btn-right {
+      border-left: 0 none; }
     .oni-spinner .oni-btn.oni-state-disabled, .oni-spinner .oni-btn.oni-state-disabled .oni-icon {
       box-shadow: none;
       background-color: whitesmoke;
       border-color: #d9d9d9;
       cursor: default;
       color: #ccc; }
+    .oni-spinner .oni-btn.oni-value-not-valid {
+      border-left-color: red !important; }
   .oni-spinner .oni-btn .oni-icon {
     line-height: 15px;
     text-indent: 0; }
@@ -50,7 +57,6 @@
     zoom: 1;
     *display: inline;
     width: 45px;
-    margin: 0 -1px;
     padding: 3px 5px;
     line-height: 18px;
     border: 1px solid #cccccc;
@@ -67,6 +73,8 @@
       -moz-user-select: none;
       -webkit-user-select: none;
       -ms-user-select: none; }
+    .oni-spinner .oni-textbox.oni-value-not-valid {
+      border-color: red; }
     .oni-spinner .oni-textbox .oni-textbox-input-wrap {
       position: relative;
       display: -moz-inline-stack;

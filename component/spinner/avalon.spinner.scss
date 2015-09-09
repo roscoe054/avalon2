@@ -12,14 +12,12 @@ $uiname: "oni-spinner";
         font-size: 0;
         outline: 0;
         vertical-align: middle;
+        cursor: pointer;
         @include border-radius(2px);
         @if($oinui-theme == smoothness) {
             color: #333333;
             background-color: #f8f8f8;
             border: 1px solid #cccccc;
-        }
-        &:active {
-            border-color: #fff;
         }
         &:hover {
             @if($oinui-theme == smoothness) {
@@ -29,12 +27,24 @@ $uiname: "oni-spinner";
                 color: #333333;
             }
         }
+        &:active {
+            background-color: #f0f0f0;
+        }
+        &.oni-spinner-btn-left{
+            border-right: 0 none;
+        }
+        &.oni-spinner-btn-right{
+            border-left: 0 none;
+        }
         &.oni-state-disabled, &.oni-state-disabled .oni-icon {
             box-shadow: none;
             background-color: whitesmoke;
             border-color: #d9d9d9;
             cursor: default;
             color: #ccc;
+        }
+        &.oni-value-not-valid{
+            border-left-color: red!important;
         }
     }
     .oni-btn .oni-icon {
@@ -44,7 +54,6 @@ $uiname: "oni-spinner";
     .oni-textbox {
         @include inline-block();
         width: 45px;
-        margin: 0 -1px;
         padding: 3px 5px;
         line-height: 18px;
         border: 1px solid #cccccc;
@@ -66,6 +75,9 @@ $uiname: "oni-spinner";
             -moz-user-select: none;
             -webkit-user-select: none;
             -ms-user-select: none;
+        }
+        &.oni-value-not-valid {
+            border-color: red;
         }
         .oni-textbox-input-wrap {
             position: relative;
