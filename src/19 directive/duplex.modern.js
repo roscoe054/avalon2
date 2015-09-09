@@ -133,7 +133,7 @@ var duplexBinding = avalon.directive("duplex", {
         if (binding.xtype === "input" && /^(text|password|hidden)/.test(elem.type)) {
             watchValueInTimer(function () {
                 if (root.contains(elem)) {
-                    if (!elem.msFocus && binding.oldValue !== elem.value) {
+                    if (binding.oldValue !== elem.value) {
                         updateVModel()
                     }
                 } else if (!elem.msRetain) {
