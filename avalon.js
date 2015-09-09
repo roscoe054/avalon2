@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.9.9
+ avalon.js 1.5.1 built in 2015.9.10
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -292,7 +292,7 @@ function _number(a, len) { //用于模拟slice, splice的效果
 avalon.mix({
     rword: rword,
     subscribers: subscribers,
-    version: 1.5,
+    version: 1.51,
     ui: {},
     log: log,
     slice: W3C ? function (nodes, start, end) {
@@ -1239,7 +1239,15 @@ function observeObject(source, options) {
             return $watch.apply($vmodel, arguments)
         })
         hideProperty($vmodel, "$fire", function (path, a) {
-            $emit.call($vmodel, path, [a])
+            if(path.indexOf("all!") === 0 ){
+                var ee = path.slice(4)
+                for(var i in avalon.vmodels){
+                    var v = avalon.vmodels[i]
+                    v.$fire && v.$fire.apply(v, [ee, a])
+                }
+            }else{
+               $emit.call($vmodel, path, [a])
+            }
         })
     }
     /* jshint ignore:end */
