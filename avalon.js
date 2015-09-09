@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.9.8
+ avalon.js 1.5 built in 2015.9.9
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -3968,9 +3968,9 @@ var duplexBinding = avalon.directive("duplex", {
             composing = false
         }
         var updateVModel = function () {
-            if (composing) //处理中文输入法在minlengh下引发的BUG
+             var val = elem.value //防止递归调用形成死循环
+            if (composing || val === binding.oldValue) //处理中文输入法在minlengh下引发的BUG
                 return
-            var val = elem.value //防止递归调用形成死循环
             var lastValue = binding.pipe(val, binding, "get")
             try {
                 binding.setter(lastValue)
@@ -4082,7 +4082,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set") + "" //fix #673
                 if (curValue !== this.oldValue) {
-                    elem.oldValue = elem.value = curValue
+                    elem.value = this.oldValue = curValue
                 }
                 break
             case "radio":
