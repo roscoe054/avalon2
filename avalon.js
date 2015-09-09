@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5 built in 2015.9.5
+ avalon.js 1.5 built in 2015.9.9
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -535,6 +535,7 @@ var Cache = new function() {// jshint ignore:line
                     entry.newer =
                     entry.older =
                     this._keymap[entry.key] = void 0
+             delete this._keymap[entry.key] //#1029
         }
     }
     p.get = function(key) {
@@ -935,6 +936,8 @@ var plugins = {
             }
             cinerator.innerHTML = ""
         }
+         kernel.openTag = openTag
+            kernel.closeTag = closeTag
         var o = escapeRegExp(openTag),
                 c = escapeRegExp(closeTag)
         rexpr = new RegExp(o + "(.*?)" + c)
@@ -3124,7 +3127,6 @@ function scanAttr(elem, vmodels, match) {
                         continue
                     }
                     uniq[name] = 1
-
                     if (events[type]) {
                         param = type
                         type = "on"
@@ -3211,7 +3213,7 @@ var rnoscanAttrBinding = /^if|widget|repeat$/
 var rnoscanNodeBinding = /^each|with|html|include$/
 //IE67下，在循环绑定中，一个节点如果是通过cloneNode得到，自定义属性的specified为false，无法进入里面的分支，
 //但如果我们去掉scanAttr中的attr.specified检测，一个元素会有80+个特性节点（因为它不区分固有属性与自定义属性），很容易卡死页面
-if (!"1" [0]) {
+if (!W3C) {
     var attrPool = new Cache(512)
     var rattrs = /\s+([^=\s]+)(?:=("[^"]*"|'[^']*'|[^\s>]+))?/g,
             rquote = /^['"]/,
@@ -3257,12 +3259,12 @@ if (!"1" [0]) {
     }
 }
 
-var hlmlOne = /^(ms-\S+|on[a-z]+|id|style|class|tabindex)$/
+var rnoCollect = /^(ms-\S+|data-\S+|on[a-z]+|id|style|class|tabindex)$/
 function getOptionsFromTag(elem) {
     var attributes = getAttributes ? getAttributes(elem) : elem.attributes
     var ret = {}
     for (var i = 0, attr; attr = attributes[i++]; ) {
-        if (attr.specified && !hlmlOne.test(attr.name)) {
+        if (attr.specified && !rnoCollect.test(attr.name)) {
             ret[camelize(attr.name)] = parseData(attr.value)
         }
     }
@@ -3500,9 +3502,9 @@ avalon.component = function (name, opts) {
                 //===========收集各种配置=======
 
                 var elemOpts = getOptionsFromTag(elem)
-                var vmOpts = getOptionsFromVM(host.vmodels, elemOpts.configs || host.fullName)
+                var vmOpts = getOptionsFromVM(host.vmodels, elemOpts.config || host.fullName)
                 var $id = elemOpts.$id || elemOpts.identifier || generateID(widget)
-                delete elemOpts.configs
+                delete elemOpts.config
                 delete elemOpts.$id
                 delete elemOpts.identifier
                 var componentDefinition = {}
@@ -3967,9 +3969,9 @@ var duplexBinding = avalon.directive("duplex", {
             composing = false
         }
         var updateVModel = function () {
-            if (composing) //处理中文输入法在minlengh下引发的BUG
+             var val = elem.value //防止递归调用形成死循环
+            if (composing || val === binding.oldValue) //处理中文输入法在minlengh下引发的BUG
                 return
-            var val = elem.value //防止递归调用形成死循环
             var lastValue = binding.pipe(val, binding, "get")
             try {
                 binding.setter(lastValue)
@@ -4081,7 +4083,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set") + "" //fix #673
                 if (curValue !== this.oldValue) {
-                    elem.oldValue = elem.value = curValue
+                    elem.value = this.oldValue = curValue
                 }
                 break
             case "radio":

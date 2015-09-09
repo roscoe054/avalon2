@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.modern.js 1.5 built in 2015.9.5
+ avalon.modern.js 1.5 built in 2015.9.9
  support IE10+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -467,6 +467,7 @@ var Cache = new function() {// jshint ignore:line
                     entry.newer =
                     entry.older =
                     this._keymap[entry.key] = void 0
+             delete this._keymap[entry.key] //#1029
         }
     }
     p.get = function(key) {
@@ -688,6 +689,8 @@ var plugins = {
             }
             cinerator.innerHTML = ""
         }
+         kernel.openTag = openTag
+            kernel.closeTag = closeTag
         var o = escapeRegExp(openTag),
                 c = escapeRegExp(closeTag)
         rexpr = new RegExp(o + "(.*?)" + c)
@@ -2267,12 +2270,12 @@ function scanAttr(elem, vmodels, match) {
 var rnoscanAttrBinding = /^if|widget|repeat$/
 var rnoscanNodeBinding = /^each|with|html|include$/
 
-var hlmlOne = /^(ms-\S+|on[a-z]+|id|style|class|tabindex)$/
+var rnoCollect = /^(ms-\S+|data-\S+|on[a-z]+|id|style|class|tabindex)$/
 function getOptionsFromTag(elem) {
     var attributes = elem.attributes
     var ret = {}
     for (var i = 0, attr; attr = attributes[i++]; ) {
-        if (attr.specified && !hlmlOne.test(attr.name)) {
+        if (attr.specified && !rnoCollect.test(attr.name)) {
             ret[camelize(attr.name)] = parseData(attr.value)
         }
     }
@@ -2501,9 +2504,9 @@ avalon.component = function (name, opts) {
                 //===========收集各种配置=======
 
                 var elemOpts = getOptionsFromTag(elem)
-                var vmOpts = getOptionsFromVM(host.vmodels, elemOpts.configs || host.fullName)
+                var vmOpts = getOptionsFromVM(host.vmodels, elemOpts.config || host.fullName)
                 var $id = elemOpts.$id || elemOpts.identifier || generateID(widget)
-                delete elemOpts.configs
+                delete elemOpts.config
                 delete elemOpts.$id
                 delete elemOpts.identifier
                 var componentDefinition = {}
@@ -2968,9 +2971,9 @@ var duplexBinding = avalon.directive("duplex", {
             composing = false
         }
         var updateVModel = function () {
-            if (composing) //处理中文输入法在minlengh下引发的BUG
+             var val = elem.value //防止递归调用形成死循环
+            if (composing || val === binding.oldValue) //处理中文输入法在minlengh下引发的BUG
                 return
-            var val = elem.value //防止递归调用形成死循环
             var lastValue = binding.pipe(val, binding, "get")
             try {
                 binding.setter(lastValue)
@@ -3082,7 +3085,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set") + "" //fix #673
                 if (curValue !== this.oldValue) {
-                    elem.oldValue = elem.value = curValue
+                    elem.value = this.oldValue = curValue
                 }
                 break
             case "radio":

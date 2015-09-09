@@ -79,12 +79,12 @@ function scanAttr(elem, vmodels, match) {
 var rnoscanAttrBinding = /^if|widget|repeat$/
 var rnoscanNodeBinding = /^each|with|html|include$/
 
-var hlmlOne = /^(ms-\S+|on[a-z]+|id|style|class|tabindex)$/
+var rnoCollect = /^(ms-\S+|data-\S+|on[a-z]+|id|style|class|tabindex)$/
 function getOptionsFromTag(elem) {
     var attributes = elem.attributes
     var ret = {}
     for (var i = 0, attr; attr = attributes[i++]; ) {
-        if (attr.specified && !hlmlOne.test(attr.name)) {
+        if (attr.specified && !rnoCollect.test(attr.name)) {
             ret[camelize(attr.name)] = parseData(attr.value)
         }
     }

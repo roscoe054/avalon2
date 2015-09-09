@@ -67,9 +67,9 @@ var duplexBinding = avalon.directive("duplex", {
             composing = false
         }
         var updateVModel = function () {
-            if (composing) //处理中文输入法在minlengh下引发的BUG
+            var val = elem.value //防止递归调用形成死循环
+            if (composing || val === binding.oldValue) //处理中文输入法在minlengh下引发的BUG
                 return
-            var val = elem.oldValue = elem.value //防止递归调用形成死循环
             var lastValue = binding.pipe(val, binding, "get")
             binding.setter(lastValue)
             callback.call(elem, lastValue)
@@ -157,7 +157,7 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set") + "" //fix #673
                 if (curValue !== this.oldValue) {
-                    elem.value = elem.oldValue = curValue
+                    elem.value = this.oldValue = curValue
                 }
                 break
             case "radio":
