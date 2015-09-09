@@ -35,9 +35,9 @@ avalon.component = function (name, opts) {
                 //===========收集各种配置=======
 
                 var elemOpts = getOptionsFromTag(elem)
-                var vmOpts = getOptionsFromVM(host.vmodels, elemOpts.configs || host.fullName)
+                var vmOpts = getOptionsFromVM(host.vmodels, elemOpts.config || host.fullName)
                 var $id = elemOpts.$id || elemOpts.identifier || generateID(widget)
-                delete elemOpts.configs
+                delete elemOpts.config
                 delete elemOpts.$id
                 delete elemOpts.identifier
                 var componentDefinition = {}

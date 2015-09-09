@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <title>dialog demo 2</title>
+        <link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/>
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/>
+        <script src="../highlight/shCore.js"></script>
+        <script src="../../avalon.js"></script>
+    </head>
+    <body>
+        <div class="wrapper">
+
+            <div class="demo-show" ms-controller="demo" data-aaa-$slot=aaa>
+                <fieldset>  
+                    <legend>可自定义回调操作的dialog</legend>
+                    <button ms-click="show('aa')">打开对话框</button>
+                    <oni:dialog identifier="aa" configs="$aaOpts" >
+                        呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                    </oni:dialog>
+                </fieldset>
+                <script>
+                    require(["./component/dialog/avalon.dialog"], function () {
+                        avalon.define({
+                            $id: "demo",
+                            show: function (id) {
+                                avalon.vmodels[id].toggle = true;
+                            },
+                            title: "可自定义回调操作的dialog",
+                            $aaOpts: {
+                                $slot: "content", //   让<oni:dialog>内部的所有节点都变成组件的content属性
+                                onOpen: function () {
+                                    alert("open dialog");
+                                },
+                                onConfirm: function () {
+                                    alert('success')
+                                },
+                                onClose: function () {
+                                    alert('fail')
+                                },
+                                onCancel: function () {
+                                    alert("cancel");
+                                }
+                            }
+                        })
+                        avalon.scan();
+                    })
+                </script>
+            </div>
+        </div>
+    </body>
+</html>
+

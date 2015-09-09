@@ -43,6 +43,8 @@ var plugins = {
             }
             cinerator.innerHTML = ""
         }
+         kernel.openTag = openTag
+            kernel.closeTag = closeTag
         var o = escapeRegExp(openTag),
                 c = escapeRegExp(closeTag)
         rexpr = new RegExp(o + "(.*?)" + c)
