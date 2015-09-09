@@ -3062,7 +3062,7 @@ var duplexBinding = avalon.directive("duplex", {
             elem.avalonSetter = updateVModel //#765
             watchValueInTimer(function () {
                 if (root.contains(elem)) {
-                    if (elem.oldValue !== elem.value) {
+                    if (binding.oldValue !== elem.value) {
                         updateVModel()
                     }
                 } else if (!elem.msRetain) {
