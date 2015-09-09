@@ -42,7 +42,7 @@
             <div class="demo-show" ms-controller="demo">
                 <fieldset>
                     <legend>配置val来设置checkboxlist初始选中状态</legend>
-                    <oni:checkboxlist configs="$opts" alltext=""></oni:checkboxlist>
+                    <oni:checkboxlist config="$opts" alltext=""></oni:checkboxlist>
                     <p>onSelect获取values:
                         <span ms-repeat="checkedInputs">{{el}}&nbsp;</span>
                     </p>
@@ -52,7 +52,7 @@
                 <pre class="brush:html; gutter: false; toolbar: false">
 &lt;!DOCTYPE html&gt;
 &lt;html&gt;
-    
+
     &lt;head&gt;
         &lt;title&gt;checkboxlist demo 2&lt;/title&gt;
         &lt;meta charset="UTF-8"&gt;
@@ -88,13 +88,13 @@
             });
         &lt;/script&gt;
     &lt;/head&gt;
-    
+
     &lt;body&gt;
         &lt;div class="wrapper"&gt;
             &lt;div class="demo-show" ms-controller="demo"&gt;
                 &lt;fieldset&gt;
                     &lt;legend&gt;配置val来设置checkboxlist初始选中状态&lt;/legend&gt;
-                    &lt;oni:checkboxlist configs="$opts" alltext=""&gt;&lt;/oni:checkboxlist&gt;
+                    &lt;oni:checkboxlist config="$opts" alltext=""&gt;&lt;/oni:checkboxlist&gt;
                     &lt;p&gt;onSelect获取values:
                         &lt;span ms-repeat="checkedInputs"&gt;{{el}}&nbsp;&lt;/span&gt;
                     &lt;/p&gt;
