@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <title>spinner demo 2</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
+        <script src="../../avalon.js"></script>
+        <script src="../style/highlight/shCore.js"></script>
+        <script>
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/spinner/avalon.spinner"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo"
+                })
+    
+                avalon.scan()
+            })
+        </script>
+    </head>
+    
+    <body ms-controller="demo">
+        <fieldset>
+            <legend>spinner 设置初始值</legend>
+            <p>
+                <oni:spinner value="100"></oni:spinner>
+            </p>
+            <p>
+                <oni:spinner value="0.5"></oni:spinner>
+            </p>
+            <p>
+                <oni:spinner value="-50"></oni:spinner>
+            </p>
+        </fieldset>
+        <div ms-skip>
+            <pre class="brush:html; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    
+    &lt;head&gt;
+        &lt;title&gt;spinner demo 2&lt;/title&gt;
+        &lt;meta charset="UTF-8"&gt;
+        &lt;meta name="viewport" content="width=device-width"&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+        &lt;script src="../style/highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script&gt;
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/spinner/avalon.spinner"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo"
+                })
+    
+                avalon.scan()
+            })
+        &lt;/script&gt;
+    &lt;/head&gt;
+    
+    &lt;body ms-controller="demo"&gt;
+        &lt;fieldset&gt;
+            &lt;legend&gt;spinner 设置初始值&lt;/legend&gt;
+            &lt;p&gt;
+                &lt;oni:spinner value="100"&gt;&lt;/oni:spinner&gt;
+            &lt;/p&gt;
+            &lt;p&gt;
+                &lt;oni:spinner value="0.5"&gt;&lt;/oni:spinner&gt;
+            &lt;/p&gt;
+            &lt;p&gt;
+                &lt;oni:spinner value="-50"&gt;&lt;/oni:spinner&gt;
+            &lt;/p&gt;
+        &lt;/fieldset&gt;
+        &lt;div ms-skip&gt;&lt;/div&gt;
+    &lt;/body&gt;
+
+&lt;/html&gt;
+</pre>
+        </div>
+    </body>
+
+</html>

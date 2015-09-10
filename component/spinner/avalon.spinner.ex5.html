@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <title>spinner demo 5</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
+        <script src="../../avalon.js"></script>
+        <script src="../style/highlight/shCore.js"></script>
+        <script>
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/spinner/avalon.spinner"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo",
+                    spinnerVal: "",
+                    $opts: {
+                        onChange: function(val){
+                            demoVM.spinnerVal = val
+                        }
+                    }
+                })
+    
+                avalon.scan()
+            })
+        </script>
+    </head>
+    
+    <body ms-controller="demo">
+        <fieldset>
+            <legend>spinner 用onChange监听改变(当value值非法时onChange不会触发)</legend>
+            <oni:spinner config="$opts"></oni:spinner>
+            <p>spinner值: {{spinnerVal}}</p>
+        </fieldset>
+        <div ms-skip>
+            <pre class="brush:html; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    
+    &lt;head&gt;
+        &lt;title&gt;spinner demo 5&lt;/title&gt;
+        &lt;meta charset="UTF-8"&gt;
+        &lt;meta name="viewport" content="width=device-width"&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+        &lt;script src="../style/highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script&gt;
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/spinner/avalon.spinner"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo",
+                    spinnerVal: "",
+                    $opts: {
+                        onChange: function(val){
+                            demoVM.spinnerVal = val
+                        }
+                    }
+                })
+    
+                avalon.scan()
+            })
+        &lt;/script&gt;
+    &lt;/head&gt;
+    
+    &lt;body ms-controller="demo"&gt;
+        &lt;fieldset&gt;
+            &lt;legend&gt;spinner 用onChange监听改变(当value值非法时onChange不会触发)&lt;/legend&gt;
+            &lt;oni:spinner config="$opts"&gt;&lt;/oni:spinner&gt;
+            &lt;p&gt;spinner值: {{spinnerVal}}&lt;/p&gt;
+        &lt;/fieldset&gt;
+        &lt;div ms-skip&gt;&lt;/div&gt;
+    &lt;/body&gt;
+
+&lt;/html&gt;
+</pre>
+        </div>
+    </body>
+
+</html>
