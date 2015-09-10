@@ -149,7 +149,15 @@ function observeObject(source, options) {
             return $watch.apply($vmodel, arguments)
         })
         hideProperty($vmodel, "$fire", function (path, a) {
-            $emit.call($vmodel, path, [a])
+            if(path.indexOf("all!") === 0 ){
+                var ee = path.slice(4)
+                for(var i in avalon.vmodels){
+                    var v = avalon.vmodels[i]
+                    v.$fire && v.$fire.apply(v, [ee, a])
+                }
+            }else{
+               $emit.call($vmodel, path, [a])
+            }
         })
     }
     /* jshint ignore:end */
