@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>textbox demo 3</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
+    <script src="../../avalon.js"></script>
+    <script src="../style/highlight/shCore.js"></script>
+    <script>
+        avalon.library("oni", {
+            $ready: function () {
+                avalon.log("控件已经构建完毕")
+            }
+        })
+        require(["./component/textbox/avalon.textbox"], function () {
+            var demoVM = avalon.define({
+                $id: "demo"
+            })
+
+            avalon.scan()
+        })
+    </script>
+</head>
+
+<body ms-controller="demo">
+<fieldset>
+    <legend>textbox 设置type为textarea</legend>
+    <p>
+        <oni:textbox type="textarea"></oni:textbox>
+    </p>
+</fieldset>
+<div ms-skip>
+    <pre class="brush:html; gutter: false; toolbar: false"></pre>
+</div>
+</body>
+
+</html>
