@@ -2,7 +2,7 @@
     <button type="button" class="oni-btn oni-spinner-btn-left"
             ms-click="_sub"
             ms-attr-disabled="min===value || disabled || !_valueIsValid"
-            ms-class="oni-state-disabled:min>=value || disabled || !_valueIsValid">
+            ms-class="oni-state-disabled:min===value || disabled || !_valueIsValid">
         <i class="oni-icon oni-icon-minus">&#xf085;</i>
     </button>
     <input class="oni-textbox oni-widget-content"
@@ -14,7 +14,7 @@
     <button type="button" class="oni-btn oni-spinner-btn-right"
             ms-click="_add"
             ms-attr-disabled="max===value || disabled || !_valueIsValid"
-            ms-class="oni-state-disabled:max<=value || disabled || !_valueIsValid">
+            ms-class="oni-state-disabled:max===value || disabled || !_valueIsValid">
         <i class="oni-icon oni-icon-plus">&#xf016;</i>
     </button>
 </div>
