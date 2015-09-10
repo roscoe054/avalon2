@@ -47,6 +47,7 @@ gulp.task('combo', function () {
                     return  "avalon.js " + version + " built in " + date + "\n support IE6+ and other browsers"
                 }))
                 .pipe(gulp.dest('./'))
+                .pipe(gulp.dest('./dist/'))
                 .pipe(jshint())
                 .pipe(jshint.reporter('default'))
                 .pipe(gulp.dest('../avalon.test/src/'))
