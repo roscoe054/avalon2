@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    
+    <head>
+        <title>textbox demo 1</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
+        <script src="../../avalon.js"></script>
+        <script src="../style/highlight/shCore.js"></script>
+        <script>
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/textbox/avalon.textbox"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo"
+                })
+
+                avalon.scan()
+            })
+        </script>
+    </head>
+    
+    <body ms-controller="demo">
+        <fieldset>
+            <legend>textbox 默认配置</legend>
+            <oni:textbox></oni:textbox>
+        </fieldset>
+        <div ms-skip>
+            <pre class="brush:html; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    
+    &lt;head&gt;
+        &lt;title&gt;textbox demo 1&lt;/title&gt;
+        &lt;meta charset="UTF-8"&gt;
+        &lt;meta name="viewport" content="width=device-width"&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+        &lt;script src="../style/highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script&gt;
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/textbox/avalon.textbox"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo"
+                })
+
+                avalon.scan()
+            })
+        &lt;/script&gt;
+    &lt;/head&gt;
+    
+    &lt;body ms-controller="demo"&gt;
+        &lt;fieldset&gt;
+            &lt;legend&gt;textbox 默认配置&lt;/legend&gt;
+            &lt;oni:textbox&gt;&lt;/oni:textbox&gt;
+        &lt;/fieldset&gt;
+        &lt;div ms-skip&gt;&lt;/div&gt;
+    &lt;/body&gt;
+
+&lt;/html&gt;
+</pre>
+        </div>
+    </body>
+
+</html>

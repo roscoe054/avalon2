@@ -24,8 +24,8 @@ define(["avalon", "text!./avalon.spinner.html", "css!../chameleon/oniui-common.c
         value: 0,
         step: 1,
         disabled: false,
-        min: Number.NEGATIVE_INFINITY,
-        max: Number.POSITIVE_INFINITY,
+        min: null,
+        max: null,
 
         // 回调方法
         onChange: _interface,
@@ -39,8 +39,13 @@ define(["avalon", "text!./avalon.spinner.html", "css!../chameleon/oniui-common.c
         },
 
         $init: function (vm) {
-            vm.min = Number(vm.min)
-            vm.max = Number(vm.max)
+            if(typeof vm.min === "string"){
+                vm.min = Number(vm.min)
+            }
+
+            if(typeof vm.max === "string"){
+                vm.max = Number(vm.max)
+            }
 
             // init value
             if(vm.min > vm.max){
@@ -50,11 +55,11 @@ define(["avalon", "text!./avalon.spinner.html", "css!../chameleon/oniui-common.c
                 return
             }
 
-            if(vm.min && vm.min > 0){
+            if(vm.min !== null && vm.min > 0){
                 vm.value = vm.min
             }
 
-            if(vm.max && vm.max < 0){
+            if(vm.max !== null && vm.max < 0){
                 vm.value = vm.max
             }
 
@@ -78,8 +83,8 @@ define(["avalon", "text!./avalon.spinner.html", "css!../chameleon/oniui-common.c
                 calCulatedValue = parseFloat(calCulatedValue.toPrecision(maxNumLength))
 
                 // 验证是否在范围内
-                var lessThanMin = Number.isFinite(vm.min) && calCulatedValue < vm.min,
-                    moreThanMax = Number.isFinite(vm.max) && calCulatedValue > vm.max
+                var lessThanMin = vm.min !== null && calCulatedValue < vm.min,
+                    moreThanMax = vm.max !== null && calCulatedValue > vm.max
 
                 if(lessThanMin){
                     vm.value = vm.min
@@ -104,12 +109,12 @@ define(["avalon", "text!./avalon.spinner.html", "css!../chameleon/oniui-common.c
                     val = Number(val)
 
                     var notNumber = isNaN(val),
-                        lessThanMin = Number.isFinite(vm.min) && val < vm.min,
-                        moreThanMax = Number.isFinite(vm.max) && val > vm.max
+                        lessThanMin = vm.min !== null && val < vm.min,
+                        moreThanMax = vm.max !== null && val > vm.max
 
                     if(notNumber){
                         vm._valueIsValid = false
-                        vm._correctValue = Number.isFinite(vm.min) ? vm.min : 0
+                        vm._correctValue = vm.min === null ? 0 : vm.min
                     } else if(lessThanMin){
                         vm._valueIsValid = false
                         vm._correctValue = vm.min
