@@ -726,11 +726,11 @@ function $watch(expr, binding) {
     if (!binding.update) {
         if (/\w\.*\B/.test(expr)) {
             binding.getter = noop
-
-            binding.update = function (x) {
+            var host = this
+            binding.update = function () {
                 var args = this.fireArgs || []
                 if (args[2])
-                    binding.handler.apply(this, args)
+                    binding.handler.apply(host, args)
                 delete this.fireArgs
             }
             queue.sync = true
