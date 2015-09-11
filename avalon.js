@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5.1 built in 2015.9.10
+ avalon.js 1.5.1 built in 2015.9.11
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1805,7 +1805,7 @@ avalon.injectBinding = function (binding) {
             } else if (Array.isArray(a) ? a.length !== (b && b.length) : false) {
                 binding.handler(a, b)
                 binding.oldValue = a.concat()
-            } else if (a !== b) {
+            } else if (!("oldValue" in binding) || a !== b) {
                 binding.handler(a, b)
                 binding.oldValue = a
             }
