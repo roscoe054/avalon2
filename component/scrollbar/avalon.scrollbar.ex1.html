@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>scrollbar组件</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
+        <script src="../../avalon.js">
+        <script src="../highlight/shCore.js"></script>
+        <script>
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/scrollbar/avalon.scrollbar"], function() {
+                avalon.define({
+                    $id: "test",
+                    scrollbar: {
+                        $id: "$bar",
+                        show: "always",
+                        showBarHeader: true
+                    },
+                    up: function() {
+                        avalon.vmodels.$bar && avalon.vmodels.$bar.update()
+                    },
+                    data: avalon.range(1, 400),
+                    $index: 2,
+                    $skipArray: ["scrollbar"]
+                })
+                avalon.scan()
+            })
+        </script>
+        <style type="text/css">
+            .nobarbg .oni-scrollbar{
+                background: transparent;
+            }
+        </style>
+    </head>
+    <body ms-controller="test">
+        <h1>scrollbar-元素带上下小箭头双滚动条</h1>
+        <div class="oni-helper-reset" style="height:300px;border:1px solid #ccc;width:700px;" data-scrollbar-position="right,bottom">
+            <oni:scrollbar config="scrollbar" data-scrollbar-position="right"></oni:scrollbar>
+            <div class="oni-scrollbar-scroller oni-helper-reset">
+                <p style="width:65000px" ms-repeat="data" class="oni-helper-reset" data-repeat-rendered="up">left {{$index}} <span style="float:right;">right {{$index}} </span></p>
+            </div>
+        </div>
+        <pre ms-skip class="brush:html;gutter:false;toolbar:false">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    &lt;head&gt;
+        &lt;title&gt;scrollbar组件&lt;/title&gt;
+        &lt;meta charset=&quot;UTF-8&quot;&gt;
+        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width&quot;&gt;
+        &lt;script src=&quot;../avalon.js&quot;&gt;&lt;/script&gt;
+        
+        &lt;script&gt;
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/scrollbar/avalon.scrollbar"], function() {
+                avalon.define({
+                    $id: "test",
+                    scrollbar: {
+                        $id: "$bar",
+                        show: "always",
+                        showBarHeader: true
+                    },
+                    up: function() {
+                        avalon.vmodels.$bar && avalon.vmodels.$bar.update()
+                    },
+                    data: avalon.range(1, 400),
+                    $index: 2,
+                    $skipArray: ["scrollbar"]
+                })
+                avalon.scan()
+            })
+        &lt;/script&gt;
+        &lt;style type=&quot;text/css&quot;&gt;
+            .nobarbg .oni-scrollbar{
+                background: transparent;
+            }
+        &lt;/style&gt;
+    &lt;/head&gt;
+    &lt;body ms-controller=&quot;test&quot; style=&quot;padding-bottom:85000px;&quot;&gt;
+        &lt;h1&gt;scrollbar-元素带上下小箭头双滚动条&lt;/h1&gt;
+        &lt;div class=&quot;oni-helper-reset&quot; style=&quot;height:300px;border:1px solid #ccc;width:700px;&quot; data-scrollbar-position=&quot;right,bottom&quot;&gt;
+            &lt;div class=&quot;oni-scrollbar-scroller oni-helper-reset&quot;&gt;
+                &lt;oni:scrollbar config="scrollbar" data-scrollbar-position="right"&gt;&lt;oni:scrollbar&gt;
+                &lt;p style=&quot;width:65000px&quot; ms-repeat=&quot;data&quot; class=&quot;oni-helper-reset&quot; data-repeat-rendered=&quot;up&quot;&gt;left {{$index}} &lt;span style=&quot;float:right;&quot;&gt;right {{$index}} &lt;/span&gt;&lt;/p&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;
+        
+    &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+    </div>
+</body>
+</html>
