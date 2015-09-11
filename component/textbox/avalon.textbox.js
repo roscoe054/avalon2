@@ -17,6 +17,7 @@ define(["avalon",
         _placeholderVisible: true,
         _focusing: false,
         _hovering: false,
+        _isLowerEndBrowser: document.all && !window.atob, // IE 9 or lower
 
         // 内部方法
         _clickPlaceholder: _interface,
@@ -29,6 +30,7 @@ define(["avalon",
         placeholder: "",
         type: "input",
         disabled: false,
+        suggest: null,
 
         // 回调方法
 
@@ -45,7 +47,7 @@ define(["avalon",
 
         $ready: function (vm) {
             vm._clickPlaceholder = function(e){
-                var input = e.target.nextElementSibling
+                var input = nextElementSibling(e.target)
                 input.focus()
             }
             vm._focus = function(){
@@ -65,6 +67,11 @@ define(["avalon",
             }
         }
     })
+
+    function nextElementSibling( el ) {
+        do { el = el.nextSibling } while ( el && el.nodeType !== 1 );
+        return el;
+    }
 
     return avalon;
 })

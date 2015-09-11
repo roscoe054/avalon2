@@ -1,45 +1,89 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-    <title>textbox demo 2</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width">
-    <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
-    <script src="../../avalon.js"></script>
-    <script src="../style/highlight/shCore.js"></script>
-    <script>
-        avalon.library("oni", {
-            $ready: function () {
-                avalon.log("控件已经构建完毕")
-            }
-        })
-        require(["./component/textbox/avalon.textbox"], function () {
-            var demoVM = avalon.define({
-                $id: "demo"
+    
+    <head>
+        <title>textbox demo 2</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
+        <script src="../../avalon.js"></script>
+        <script src="../style/highlight/shCore.js"></script>
+        <script>
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
             })
+            require(["./component/textbox/avalon.textbox", "./component/button/avalon.button"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo"
+                })
+    
+                avalon.scan()
+            })
+        </script>
+    </head>
+    
+    <body ms-controller="demo">
+        <fieldset>
+            <legend>textbox 设置value/placeholder/disabled</legend>
+            <div>
+                <oni:textbox value="my value"></oni:textbox>
+            </div>
+            <div>
+                <oni:textbox placeholder="my placeholder"></oni:textbox>
+            </div>
+            <div>
+                <oni:textbox disabled="true"></oni:textbox>
+            </div>
+        </fieldset>
+        <div ms-skip>
+            <pre class="brush:html; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+    
+    &lt;head&gt;
+        &lt;title&gt;textbox demo 2&lt;/title&gt;
+        &lt;meta charset="UTF-8"&gt;
+        &lt;meta name="viewport" content="width=device-width"&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+        &lt;script src="../style/highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script&gt;
+            avalon.library("oni", {
+                $ready: function () {
+                    avalon.log("控件已经构建完毕")
+                }
+            })
+            require(["./component/textbox/avalon.textbox", "./component/button/avalon.button"], function () {
+                var demoVM = avalon.define({
+                    $id: "demo"
+                })
+    
+                avalon.scan()
+            })
+        &lt;/script&gt;
+    &lt;/head&gt;
+    
+    &lt;body ms-controller="demo"&gt;
+        &lt;fieldset&gt;
+            &lt;legend&gt;textbox 设置value/placeholder/disabled&lt;/legend&gt;
+            &lt;div&gt;
+                &lt;oni:textbox value="my value"&gt;&lt;/oni:textbox&gt;
+            &lt;/div&gt;
+            &lt;div&gt;
+                &lt;oni:textbox placeholder="my placeholder"&gt;&lt;/oni:textbox&gt;
+            &lt;/div&gt;
+            &lt;div&gt;
+                &lt;oni:textbox disabled="true"&gt;&lt;/oni:textbox&gt;
+            &lt;/div&gt;
+        &lt;/fieldset&gt;
+        &lt;div ms-skip&gt;&lt;/div&gt;
+    &lt;/body&gt;
 
-            avalon.scan()
-        })
-    </script>
-</head>
-
-<body ms-controller="demo">
-<fieldset>
-    <legend>textbox 设置type为textarea</legend>
-    <p>
-        <oni:textbox value="my value"></oni:textbox>
-    </p>
-    <p>
-        <oni:textbox placeholder="my placeholder"></oni:textbox>
-    </p>
-    <p>
-        <oni:textbox disabled="true"></oni:textbox>
-    </p>
-</fieldset>
-<div ms-skip>
-    <pre class="brush:html; gutter: false; toolbar: false"></pre>
-</div>
-</body>
+&lt;/html&gt;
+</pre>
+        </div>
+    </body>
 
 </html>

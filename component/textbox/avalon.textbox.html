@@ -2,13 +2,14 @@
      ms-class-1="oni-textbox-hover: _hovering"
      ms-class-2="oni-textbox-focus: _focusing">
     <span class="oni-textbox-placeholder"
-          ms-visible="_placeholderVisible"
+          ms-visible="_placeholderVisible && _isLowerEndBrowser"
           ms-click = "_clickPlaceholder($event)">
         {{placeholder}}
     </span>
     <input class="oni-textbox-input"
            ms-class="oni-state-disabled:disabled"
            ms-attr-disabled="disabled"
+           ms-attr-placeholder="placeholder"
            ms-if="type === 'input'"
            ms-duplex="value"
            ms-focus="_focus()"
