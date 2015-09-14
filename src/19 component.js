@@ -9,7 +9,7 @@ var componentHooks = {
     $container: null,
     $childReady: noop,
     $replace: false,
-    $extends: null,
+    $extend: null,
     $$template: function (str) {
         return str
     }
@@ -42,7 +42,7 @@ avalon.component = function (name, opts) {
                 delete elemOpts.identifier
                 var componentDefinition = {}
 
-                var parentHooks = avalon.components[hooks.$extends]
+                var parentHooks = avalon.components[hooks.$extend]
                 if (parentHooks) {
                     avalon.mix(true, componentDefinition, parentHooks)
                     componentDefinition = parentHooks.$construct.call(elem, componentDefinition, {}, {})

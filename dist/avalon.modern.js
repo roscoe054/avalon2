@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.modern.js 1.5.1 built in 2015.9.11
+ avalon.modern.js 1.5.1 built in 2015.9.14
  support IE10+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -2846,7 +2846,7 @@ var componentHooks = {
     $container: null,
     $childReady: noop,
     $replace: false,
-    $extends: null,
+    $extend: null,
     $$template: function (str) {
         return str
     }
@@ -2879,7 +2879,7 @@ avalon.component = function (name, opts) {
                 delete elemOpts.identifier
                 var componentDefinition = {}
 
-                var parentHooks = avalon.components[hooks.$extends]
+                var parentHooks = avalon.components[hooks.$extend]
                 if (parentHooks) {
                     avalon.mix(true, componentDefinition, parentHooks)
                     componentDefinition = parentHooks.$construct.call(elem, componentDefinition, {}, {})
