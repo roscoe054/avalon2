@@ -4099,7 +4099,7 @@ var duplexBinding = avalon.directive("duplex", {
         switch (this.xtype) {
             case "input":
             case "change":
-                curValue = this.pipe(value, this, "set") + "" //fix #673
+                curValue = this.pipe(value, this, "set")  //fix #673
                 if (curValue !== this.oldValue) {
                     elem.value = this.oldValue = curValue
                 }
