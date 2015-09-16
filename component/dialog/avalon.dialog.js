@@ -121,7 +121,8 @@ define([
                 }
                 // 通过zIndex的提升来调整遮罩层，保证层上层存在时遮罩层始终在顶层dialog下面(顶层dialog zIndex-1)但是在其他dialog上面
                 adjustZIndex(element)
-                root.style.overflow = "hidden"
+                // root.style.overflow = "hidden"
+                element.openScrollTop = root.scrollTop + body.scrollTop
                 resetCenter(vm, element)
                 // IE6下遮罩层无法覆盖select解决办法
                 if (isIE6 && selectLength && maskLayerShim === null && vm.modal) {
@@ -141,7 +142,7 @@ define([
 
             // 隐藏dialog
             vm._close = function () {
-                if(vm.toggle === false)
+                if (vm.toggle === false)
                     return
                 avalon.Array.remove(dialogShows, vm)
                 var len = dialogShows.length
@@ -150,25 +151,19 @@ define([
                 /* 处理层上层的情况，因为maskLayer公用，所以需要其以将要显示的dialog的toggle状态为准 */
                 if (topShowDialog && topShowDialog.modal) {
                     var topElement = topShowDialog.widgetElement
-                    topShowDialog.$container.appendChild(topElement)
-                    topShowDialog.$container.insertBefore(maskLayer, topElement)
 
-                    avalon(topElement).css("display", "block")
-                    avalon(maskLayer).css("display", "block")
                     adjustZIndex(topElement)
                     resetCenter(topShowDialog, topElement)
                     if (maskLayerShim) {
                         topShowDialog.$container.insertBefore(maskLayerShim, maskLayer)
                         maskLayerShim.style.zIndex = maskLayer.style.zIndex
                     }
-                    root.style.overflow = "hidden"
                 } else {
                     avalon(maskLayer).css("display", "none")
                     if (maskLayerShim && maskLayerShim.parentNode) {
                         maskLayerShim.parentNode.removeChild(maskLayerShim)
                         maskLayerShim = null
                     }
-                    root.style.overflow = ""
                 }
                 vm.onClose.call(element, vm)
             }
@@ -211,7 +206,7 @@ define([
             element.parentNode.insertBefore(maskLayer, element)
             adjustZIndex(element)
 
-            vm.$watch("toggle", function (val, oldValue) {
+            vm.$watch("toggle", function (val) {
 
                 if (val) {
                     vm._open()
@@ -294,23 +289,35 @@ define([
         var top = Math.max((windowHeight - dialogHeight) / 2, 0)
         var left = Math.max((windowWidth - dialogWidth) / 2, 0)
 
-        avalon(target).css({"top": top, "left": left})
         avalon(maskLayer).css({
             height: windowHeight + scrollTop,
             width: windowWidth + scrollLeft,
             position: "absolute",
-            top: 0,
+            overflow: "auto",
+            top: scrollTop,
             left: 0
         })
         if (maskLayerShim) {
             avalon(maskLayerShim).css({
                 height: windowHeight + scrollTop,
                 width: windowWidth + scrollLeft,
-                top: 0,
+                top: scrollTop,
                 left: 0
             })
         }
+        var curTop = top 
+        if (dialogHeight > windowHeight) {//如果弹出层的高度大于窗口高,为了能看到弹出层的内容,需要通过滚动,上下移动弹出层
+            var curTop = top + target.openScrollTop - scrollTop
 
+            var minTop = windowHeight - dialogHeight - 15
+            if (curTop < minTop && minTop < 0) {
+                curTop = minTop
+            } else if (curTop > target.openScrollTop) {
+                curTop = target.openScrollTop
+            }
+        }
+
+        avalon(target).css({"top": curTop, "left": left})
     }
 
 

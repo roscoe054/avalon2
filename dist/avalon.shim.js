@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.shim.js 1.5.1 built in 2015.9.14
+ avalon.shim.js 1.5.1 built in 2015.9.17
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -3474,6 +3474,7 @@ Buffer.prototype = {
 
 var buffer = new Buffer()
 var componentQueue = []
+var widgetList = []
 var componentHooks = {
     $construct: function () {
         return avalon.mix.apply(null, arguments)
@@ -4668,15 +4669,14 @@ avalon.directive("if", {
                         return
                     elem.parentNode.replaceChild(keep, elem)
                     elem = binding.element = keep //这时可能为null
-                    if (keep.getAttribute("_required")) {
-                      elem.required = true
-                      //  elem.setAttribute("required","required")
-                        console.log("111")
+                    if (keep.getAttribute("_required")) {//#1044
+                        elem.required = true
+                        elem.removeAttribute("_required")
                     }
                     if (elem.querySelectorAll) {
-                        avalon.each(elem.querySelectorAll("_required"), function (el) {
-                           elem.required = true
-                           //  elem.setAttribute("required","required")
+                        avalon.each(elem.querySelectorAll("[_required=true]"), function (el) {
+                            el.required = true
+                            el.removeAttribute("_required")
                         })
                     }
                     alway()
@@ -4691,12 +4691,14 @@ avalon.directive("if", {
                     elem.required = false
                     elem.setAttribute("_required", "true")
                 }
-                if (elem.querySelectorAll) {
+                try {// 如果不支持querySelectorAll或:required,可以直接无视
                     avalon.each(elem.querySelectorAll(":required"), function (el) {
                         elem.required = false
                         el.setAttribute("_required", "true")
                     })
+                } catch (e) {
                 }
+
                 var node = binding.element = DOC.createComment("ms-if"),
                         pos = elem.nextSibling
                 binding.recoverNode = function () {

@@ -123,10 +123,9 @@ gulp.task('combo', function () {
                     return "version: " + fixVersion(version)
                 }))
                 .pipe(replace(/!!/, function (a, b) {
-                    return  "avalon.modern.js " + version + " built in " + date + "\n support IE10+ and other browsers"
+                    return  "avalon.modern.shim.js " + version + " built in " + date + "\n support IE10+ and other browsers"
                 }))
                 .pipe(gulp.dest('./dist/'))
-                .pipe(gulp.dest('../avalon.test/src/'))
                 
 
     })
