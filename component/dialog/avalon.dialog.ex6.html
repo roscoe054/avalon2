@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <title>dialog demo 6</title>
+        <link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/>
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/>
+        <script src="../highlight/shCore.js"></script>
+        <script src="../../avalon.js"></script>
+    </head>
+    <body>
+        <div class="wrapper">
+            <h1>dialog demo 6</h1>
+            <p class="example">模拟alert（<span class="statement">type="alert"</span>）</p>
+            <p><span class="useDescription">说明：</span>当配置type为alert时，showClose的配置无效，也就是其为false还是true都不会显示“关闭”按钮</p>
+             <div class="demo-show" ms-controller="demo">
+                <fieldset>  
+                    <legend>模拟alert</legend>
+                    <button ms-click="show('bb')">打开对话框</button>
+                    <oni:dialog $id="bb" config="opts" $slot="content">
+                        呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                    </oni:dialog>
+                </fieldset>
+                <script>
+                    require(["./component/dialog/avalon.dialog"], function () {
+                        avalon.define({
+                            $id: "demo",
+                            $skipArray: ["opts"],
+                            opts: {
+                                type: 'alert',
+                                title: '警告框demo',
+                                showClose: true
+                            },
+                            show: function (id) {
+                                avalon.vmodels[id].toggle = true;
+                            }
+                        })
+                        avalon.scan();
+                    })
+                </script>
+            </div>
+            
+            <div ms-skip>
+                <pre class="brush: javascript;gutter: false; toolbar: false">
+                &lt;!DOCTYPE HTML&gt;
+                &lt;html&gt;
+                &lt;head&gt;
+                    &lt;meta charset='utf-8'/&gt;
+                    &lt;title&gt;模拟alert&lt;/title&gt;
+                    &lt;script src='avalon.js'&gt;&lt;/script&gt;
+                &lt;/head&gt;
+                &lt;body&gt;
+                    &lt;div class="demo-show" ms-controller="demo"&gt;
+                        &lt;fieldset&gt;  
+                            &lt;legend&gt;模拟alert&lt;/legend&gt;
+                                &lt;button ms-click="show('bb')"&gt;打开对话框&lt;/button&gt;
+                                &lt;oni:dialog $id="bb" config="opts" $slot="content"&gt;
+                                    设置了type之后，无论showClose为true or false都不显示关闭Icon
+                                &lt;/oni:dialog&gt;
+                        &lt;/fieldset&gt;
+                        &lt;script&gt; 
+                            require(["./component/dialog/avalon.dialog"], function() {
+                                avalon.define({
+                                    $id: "demo",
+                                    $skipArray: ["opts"],
+                                    opts: {
+                                        type: 'alert',
+                                        title: '警告框demo',
+                                        showClose: true
+                                    },
+                                    show: function (id) {
+                                        avalon.vmodels[id].toggle = true;
+                                    }
+                                })
+                                avalon.scan();
+                            })
+                        &lt;/script&gt;
+                    &lt;/div&gt;
+                &lt;/body&gt;
+                &lt;/html&gt;
+                </pre>
+            </div>
+           
+        </div>
+    </body>
+</html>
+

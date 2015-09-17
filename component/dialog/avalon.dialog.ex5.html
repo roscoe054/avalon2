@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge" />
+        <title>dialog demo 5</title>
+        <link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/>
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/>
+        <script src="../highlight/shCore.js"></script>
+        <script src="../../avalon.js"></script>
+    </head>
+    <body>
+        <div class="wrapper">
+            <h1>dialog demo 5</h1>
+            <p class="example">模拟alert（<span class="statement">type="alert"</span>）</p>
+            <p><span class="useDescription">说明：</span>通过将dialog配置对象的type属性设为alert，将模拟alert的表现，也就是说不会存在“关闭”、“取消”按钮</p>
+             <div class="demo-show" ms-controller="demo">
+                <fieldset>  
+                    <legend>模拟alert</legend>
+                    <button ms-click="show('bb')">打开对话框</button>
+                    <oni:dialog $id="bb" config="opts" $slot="content">
+                        呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                    </oni:dialog>
+                </fieldset>
+                <script>
+                    require(["./component/dialog/avalon.dialog"], function () {
+                        avalon.define({
+                            $id: "demo",
+                            $skipArray: ["opts"],
+                            opts: {
+                                type: 'alert',
+                                title: '警告框demo'
+                            },
+                            show: function (id) {
+                                avalon.vmodels[id].toggle = true;
+                            }
+                        })
+                        avalon.scan();
+                    })
+                </script>
+            </div>
+            
+            <div ms-skip>
+                <pre class="brush: javascript;gutter: false; toolbar: false">
+                &lt;!DOCTYPE HTML&gt;
+                &lt;html&gt;
+                &lt;head&gt;
+                    &lt;meta charset='utf-8'/&gt;
+                    &lt;title&gt;模拟alert&lt;/title&gt;
+                    &lt;script src='avalon.js'&gt;&lt;/script&gt;
+                &lt;/head&gt;
+                &lt;body&gt;
+                    &lt;div class="demo-show" ms-controller="demo"&gt;
+                        &lt;fieldset&gt;  
+                            &lt;legend&gt;模拟alert&lt;/legend&gt;
+                                &lt;button ms-click="show('bb')"&gt;打开对话框&lt;/button&gt;
+                                &lt;oni:dialog $id="bb" config="opts" $slot="content"&gt;
+                                    呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵呵
+                                &lt;/oni:dialog&gt;
+                        &lt;/fieldset&gt;
+                        &lt;script&gt; 
+                            require(["./component/dialog/avalon.dialog"], function() {
+                                avalon.define({
+                                    $id: "demo",
+                                    $skipArray: ["opts"],
+                                    opts: {
+                                        type: 'alert',
+                                        title: '警告框demo'
+                                    },
+                                    show: function (id) {
+                                        avalon.vmodels[id].toggle = true;
+                                    }
+                                })
+                                avalon.scan();
+                            })
+                        &lt;/script&gt;
+                    &lt;/div&gt;
+                &lt;/body&gt;
+                &lt;/html&gt;
+                </pre>
+            </div>
+           
+        </div>
+    </body>
+</html>
+

@@ -328,6 +328,6 @@ define([
 
     }
 
-
+    return avalon
 
 })
