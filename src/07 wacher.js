@@ -3,14 +3,14 @@ function $watch(expr, binding) {
     var queue = $events[expr] || ($events[expr] = [])
     if (typeof binding === "function") {
         var backup = binding
-        backup.uuid = Math.random()
+        backup.uniqueNumber = Math.random()
         binding = {
             element: root,
             type: "user-watcher",
             handler: noop,
             vmodels: [this],
             expr: expr,
-            uuid: backup.uuid
+            uniqueNumber: backup.uniqueNumber
         }
         binding.wildcard = /\*/.test(expr)
     }
