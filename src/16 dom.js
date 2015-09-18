@@ -436,8 +436,9 @@ function showHidden(node, array) {
     avalon.fn[method] = function (value) { //会忽视其display
         var node = this[0]
         if (arguments.length === 0) {
-            if (node.setTimeout) { //取得窗口尺寸,IE9后可以用node.innerWidth /innerHeight代替
+            if (node.setTimeout) { //取得窗口尺寸
                 return node["inner" + name] || node.document.documentElement[clientProp]
+                 || node.document.body[clientProp] //IE6下前两个分别为undefined,0
             }
             if (node.nodeType === 9) { //取得页面尺寸
                 var doc = node.documentElement
