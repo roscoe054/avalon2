@@ -20,7 +20,7 @@ define([
     var maskLayerShim //一个iframe,用于处理IE6select BUG 
     var dialogShows = [] //存在层上层时由此数组判断层的个数
     var dialogNum = 0 //保存页面dialog的数量，当dialogNum为0时，清除maskLayer
-    var isIE6 = /MISE 6/.test(navigator.userAgent)
+    var isIE6 = document.document === 5 || (document.compatMode && !window.XMLHttpRequest)
     var root = document.documentElement
     avalon.component("oni:dialog", {
         $template: template,
