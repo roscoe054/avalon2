@@ -8,13 +8,14 @@
         <script src="../highlight/shCore.js">
 
         </script>
-        <script src="../avalon.js">
+        <script src="../../avalon.js">
 
         </script>
         <script>
-            require(["draggable/avalon.draggable"], function() {
-                avalon.define("test", function(vm) {
-                    vm.draggable = {
+            require(["./component/draggable/avalon.draggable"], function() {
+                avalon.define({
+                    $id:"test",
+                    draggable: {
                         handle: function(e){
                             var el = e.target
                             do{
@@ -23,8 +24,8 @@
                                 }
                             }while(el = el.parentNode)
                         }
-                    }
-                    vm.$skipArray = ["draggable"]
+                    },
+                    $skipArray: ["draggable"]
                 })
                 avalon.scan()
             })

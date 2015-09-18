@@ -46,7 +46,7 @@ define(["avalon"], function(avalon) {
         dragstop = "touchend"
     }
 
-    var draggable = avalon.bindingHandlers.draggable = function(data) {
+    var draggable = (avalon.bindingHandlers || {}).draggable = function(data) {
         var vmodels = data.vmodels || arguments[1]
         var val = data.value || data.expr || "" 
         var args = val.match(avalon.rword) || []

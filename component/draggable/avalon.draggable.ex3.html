@@ -8,12 +8,13 @@
         <script src="../highlight/shCore.js">
 
         </script>
-        <script src="../avalon.js">
+        <script src="../../avalon.js">
 
         </script>
         <script>
-            require(["draggable/avalon.draggable"], function() {
-                avalon.define("test", function(vm) {
+            require(["./component/draggable/avalon.draggable"], function() {
+                avalon.define({
+                    $id:"test"
                 })
                 avalon.scan()
             })

@@ -8,22 +8,25 @@
         <script src="../highlight/shCore.js">
 
         </script>
-        <script src="../avalon.js">
+        <script src="../../avalon.js"></script>
 
         </script>
         <script>
-            require(["draggable/avalon.draggable"], function() {
-                avalon.define("test", function(vm) {
+            require(["./component/draggable/avalon.draggable"], function() {
+                avalon.define({
+                    $id: "test"
                 })
-                avalon.define("test2", function(vm) {
-                    vm.draggable = {
+                avalon.define({
+                    $id: "test2",
+                    draggable: {
                         dragFn: function(e, data) {
                             this.innerHTML = data.pageX + " " + data.pageY
                         }
                     }
                 })
-                avalon.define("test3", function(vm) {
-                    vm.draggable = {
+                avalon.define({
+                    $id: "test3",
+                    draggable: {
                         drag: function(e, data) {
                             this.innerHTML = data.pageX + " " + data.pageY + " drag3"
                         }
@@ -63,10 +66,10 @@
         <div ms-controller="test" ms-draggable=""id="aaa">
 
         </div>
-        <div ms-controller="test2" ms-draggable=" test2" data-draggable-drag="dragFn" id="bbb">
+        <div ms-controller="test2" ms-draggable="test2" data-draggable-drag="dragFn" id="bbb">
 
         </div>
-        <div ms-controller="test3" ms-draggable=" test3"  id="ccc">
+        <div ms-controller="test3" ms-draggable="test3"  id="ccc">
 
         </div>
         <h1>最简单例子</h1>

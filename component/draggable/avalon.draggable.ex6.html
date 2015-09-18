@@ -8,13 +8,14 @@
         <script src="../highlight/shCore.js">
 
         </script>
-        <script src="../avalon.js">
+        <script src="../../avalon.js">
 
         </script>
         <script>
-            require(["draggable/avalon.draggable"], function() {
-                avalon.define("test", function(vm) {
-                    vm.draggable = {
+            require(["./component/draggable/avalon.draggable"], function() {
+                avalon.define({
+                    $id:"test",
+                    draggable: {
                         beforeStartFn: function(e, data) {
                             avalon.log(e.type + " beforeStart")
                             data.$element.addClass("active")
@@ -34,8 +35,8 @@
                             avalon.log(e.type + " stop")
                             this.innerHTML = ""
                         }
-                    }
-                    vm.$skipArray = ["draggable"]
+                    },
+                    $skipArray: ["draggable"]
                 })
                 avalon.scan()
             })
