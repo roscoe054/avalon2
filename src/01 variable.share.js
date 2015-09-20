@@ -26,13 +26,11 @@ var class2type = {}
 function CSPHack(array){
     var a = array.reverse().join("")
     return function(v){
-        if(Array.isArray(v))
-            return window[a].apply(0, v)
-        return window[a].apply(0, arguments)
+        return window[a].apply(0, v)
     }
     return window
 }
-var CPScompile = CSPHack(["n","o","i","t","c","n","u", "F"])
+var CSPcompile = CSPHack(["n","o","i","t","c","n","u", "F"])
 function noop() {
 }
 

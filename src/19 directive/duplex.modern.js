@@ -124,7 +124,7 @@ var duplexBinding = avalon.directive("duplex", {
                         val = binding.pipe(val, binding, "get")
                     }
                     if (val + "" !== binding.oldValue) {
-                        avalon.setter(val)
+                        binding.setter(val)
                         callback.call(elem, val)
                     }
                 })
