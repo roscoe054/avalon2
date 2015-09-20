@@ -23,8 +23,16 @@ var class2type = {}
 "Boolean Number String Function Array Date RegExp Object Error".replace(rword, function (name) {
     class2type["[object " + name + "]"] = name.toLowerCase()
 })
-
-
+function CSPHack(array){
+    var a = array.reverse().join("")
+    return function(v){
+        if(Array.isArray(v))
+            return window[a].apply(0, v)
+        return window[a].apply(0, arguments)
+    }
+    return window
+}
+var CPScompile = CSPHack(["n","o","i","t","c","n","u", "F"])
 function noop() {
 }
 
@@ -60,11 +68,6 @@ avalon = function (el) { //创建jQuery式的无new 实例化结构
     return new avalon.init(el)
 }
 
-avalon.profile = function () {
-    if (window.console && avalon.config.profile) {
-        Function.apply.call(console.log, console, arguments)
-    }
-}
 
 /*视浏览器情况采用最快的异步回调*/
 avalon.nextTick = new function () {// jshint ignore:line

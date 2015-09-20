@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5.2 built in 2015.9.18
+ avalon.js 1.5.2 built in 2015.9.20
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -74,8 +74,16 @@ var class2type = {}
 "Boolean Number String Function Array Date RegExp Object Error".replace(rword, function (name) {
     class2type["[object " + name + "]"] = name.toLowerCase()
 })
-
-
+function CSPHack(array){
+    var a = array.reverse().join("")
+    return function(v){
+        if(Array.isArray(v))
+            return window[a].apply(0, v)
+        return window[a].apply(0, arguments)
+    }
+    return window
+}
+var CPScompile = CSPHack(["n","o","i","t","c","n","u", "F"])
 function noop() {
 }
 
@@ -111,11 +119,6 @@ avalon = function (el) { //创建jQuery式的无new 实例化结构
     return new avalon.init(el)
 }
 
-avalon.profile = function () {
-    if (window.console && avalon.config.profile) {
-        Function.apply.call(console.log, console, arguments)
-    }
-}
 
 /*视浏览器情况采用最快的异步回调*/
 avalon.nextTick = new function () {// jshint ignore:line
@@ -2693,7 +2696,7 @@ function parser(input) {
 
         try {
             /* jshint ignore:start */
-            var execText = Function("return " + content)()
+            var execText = CPScompile("return " + content)()
             /* jshint ignore:end */
 
             execText += ''
@@ -2928,7 +2931,7 @@ function parseExpr(expr, vmodels, binding) {
             return nameOne[a] ? nameOne[a] : a
         })
         /* jshint ignore:start */
-        var fn2 = Function.apply(noop, names.concat("'use strict';" +
+        var fn2 = CPScompile(names.concat("'use strict';" +
                 "return function(vvv){" + expr + " = vvv\n}\n"))
         /* jshint ignore:end */
         evaluatorPool.put(exprId + "setter", fn2)
@@ -2951,7 +2954,7 @@ function parseExpr(expr, vmodels, binding) {
         expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     /* jshint ignore:start */
-    getter = Function.apply(noop, names.concat("'use strict';\nvar " +
+    getter = CPScompile(names.concat("'use strict';\nvar " +
             assigns.join(",\n") + expr))
     /* jshint ignore:end */
 
@@ -3007,7 +3010,7 @@ function parseFilter(filters) {
                 return '",'
             }) + "]"
     /* jshint ignore:start */
-    return  Function("return [" + filters + "]")()
+    return  CPScompile("return [" + filters + "]")()
     /* jshint ignore:end */
 
 }

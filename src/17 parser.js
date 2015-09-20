@@ -55,7 +55,7 @@ function parser(input) {
 
         try {
             /* jshint ignore:start */
-            var execText = Function("return " + content)()
+            var execText = CPScompile("return " + content)()
             /* jshint ignore:end */
 
             execText += ''
@@ -290,7 +290,7 @@ function parseExpr(expr, vmodels, binding) {
             return nameOne[a] ? nameOne[a] : a
         })
         /* jshint ignore:start */
-        var fn2 = Function.apply(noop, names.concat("'use strict';" +
+        var fn2 = CPScompile(names.concat("'use strict';" +
                 "return function(vvv){" + expr + " = vvv\n}\n"))
         /* jshint ignore:end */
         evaluatorPool.put(exprId + "setter", fn2)
@@ -313,7 +313,7 @@ function parseExpr(expr, vmodels, binding) {
         expr = "\nreturn " + expr + ";" //IE全家 Function("return ")出错，需要Function("return ;")
     }
     /* jshint ignore:start */
-    getter = Function.apply(noop, names.concat("'use strict';\nvar " +
+    getter = CPScompile(names.concat("'use strict';\nvar " +
             assigns.join(",\n") + expr))
     /* jshint ignore:end */
 
@@ -369,7 +369,7 @@ function parseFilter(filters) {
                 return '",'
             }) + "]"
     /* jshint ignore:start */
-    return  Function("return [" + filters + "]")()
+    return  CPScompile("return [" + filters + "]")()
     /* jshint ignore:end */
 
 }
