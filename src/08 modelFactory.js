@@ -341,8 +341,11 @@ function toJson(val) {
     } else if (xtype === "object") {
         var obj = {}
         for (i in val) {
+            if(i === "__proxy__" || i === "__data__" || i === "__const__")
+                continue
             if (val.hasOwnProperty(i)) {
-                obj[i] = toJson(val[i])
+                var value = val[i]
+                obj[i] = value && value.nodeType ? value :toJson(value)
             }
         }
         return obj

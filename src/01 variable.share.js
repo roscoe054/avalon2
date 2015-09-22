@@ -23,17 +23,10 @@ var class2type = {}
 "Boolean Number String Function Array Date RegExp Object Error".replace(rword, function (name) {
     class2type["[object " + name + "]"] = name.toLowerCase()
 })
-function CSPHack(array){
-    var a = array.reverse().join("")
-    return function(v){
-        return window[a].apply(0, v)
-    }
-    return window
+function CSPcompile(array){
+    return Object.constructor.apply(0,array)
 }
-var CSPcompile = CSPHack(["n","o","i","t","c","n","u", "F"])
-function noop() {
-}
-
+function noop(){}
 
 function oneObject(array, val) {
     if (typeof array === "string") {

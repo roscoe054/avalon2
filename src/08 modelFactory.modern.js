@@ -320,7 +320,8 @@ function toJson(val) {
         var obj = {}
         for (i in val) {
             if (val.hasOwnProperty(i)) {
-                obj[i] = toJson(val[i])
+                var value = val[i]
+                obj[i] = value && value.nodeType ? value :toJson(value)
             }
         }
         return obj

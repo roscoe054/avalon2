@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.modern.shim.js 1.5.2 built in 2015.9.20
+ avalon.modern.shim.js 1.5.2 built in 2015.9.22
  support IE10+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -83,17 +83,10 @@ var class2type = {}
 "Boolean Number String Function Array Date RegExp Object Error".replace(rword, function (name) {
     class2type["[object " + name + "]"] = name.toLowerCase()
 })
-function CSPHack(array){
-    var a = array.reverse().join("")
-    return function(v){
-        return window[a].apply(0, v)
-    }
-    return window
+function CSPcompile(array){
+    return Object.constructor.apply(0,array)
 }
-var CSPcompile = CSPHack(["n","o","i","t","c","n","u", "F"])
-function noop() {
-}
-
+function noop(){}
 
 function oneObject(array, val) {
     if (typeof array === "string") {
@@ -1164,7 +1157,8 @@ function toJson(val) {
         var obj = {}
         for (i in val) {
             if (val.hasOwnProperty(i)) {
-                obj[i] = toJson(val[i])
+                var value = val[i]
+                obj[i] = value && value.nodeType ? value :toJson(value)
             }
         }
         return obj
