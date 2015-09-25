@@ -24,7 +24,7 @@ var class2type = {}
     class2type["[object " + name + "]"] = name.toLowerCase()
 })
 function CSPcompile(array){
-    return Object.constructor.apply(0,array)
+    return Function.apply(noop,array)
 }
 function noop(){}
 
