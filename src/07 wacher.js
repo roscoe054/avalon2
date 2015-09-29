@@ -50,7 +50,7 @@ function $emit(key, args) {
         }
         notifySubscribers(event[key], args)
         var parent = this.$up
-        if (parent && parent.$event) {
+        if (parent) {
             if (this.$pathname) {
                 $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
             }
