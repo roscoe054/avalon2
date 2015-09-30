@@ -1,277 +1,474 @@
-new function() {// jshint ignore:line
-    // http://www.cnblogs.com/yexiaochai/p/3462657.html
+new function () {// jshint ignore:line
+    var me = onDir
+    var sniff = {}
     var ua = navigator.userAgent
-    var isAndroid = ua.indexOf("Android") > 0
-    var isIOS = /iP(ad|hone|od)/.test(ua)
-    var me = bindingHandlers.on
-    var touchProxy = {}
+    var platform = navigator.platform
+    var android = ua.match(/(Android);?[\s\/]+([\d.]+)?/) // 匹配 android
+    var ipad = ua.match(/(iPad).*OS\s([\d_]+)/) // 匹配 ipad
+    var ipod = ua.match(/(iPod)(?:.*OS\s([\d_]+))?/) // 匹配 ipod
+    var iphone = ua.match(/(iPhone\sOS)\s([\d_]+)/)  // 匹配 iphone
+    if (android) {
+        sniff.version = android[2]
+        sniff.android = true
+    }
 
-    var IE11touch = navigator.pointerEnabled
-    var IE9_10touch = navigator.msPointerEnabled
-    var w3ctouch = (function() {
-        var supported = isIOS || false
-        //http://stackoverflow.com/questions/5713393/creating-and-firing-touch-events-on-a-touch-enabled-browser
-        try {
-            var div = document.createElement("div")
-            div.ontouchstart = function() {
-                supported = true
+    var iversion = ipad || iphone || ipod
+    if (iversion) {
+        sniff.version = String(iversion[2]).replace(/_/g, '.');
+        sniff.ios = true
+        if (ua.indexOf('Version/') >= 0) {
+            sniff.version = ua.toLowerCase().split('version/')[1].split(' ')[0];
+        }
+        sniff.versionN = parseInt(sniff.version, 10)
+    }
+    sniff.pc = platform.indexOf('Mac') === 0 || platform.indexOf('Win') === 0 ||
+            (platform.indexOf('linux') === 0 && !sniff.android)
+
+    // avalon在移动端提供两组 tap系 与 swipe系
+    // tap相当于PC端的click,包括tap, doubletap, longtap(500)
+    // swipe是划动,移动距离超过10, 大于0.65px/ms的速度才可以触发
+    var TOUCHKEYS = [
+        'screenX', 'screenY', 'clientX', 'clientY', 'pageX', 'pageY'
+    ]
+    // 普通的点击 200, 长按500
+
+    var gesture,
+            curElement,
+            curId,
+            lastId,
+            lastTime = 0,
+            trackingClick,
+            clickElement,
+            overTouchTime = 0,
+            cancelNextClick = false,
+            running = true;
+
+    // 重置
+    function reset() {
+        gesture = curElement = curId = null;
+    }
+
+    // 复制 touch 对象上的有用属性到固定对象上
+    function mixTouchAttr(target, source) {
+        if (source) {
+            TOUCHKEYS.forEach(function (key) {
+                target[key] = source[key];
+            });
+        }
+        return target;
+    }
+
+    // 检测是否需要原生 click
+    function needsClick(target) {
+        switch (target.nodeName.toLowerCase()) {
+            case 'button':
+            case 'select':
+            case 'textarea':
+                if (target.disabled) {
+                    return true;
+                }
+                break;
+            case 'input':
+                // IOS6 pad 上选择文件，如果不是原生的click，弹出的选择界面尺寸错误
+                if ((ipad && sniff.versionN === 6 && target.type === 'file') || target.disabled) {
+                    return true;
+                }
+                break;
+            case 'label':
+            case 'iframe':
+            case 'video':
+                return true;
+        }
+
+        return (/\bneedsclick\b/).test(target.className);
+    }
+
+    // 检测是否需要 focus
+    function needsFocus(target) {
+        switch (target.nodeName.toLowerCase()) {
+            case 'textarea':
+                return true;
+            case 'select':
+                return !sniff.android;
+            case 'input':
+                switch (target.type) {
+                    case 'button':
+                    case 'checkbox':
+                    case 'file':
+                    case 'image':
+                    case 'radio':
+                    case 'submit':
+                        return false;
+                }
+                return !target.disabled && !target.readOnly;
+            default:
+                return (/\bneedsfocus\b/).test(target.className);
+        }
+    }
+
+    // 选择触发的事件
+    function determineEventType(target) {
+        // 安卓chrome浏览器上，模拟的 click 事件不能让 select 打开，故使用 mousedown 事件
+        if (sniff.android && target.nodeName.toLowerCase() === 'select') {
+            return 'mousedown'
+        }
+
+        return 'click'
+    }
+
+    // 发送 click 事件
+    function sendClick(target, touch) {
+        var clickEvent;
+
+        // 某些安卓设备必须先移除焦点，之后模拟的click事件才能让新元素获取焦点
+        if (document.activeElement && document.activeElement !== target) {
+            document.activeElement.blur();
+        }
+
+        clickEvent = document.createEvent('MouseEvents')
+        clickEvent.initMouseEvent(determineEventType(target), true, true, window, 1, touch.screenX,
+                touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null);
+        clickEvent.forwardedTouchEvent = true;
+        if (running) {
+            target.dispatchEvent(clickEvent);
+        }
+    }
+
+    //  寻找 label 对应的元素
+    function findControl(labelElement) {
+
+        // HTML5 新属性
+        if (labelElement.control !== undefined) {
+            return labelElement.control;
+        }
+
+        // 通过 htmlFor
+        if (labelElement.htmlFor) {
+            return document.getElementById(labelElement.htmlFor);
+        }
+
+        return labelElement.querySelector('button, input:not([type=hidden]), keygen, meter,' +
+                'output, progress, select, textarea');
+    }
+
+    function findTouch(touches) {
+        for (var i = 0, el; el = touches[i++]; ) {
+            if (el.identifier === curId) {
+                return el
             }
-            var e = document.createEvent("TouchEvent")
-            e.initUIEvent("touchstart", true, true)
-            div.dispatchEvent(e)
-        } catch (err) {
-        }
-        div = div.ontouchstart = null
-        return supported
-    })()
-    var touchSupported = !!(w3ctouch || IE11touch || IE9_10touch)
-    //合成做成触屏事件所需要的各种原生事件
-    var touchNames = ["mousedown", "mousemove", "mouseup", ""]
-    if (w3ctouch) {
-        touchNames = ["touchstart", "touchmove", "touchend", "touchcancel"]
-    } else if (IE11touch) {
-        touchNames = ["pointerdown", "pointermove", "pointerup", "pointercancel"]
-    } else if (IE9_10touch) {
-        touchNames = ["MSPointerDown", "MSPointerMove", "MSPointerUp", "MSPointerCancel"]
-    }
-    function isPrimaryTouch(event){
-        return (event.pointerType === 'touch' || event.pointerType === event.MSPOINTER_TYPE_TOUCH) && event.isPrimary
-    }
-
-    function isPointerEventType(e, type){
-        return (e.type === 'pointer'+type || e.type.toLowerCase() === 'mspointer'+type)
-    }
-
-    var touchTimeout, longTapTimeout
-    //判定滑动方向
-    function swipeDirection(x1, x2, y1, y2) {
-        return Math.abs(x1 - x2) >=
-                Math.abs(y1 - y2) ? (x1 - x2 > 0 ? "left" : "right") : (y1 - y2 > 0 ? "up" : "down")
-    }
-    function getCoordinates(event) {
-        var touches = event.touches && event.touches.length ? event.touches : [event];
-        var e = event.changedTouches ? event.changedTouches[0] : touches[0]
-        return {
-            x: e.clientX,
-            y: e.clientY
         }
     }
-    function fireEvent(el, name, detail) {
-        var event = document.createEvent("Events")
-        event.initEvent(name, true, true)
-        event.fireByAvalon = true//签名，标记事件是由avalon触发
-        //event.isTrusted = false 设置这个opera会报错
-        if (detail)
-            event.detail = detail
-        el.dispatchEvent(event)
+
+    // 创建事件
+    function createEvent(type) {
+        var event = document.createEvent('HTMLEvents')
+        event.initEvent(type, true, true)
+        return event
     }
-    function onMouse(event) { 
-        if (event.fireByAvalon) { 
+
+    // 分析 Move
+    function analysisMove(event, touch) {
+        var startTouch = gesture.origin
+        var offsetX = touch.clientX - startTouch.clientX
+        var offsetY = touch.clientY - startTouch.clientY
+        if (gesture.status === 'tapping') {
+            if (swipeDistance(offsetX, offsetY) > 10) {//如果发生移动, 那么事件改成
+                gesture.status = 'swipering' // 更改状态
+                trackingClick = clickElement = null;
+                gesture.startMoveTime = event.timeStamp // 记录移动开始的时间
+                clearTimeout(gesture.handler)
+                gesture.handler = null
+            }
+        }
+    }
+    // 判定滑动方向
+    function swipeDirection(offsetX, offsetY) {
+        return Math.abs(offsetX) >=
+                Math.abs(offsetY) ? (offsetX < 0 ? 'left' : 'right') : (offsetY < 0 ? 'up' : 'down')
+    }
+    // 计算滑动距离
+    function swipeDistance(offsetX, offsetY) {
+        return Math.sqrt(Math.pow(offsetX, 2) + Math.pow(offsetY, 2))
+    }
+    // 分析 End
+    var doubleCount = 0
+    var doubleTime = 0
+    function analysisEnd(event, touch) {
+        if (gesture.handler) {
+            clearTimeout(gesture.handler)
+            gesture.handler = null
+        }
+        if (gesture.status === 'swipering') {//平移
+            var startTouch = gesture.origin,
+                    offsetX = touch.clientX - startTouch.clientX,
+                    offsetY = touch.clientY - startTouch.clientY,
+                    duration = event.timeStamp - gesture.startMoveTime;
+            var distance = swipeDistance(offsetX, offsetY)
+            if (distance > 100 && distance / duration > 0.65) {
+                var direction = swipeDirection(offsetX, offsetY)
+
+                var swipeEvent = mixTouchAttr(createEvent('swipe'), touch)
+                swipeEvent.direction = direction
+                trigger(swipeEvent)
+                trigger(mixTouchAttr(createEvent('swipe' + direction), touch))
+            }
+        } else {
+            if (gesture.status === 'tapping') {
+                trigger(mixTouchAttr(createEvent('tap'), touch))
+                doubleCount++
+                var now = new Date - 0
+                if (doubleCount === 2) {
+                    doubleTime = now
+                    doubleCount = 0
+                    if (now - doubleTime < 250) {
+                        event.preventDefault()
+                        trigger(mixTouchAttr(createEvent('doubletap'), touch))
+                    }
+                }
+            }
+        }
+    }
+
+    // 触发事件
+    function trigger(event) {
+        if (running && curElement) {
+            curElement.dispatchEvent(event);
+        }
+    }
+    function onTouchStart(event) {
+
+        var touch, selection,
+                changedTouches = event.changedTouches,
+                timestamp = event.timeStamp;
+
+        // 如果两次 touch 事件过快，则，直接阻止默认行为
+        if (timestamp - lastTime < 200) {
+            event.preventDefault()
+            return false
+        }
+
+        // 忽略多指操作
+        if (changedTouches.length > 1) {
+            return true
+        } else if (curId) {
+            // 防抱死，由于快速点击时，有时touchend事件没有触发，造成手势库卡死
+            overTouchTime++
+            if (overTouchTime > 3) {
+                reset()
+            }
+            return true;
+        }
+
+        touch = changedTouches[0]
+        if (touch) {
+            curElement = event.target
+            curId = touch.identifier
+            gesture = {
+                origin: mixTouchAttr({}, touch), //保持原有的位置
+                timestamp: timestamp,
+                status: 'tapping',
+                handler: setTimeout(function () {
+                    var event = mixTouchAttr(createEvent('longtap'), gesture.origin)
+                    event.duration = new Date - timestamp //长按
+                    trigger(event)
+                    clearTimeout(gesture.handler)
+                    gesture.handler = null
+                }, 500)
+            };
+
+            if (!sniff.pc) {
+                // 排除 ios 上的一些特殊情况
+                if (sniff.ios) {
+                    // 判断是否是点击文字，进行选择等操作，如果是，不需要模拟click
+                    selection = window.getSelection()
+                    if (selection.rangeCount && !selection.isCollapsed) {
+                        return true
+                    }
+                    // 当 alert 或 confirm 时，点击其他地方，会触发touch事件，id相同，此事件应该被忽略
+                    if (curId === lastId) {
+                        event.preventDefault()
+                        return false
+                    }
+
+                    lastId = curId
+                }
+
+                // 开始跟踪 click
+                trackingClick = true;
+                clickElement = curElement
+            }
+
+        }
+        overTouchTime = 0
+    }
+
+
+    function onTouchMove(event) {
+        var touch = findTouch(event.changedTouches)
+        if (touch && gesture) {
+            analysisMove(event, touch)
+        }
+    }
+
+    function onFocus(element) {
+        var length;
+        // 兼容 ios7 问题
+        if (sniff.ios && element.setSelectionRange &&
+                element.type.indexOf('date') !== 0 &&
+                element.type !== 'time' && element.type !== 'month') {
+            length = element.value.length
+            element.setSelectionRange(length, length)
+        } else {
+            element.focus()
+        }
+    }
+
+    function onTouchEnd(event) {
+        var touch = findTouch(event.changedTouches),
+                timestamp = event.timeStamp,
+                tagName, forElement
+
+        if (touch && gesture) {
+            analysisEnd(event, touch);
+
+            var startTime = gesture.timestamp;
+
+            reset()
+
+            if (trackingClick) {
+
+                // 触击过快，阻止下一次 click
+                // 这次的touchstart - 上次的touchstart
+                if (timestamp - lastTime < 200) {
+                    cancelNextClick = true;
+                    return true
+                }
+                //太长了
+                if (timestamp - startTime > 200) {
+                    return true
+                }
+
+                cancelNextClick = false
+                lastTime = timestamp
+
+                tagName = clickElement.nodeName.toLowerCase();
+                // 如果是 label， 则模拟 focus 其相关的元素
+                if (tagName === 'label') {
+                    forElement = findControl(clickElement);
+                    if (forElement) {
+                        onFocus(forElement)
+
+                        if (android) {
+                            return false;
+                        }
+
+                        clickElement = forElement
+                    }
+                } else if (needsFocus(clickElement)) {
+                    if (timestamp - startTime > 100 ||
+                            (sniff.ios && window.top !== window && tagName === 'input')) {
+                        clickElement = null
+                        return false
+                    }
+
+                    onFocus(clickElement)
+                    sendClick(clickElement, touch)
+
+                    if (!sniff.ios || tagName !== 'select') {
+                        clickElement = null
+                        event.preventDefault()
+                    }
+
+                    return false
+                }
+
+                if (!needsClick(clickElement)) {
+                    event.preventDefault()
+                    sendClick(clickElement, touch)
+                }
+
+            }
+        }
+    }
+
+
+    function onTouchCancel(event) {
+        var touch = findTouch(event.changedTouches)
+
+        if (touch && gesture) {
+            clickElement = null
+            analysisEnd(event, touch)
+            reset()
+        }
+    }
+
+    function onMouse(event) {
+        if (!clickElement) {
             return true
         }
-        if (touchProxy.element && event.target.tagName.toLowerCase()!=='select') { // 如果是pc端,不判断touchProxy.element的话此监听函数先触发的话之后所有的事件都不能正常触发
+
+        if (event.forwardedTouchEvent) {
+            return true
+        }
+
+        if (!event.cancelable) {
+            return true
+        }
+
+        if (!needsClick(clickElement) || cancelNextClick) {
             if (event.stopImmediatePropagation) {
                 event.stopImmediatePropagation()
             } else {
                 event.propagationStopped = true
             }
-            event.stopPropagation() 
+            event.stopPropagation()
             event.preventDefault()
-            if (event.type === 'click') {
-                touchProxy.element = null
-            }
+            return false
         }
-    }
-    function cancelLongTap() {
-        if (longTapTimeout) clearTimeout(longTapTimeout)
-        longTapTimeout = null
-    }
-    function touchstart(event) {
-        var _isPointerType = isPointerEventType(event, 'down'),
-            firstTouch = _isPointerType ? event : (event.touches && event.touches[0] || event),
-            element = 'tagName' in firstTouch.target ? firstTouch.target: firstTouch.target.parentNode,
-            now = Date.now(),
-            delta = now - (touchProxy.last || now)
-        if (_isPointerType && !isPrimaryTouch(event)) return
-        avalon.mix(touchProxy, getCoordinates(event))
-        touchProxy.mx = 0
-        touchProxy.my = 0
-        if (delta > 0 && delta <= 250) {
-            touchProxy.isDoubleTap = true
-        }
-        touchProxy.last = now
-        touchProxy.element = element
-        /*
-            当触发hold和longtap事件时会触发touchcancel事件，从而阻止touchend事件的触发，继而保证在同时绑定tap和hold(longtap)事件时只触发其中一个事件
-        */
-        avalon(element).addClass(fastclick.activeClass)
-        longTapTimeout = setTimeout(function() {
-            longTapTimeout = null
-            fireEvent(element, "hold")
-            fireEvent(element, "longtap")
-            touchProxy = {}
-            avalon(element).removeClass(fastclick.activeClass)
-        }, fastclick.clickDuration)
+
         return true
     }
-    function touchmove(event) {
-        var _isPointerType = isPointerEventType(event, 'down'),
-            e = getCoordinates(event)
-        /*
-            android下某些浏览器触发了touchmove事件的话touchend事件不触发，禁用touchmove可以解决此bug
-            http://stackoverflow.com/questions/14486804/understanding-touch-events
-        */
-        if (isAndroid && Math.abs(touchProxy.x - e.x) > 10) {
-            event.preventDefault()
+    function onClick(event) {
+        var permitted;
+
+        if (trackingClick) {
+            clickElement = trackingClick = null;
+            return true;
         }
-        if (_isPointerType && !isPrimaryTouch(event)) return
-          
-        cancelLongTap()
-        touchProxy.mx += Math.abs(touchProxy.x - e.x)
-        touchProxy.my += Math.abs(touchProxy.y - e.y)
+
+        if (event.target.type === 'submit' && event.detail === 0) {
+            return true;
+        }
+
+        permitted = onMouse(event);
+
+        if (!permitted) {
+            clickElement = null;
+        }
+
+        return permitted;
     }
-    function touchend(event) { 
-        var _isPointerType = isPointerEventType(event, 'down')
-            element = touchProxy.element
 
-        if (_isPointerType && !isPrimaryTouch(event)) return
+    avalon.ready(function () {
+        var body = DOC.body
 
-        if (!element) { // longtap|hold触发后touchProxy为{}
-            return
+        if (!sniff.pc) {
+            if (android) {
+                avalon.bind(body, 'moveover', onMouse, true)
+                avalon.bind(body, 'mousedown', onMouse, true)
+                avalon.bind(body, 'mouseup', onMouse, true)
+            }
+
+            avalon.bind(body, 'click', onClick, true)
         }
-        cancelLongTap()
-        var e = getCoordinates(event)
-        var totalX = Math.abs(touchProxy.x - e.x)
-        var totalY = Math.abs(touchProxy.y - e.y)
-        if (totalX > 30 || totalY > 30) {
-            //如果用户滑动的距离有点大，就认为是swipe事件
-            var direction = swipeDirection(touchProxy.x, e.x, touchProxy.y, e.y)
-            var details = {
-                direction: direction
-            }
-            fireEvent(element, "swipe", details)
-            fireEvent(element, "swipe" + direction, details)
-            avalon(element).removeClass(fastclick.activeClass)
-            touchProxy = {}
-            touchProxy.element = element
-        } else {
-            if (fastclick.canClick(element) && touchProxy.mx < fastclick.dragDistance && touchProxy.my < fastclick.dragDistance) {
-                // 失去焦点的处理
-                if (document.activeElement && document.activeElement !== element) {
-                    document.activeElement.blur()
-                }
-                //如果此元素不为表单元素,或者它没有disabled
-                var forElement
-                if (element.tagName.toLowerCase() === "label") {
-                    forElement = element.htmlFor ? document.getElementById(element.htmlFor) : null
-                }
-                if (forElement) {
-                    fastclick.focus(forElement)
-                } else {
-                    fastclick.focus(element)
-                }
-                if (event.target.tagName.toLowerCase() !== 'select') { //select无法通过click或者focus事件触发其下拉款的显示，只能让其通过原生的方式触发
-                    event.preventDefault()
-                }
-                fireEvent(element, 'tap')
-                avalon.fastclick.fireEvent(element, "click", event)
-                avalon(element).removeClass(fastclick.activeClass)
-                if (touchProxy.isDoubleTap) {
-                    fireEvent(element, "doubletap")
-                    avalon.fastclick.fireEvent(element, "dblclick", event)
-                    touchProxy = {}
-                    avalon(element).removeClass(fastclick.activeClass)
-                    touchProxy.element = element
-                } else {
-                    touchTimeout = setTimeout(function() {
-                        clearTimeout(touchTimeout)
-                        touchTimeout = null
-                        touchProxy = {}
-                        avalon(element).removeClass(fastclick.activeClass)
-                        touchProxy.element = element
-                    }, 250)
-                }
-            }
-        }
-    }
-    document.addEventListener('mousedown', onMouse, true)
-    document.addEventListener('click', onMouse, true)
-    document.addEventListener(touchNames[0], touchstart)
-    document.addEventListener(touchNames[1], touchmove)
-    document.addEventListener(touchNames[2], touchend)
-    if (touchNames[3]) {
-        document.addEventListener(touchNames[3], function(event) {
-            if (longTapTimeout) clearTimeout(longTapTimeout)
-            if (touchTimeout) clearTimeout(touchTimeout)
-            longTapTimeout = touchTimeout = null
-            touchProxy = {}
-        })
-    }
-    //fastclick只要是处理移动端点击存在300ms延迟的问题
-    //这是苹果乱搞异致的，他们想在小屏幕设备上通过快速点击两次，将放大了的网页缩放至原始比例。
-    var fastclick = avalon.fastclick = {
-        activeClass: "ms-click-active",
-        clickDuration: 750, //小于750ms是点击，长于它是长按或拖动
-        dragDistance: 30, //最大移动的距离
-        fireEvent: function(element, type, event) {
-            var clickEvent = document.createEvent("MouseEvents")
-            clickEvent.initMouseEvent(type, true, true, window, 1, event.screenX, event.screenY,
-                    event.clientX, event.clientY, false, false, false, false, 0, null)
-            Object.defineProperty(clickEvent, "fireByAvalon", {
-                value: true
-            })
-            element.dispatchEvent(clickEvent)
-        },
-        focus: function(target) {
-            if (this.canFocus(target)) {
-                //https://github.com/RubyLouvre/avalon/issues/254
-                var value = target.value
-                target.value = value
-                if (isIOS && target.setSelectionRange && target.type.indexOf("date") !== 0 && target.type !== 'time') {
-                    // iOS 7, date datetime等控件直接对selectionStart,selectionEnd赋值会抛错
-                    var n = value.length
-                    target.setSelectionRange(n, n)
-                } else {
-                    target.focus()
-                }
-            }
-        },
-        canClick: function(target) {
-            switch (target.nodeName.toLowerCase()) {
-                case "textarea":
-                case "select":
-                case "input":
-                    return !target.disabled
-                default:
-                    return true
-            }
-        },
-        canFocus: function(target) {
-            switch (target.nodeName.toLowerCase()) {
-                case "textarea":
-                    return true;
-                case "select":
-                    return !isAndroid
-                case "input":
-                    switch (target.type) {
-                        case "button":
-                        case "checkbox":
-                        case "file":
-                        case "image":
-                        case "radio":
-                        case "submit":
-                            return false
-                    }
-                    // No point in attempting to focus disabled inputs
-                    return !target.disabled && !target.readOnly
-                default:
-                    return false
-            }
-        }
-    };
 
+        avalon.bind(body, 'touchstart', onTouchStart, true)
+        avalon.bind(body, 'touchmove', onTouchMove, true)
+        avalon.bind(body, 'touchend', onTouchEnd, true)
+        avalon.bind(body, 'touchcancel', onTouchCancel, true)
+    });
 
-    ["swipe", "swipeleft", "swiperight", "swipeup", "swipedown", "doubletap", "tap", "dblclick", "longtap", "hold"].forEach(function(method) {
+    ["swipe", "swipeleft", "swiperight", "swipeup", "swipedown", "doubletap", "tap", "longtap"].forEach(function (method) {
         me[method + "Hook"] = me["clickHook"]
     })
 

@@ -38,7 +38,6 @@ gulp.task('combo', function () {
         var version = '1.5.3' //当前版本号
         var now = new Date  //构建日期
         var date = now.getFullYear() + "." + (now.getMonth() + 1) + "." + now.getDate()
-        console.log(compatibleFiles)
         gulp.src(compatibleFiles)
                 .pipe(concat('avalon.js'))
                 .pipe(replace(/version:\s+([\d\.]+)/, function (a, b) {
@@ -53,7 +52,7 @@ gulp.task('combo', function () {
                 .pipe(jshint.reporter('default'))
                 .pipe(gulp.dest('../avalon.test/src/'))
                 .pipe(uglify())
-                .pipe(rename('avalon.modern.min.js'))
+                .pipe(rename('avalon.min.js'))
                 .pipe(gulp.dest('./dist/'))
                 .on('error', function (err) {
                     console.log(err.toString());
@@ -61,9 +60,9 @@ gulp.task('combo', function () {
                 })
 
         var shimFiles = compatibleFiles.map(function (el) {
-           
+
             return /domReady/.test(el) ? el.replace("domRedy", "domReady.noop") : el
-        }).filter(function(el){
+        }).filter(function (el) {
             return !/loader/.test(el)
         })
         gulp.src(shimFiles)
@@ -75,6 +74,10 @@ gulp.task('combo', function () {
                     return  "avalon.shim.js " + version + " built in " + date + "\n support IE6+ and other browsers"
                 }))
                 .pipe(gulp.dest('./dist'))
+                .pipe(uglify())
+                .pipe(rename('avalon.shim.min.js'))
+                .pipe(gulp.dest('./dist/'))
+
 
         var modernFiles = compatibleFiles.filter(function (el) {
             return !/shim/.test(el)
@@ -111,10 +114,27 @@ gulp.task('combo', function () {
                 .pipe(rename('avalon.modern.min.js'))
                 .pipe(gulp.dest('./dist/'))
 
+        var touchFiles = modernFiles.concat()
+        var lastFile = touchFiles.pop()
+        var touchFile = lastFile.replace("24 outer", "23 touch")
+        touchFiles.push(touchFile, lastFile)
+
+        gulp.src(touchFiles)
+                .pipe(concat('avalon.mobile.js'))
+                .pipe(replace(/version:\s+([\d\.]+)/, function (a, b) {
+                    return "version: " + fixVersion(version)
+                }))
+                .pipe(replace(/!!/, function (a, b) {
+                    return  "avalon.mobile.js " + version + " built in " + date + "\n mobile"
+                }))
+                .pipe(gulp.dest('./dist/'))
+                .pipe(uglify())
+                .pipe(rename('avalon.mobile.min.js'))
+                .pipe(gulp.dest('./dist/'))
 
         var modernShimFiles = modernFiles.map(function (el) {
             return /domReady/.test(el) ? el.replace("domRedy.modern", "domReady.noop") : el
-        }).filter(function(el){
+        }).filter(function (el) {
             return !/loader/.test(el)
         })
 
@@ -127,8 +147,27 @@ gulp.task('combo', function () {
                     return  "avalon.modern.shim.js " + version + " built in " + date + "\n support IE10+ and other browsers"
                 }))
                 .pipe(gulp.dest('./dist/'))
-                
+                .pipe(uglify())
+                .pipe(rename('avalon.modern.shim.min.js'))
+                .pipe(gulp.dest('./dist/'))
+        var touchShimFiles = touchFiles.map(function (el) {
+            return /domReady/.test(el) ? el.replace("domRedy.modern", "domReady.noop") : el
+        }).filter(function (el) {
+            return !/loader/.test(el)
+        })
 
+        gulp.src(touchShimFiles)
+                .pipe(concat('avalon.mobile.shim.js'))
+                .pipe(replace(/version:\s+([\d\.]+)/, function (a, b) {
+                    return "version: " + fixVersion(version)
+                }))
+                .pipe(replace(/!!/, function (a, b) {
+                    return  "avalon.mobile.shim.js " + version + " built in " + date + "\n mobile"
+                }))
+                .pipe(gulp.dest('./dist/'))
+                .pipe(uglify())
+                .pipe(rename('avalon.mobile.shim.min.js'))
+                .pipe(gulp.dest('./dist/'))
     })
 
 
