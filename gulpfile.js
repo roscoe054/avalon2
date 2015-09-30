@@ -38,6 +38,7 @@ gulp.task('combo', function () {
         var version = '1.5.3' //当前版本号
         var now = new Date  //构建日期
         var date = now.getFullYear() + "." + (now.getMonth() + 1) + "." + now.getDate()
+        console.log(compatibleFiles)
         gulp.src(compatibleFiles)
                 .pipe(concat('avalon.js'))
                 .pipe(replace(/version:\s+([\d\.]+)/, function (a, b) {
