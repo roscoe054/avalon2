@@ -116,9 +116,13 @@ gulp.task('combo', function () {
 
         var touchFiles = modernFiles.concat()
         var lastFile = touchFiles.pop()
-        var touchFile = lastFile.replace("24 outer", "23 touch")
-        touchFiles.push(touchFile, lastFile)
-
+        touchFiles.push(
+                lastFile.replace("24 outer", "23 touch.0"),
+                lastFile.replace("24 outer", "23 touch.1.tap"),
+                lastFile.replace("24 outer", "23 touch.2.swipe"),
+                lastFile.replace("24 outer", "23 touch.3.press"),
+                lastFile)
+        console.log(touchFiles)
         gulp.src(touchFiles)
                 .pipe(concat('avalon.mobile.js'))
                 .pipe(replace(/version:\s+([\d\.]+)/, function (a, b) {

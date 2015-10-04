@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>touch</title>
+        <script src="../dist/avalon.mobile.js">
+
+        </script>
+        <script src="../highlight/shCore.js">
+
+        </script>
+        <style>
+            .tap{
+                width:200px;
+                height:200px;
+                display: inline-block;
+                overflow: hidden;
+                background: yellowgreen;
+            }
+            .longtap{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background: rosybrown
+            }
+            .swipeleft{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:aqua;
+            }
+            .swiperight{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:khaki;
+            }
+            .swipeup{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:blueviolet;
+            }
+            .swipedown{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:lawngreen;
+            }
+            .doubletap{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:gold;
+            }
+        </style>
+    </head>
+    <body>
+        <div ms-controller="test" >
+            <div class="tap" ms-on-tap="tap">
+
+            </div>
+            <div class="longtap" ms-on-longtap="tap">
+
+            </div>
+            <div class="swipeleft" ms-on-swipeleft="tap">
+
+            </div>
+            <div class="swiperight" ms-on-swiperight="tap">
+
+            </div>
+            <div class="swipeup" ms-on-swipeup="tap">
+                up
+            </div>
+            <div class="swipedown" ms-on-swipedown="tap">
+                down
+            </div>
+            <div class="doubletap" ms-on-doubletap="tap">
+                双击
+            </div>
+            <button ms-click="aaa" type="button">{{a|uppercase}}</button>
+            <p>{{a|gende}}</p>
+        </div>
+
+        <script type="text/javascript">
+            avalon.filters.gende = function (a) {
+                return a === "aaa" ? "男" : "女"
+            }
+
+            var vm = avalon.define({
+                $id: "test",
+                a: "aaa",
+                tap: function (e) {
+                    console.log(e)
+                    this.innerHTML = e.type + " " + (new Date - 0)
+                },
+                aaa: function (e) {
+                    console.log(e)
+                }
+            })
+
+
+
+        </script>
+    </body>
+</html>
