@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.shim.js 1.5.3 built in 2015.10.4
+ avalon.mobile.shim.js 1.5.3 built in 2015.10.5
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -5049,7 +5049,97 @@ function iOSversion() {
 
 var deviceIsAndroid = ua.indexOf('android') > 0
 var deviceIsIOS = iOSversion()
-avalon.gestureHooks = {
+var gestureHooks = avalon.gestureHooks = {
+    pointers: {},
+    start: function (event, callback) {
+        //touches是当前屏幕上所有触摸点的列表;
+        //targetTouches是当前对象上所有触摸点的列表;
+        //changedTouches是涉及当前事件的触摸点的列表。
+        for (var i = 0; i < event.changedTouches.length; i++) {
+            var touch = event.changedTouches[i]
+
+            var gesture = {
+                startTouch: mixTouchAttr({}, touch),
+                startTime: Date.now(),
+                status: 'tapping',
+                element: event.target
+            }
+            gestureHooks.pointers[touch.identifier] = gesture;
+            callback(gesture, event)
+
+        }
+    },
+    move: function (event, callback) {
+        for (var i = 0; i < event.changedTouches.length; i++) {
+            var touch = event.changedTouches[i],
+                    gesture = gestureHooks.pointers[touch.identifier];
+            if (!gesture) {
+                return;
+            }
+            if (typeof gesture._movestart === 'boolean') {
+                gesture._movestart = !!gesture._movestart
+            }
+
+            if (!gesture.lastTouch) {
+                gesture.lastTouch = gesture.startTouch
+            }
+            if (!gesture.lastTime) {
+                gesture.lastTime = gesture.startTime
+            }
+
+            if (!gesture.duration) {
+                gesture.duration = 0
+            }
+
+            var time = Date.now() - gesture.lastTime
+
+            if (time > 0) {
+
+                var RECORD_DURATION = 70
+                if (time > RECORD_DURATION) {
+                    time = RECORD_DURATION
+                }
+                if (gesture.duration + time > RECORD_DURATION) {
+                    gesture.duration = RECORD_DURATION - time
+                }
+
+
+                gesture.duration += time;
+                gesture.lastTouch = mixTouchAttr({}, touch)
+
+                gesture.lastTime = Date.now()
+
+                var displacementX = touch.clientX - gesture.startTouch.clientX
+                var displacementY = touch.clientY - gesture.startTouch.clientY
+                gesture.distance = Math.sqrt(Math.pow(displacementX, 2) + Math.pow(displacementY, 2));
+                gesture.isVertical = !(Math.abs(displacementX) > Math.abs(displacementY))
+
+                callback(gesture, touch)
+            }
+        }
+    },
+    end: function (event, callback) {
+        for (var i = 0; i < event.changedTouches.length; i++) {
+            var touch = event.changedTouches[i],
+                    id = touch.identifier,
+                    gesture = gestureHooks.pointers[id]
+
+            if (!gesture)
+                continue
+
+            callback(gesture, touch)
+
+            delete gestureHooks.pointers[id]
+        }
+    },
+    fire: function (elem, type, props) {
+        if (elem) {
+            var event = document.createEvent('Events')
+            event.initEvent(type, true, true)
+            avalon.mix(event, props)
+            elem.dispatchEvent(event)
+        }
+    },
     add: function (name, gesture) {
         function move(event) {
             gesture.touchmove(event)
@@ -5099,7 +5189,9 @@ avalon.gestureHooks = {
         })
     }
 }
-var gestures = {}
+
+
+
 var touchkeys = ['screenX', 'screenY', 'clientX', 'clientY', 'pageX', 'pageY']
 
 // 复制 touch 对象上的有用属性到固定对象上
@@ -5112,95 +5204,8 @@ function mixTouchAttr(target, source) {
     return target
 }
 
-function startGesture(event, callback) {
-    for (var i = 0; i < event.changedTouches.length; i++) {
-        var touch = event.changedTouches[i]
 
-        var gesture = {
-            startTouch: mixTouchAttr({}, touch),
-            startTime: Date.now(),
-            status: 'tapping',
-            element: event.target
-        };
-        callback(gesture, event)
-        gestures[touch.identifier] = gesture;
-    }
-}
-function moveGesture(event, callback) {
-    for (var i = 0; i < event.changedTouches.length; i++) {
-        var touch = event.changedTouches[i],
-                gesture = gestures[touch.identifier];
 
-        if (!gesture) {
-            return;
-        }
-        if (typeof gesture._movestart === 'boolean') {
-            gesture._movestart = !!gesture._movestart 
-        }
-
-        if (!gesture.lastTouch) {
-            gesture.lastTouch = gesture.startTouch
-        }
-        if (!gesture.lastTime) {
-            gesture.lastTime = gesture.startTime
-        }
-
-        if (!gesture.duration) {
-            gesture.duration = 0
-        }
-
-        var time = Date.now() - gesture.lastTime
-
-        if (time > 0) {
-      
-            var RECORD_DURATION = 70
-            if (time > RECORD_DURATION) {
-                time = RECORD_DURATION
-            }
-            if (gesture.duration + time > RECORD_DURATION) {
-                gesture.duration = RECORD_DURATION - time
-            }
-
-       
-            gesture.duration += time;
-
-            gesture.lastTouch = mixTouchAttr({}, touch)
-
-            gesture.lastTime = Date.now()
-
-            var displacementX = touch.clientX - gesture.startTouch.clientX
-            var displacementY = touch.clientY - gesture.startTouch.clientY
-            gesture.distance = Math.sqrt(Math.pow(displacementX, 2) + Math.pow(displacementY, 2));
-            gesture.isVertical = !(Math.abs(displacementX) > Math.abs(displacementY))
-
-            callback(gesture, touch)
-        }
-    }
-}
-
-function endGesture(event, callback) {
-    for (var i = 0; i < event.changedTouches.length; i++) {
-        var touch = event.changedTouches[i],
-                id = touch.identifier,
-                gesture = gestures[id]
-
-        if (!gesture)
-            continue
-
-        callback(gesture, touch)
-
-        delete gestures[id]
-    }
-}
-
-function fireGesture(elem, type, props) {
-    if (elem) {
-        var event = document.createEvent('Events')
-        event.initEvent(type, true, true)
-        avalon.mix(event, props)
-        elem.dispatchEvent(event)
-    }
-}
 var fastClick = {
     trackingClick: false,
     trackingClickStart: 0,
@@ -5211,7 +5216,7 @@ var fastClick = {
     tapDelay: 200,
     sendClick: function (targetElement, event) {
         // 在click之前触发tap事件
-        fireGesture(targetElement, 'tap', {
+        gestureHooks.fire(targetElement, 'tap', {
             fastclick: true
         })
         var clickEvent, touch
@@ -5356,7 +5361,7 @@ supportPointer = !!navigator.pointerEnabled || !!navigator.msPointerEnabled
 if (supportPointer) { // 支持pointer的设备可用样式来取消click事件的300毫秒延迟
     root.style.msTouchAction = root.style.touchAction = "none"
 }
-avalon.gestureHooks.add("tap", {
+gestureHooks.add("tap", {
     events: ['tap', 'click'],
     touchstart: function (event) {
         var targetElement, touch, selection;
@@ -5485,15 +5490,15 @@ avalon.gestureHooks.add("tap", {
 var swipeGesture = {
     events: ['swipe', 'swipeleft', 'swiperight', 'swipeup', 'swipedown'],
     touchstart: function (event) {
-        startGesture(event, noop)
+        gestureHooks.start(event, noop)
     },
     touchmove: function (event) {
-        moveGesture(event, noop)
+        gestureHooks.move(event, noop)
     },
     touchend: function (event) {
-        endGesture(event, function (gesture, touch) {
+        gestureHooks.end(event, function (gesture, touch) {
             var now = Date.now()
-            var isflick = (gesture.distance > 100 && gesture.distance / gesture.duration > 0.65)
+            var isflick = (gesture.distance > 30 && gesture.distance / gesture.duration > 0.65)
 
             if (isflick) {
                 var displacementX = touch.clientX - gesture.startTouch.clientX
@@ -5509,21 +5514,21 @@ var swipeGesture = {
                 }
                 var target = gesture.element,
                         dir
-                fireGesture(target, 'swipe', extra)
+                gestureHooks.fire(target, 'swipe', extra)
 
                 if (gesture.isVertical) {
                     dir = displacementY > 0 ? 'down' : 'up'
                 } else {
                     dir = displacementY > 0 ? 'right' : 'left'
                 }
-                fireGesture(target, 'swipe' + dir, extra)
+                gestureHooks.fire(target, 'swipe' + dir, extra)
             }
         })
     }
 }
 
 swipeGesture.touchcancel = swipeGesture.touchend
-avalon.gestureHooks.add('swipe', swipeGesture)
+gestureHooks.add('swipe', swipeGesture)
 
 var lastTap = null
 function cancelPress(gesture) {
@@ -5533,11 +5538,11 @@ function cancelPress(gesture) {
 var pressGesture = {
     events: ['longtap', 'doubletap'],
     touchstart: function (event) {
-        startGesture(event, function (gesture, event) {
+        gestureHooks.start(event, function (gesture, event) {
             gesture.pressingHandler = setTimeout(function () {
                 if (gesture.status === 'tapping') {
                     gesture.status = 'pressing'
-                    fireGesture(event.target, 'longtap', {
+                    gestureHooks.fire(event.target, 'longtap', {
                         touchEvent: event
                     })
                 }
@@ -5546,7 +5551,7 @@ var pressGesture = {
         })
     },
     touchmove: function (event) {
-        moveGesture(event, function (gesture) {
+        gestureHooks.move(event, function (gesture) {
 
             if (gesture.distance > 10 && gesture.pressingHandler) {
                 cancelPress(gesture)
@@ -5558,14 +5563,14 @@ var pressGesture = {
         })
     },
     touchend: function (event) {
-        endGesture(event, function (gesture, touch) {
+        gestureHooks.end(event, function (gesture, touch) {
             cancelPress(gesture)
 
             if (gesture.status === 'tapping') {
                 gesture.timestamp = Date.now()
 
                 if (lastTap && gesture.timestamp - lastTap.timestamp < 300) {
-                    fireGesture(gesture.element, 'doubletap', {
+                    gestureHooks.fire(gesture.element, 'doubletap', {
                         touch: touch,
                         touchEvent: event
                     })
@@ -5577,12 +5582,12 @@ var pressGesture = {
 
     },
     touchcancel: function (event) {
-        endGesture(event, function (gesture) {
+        gestureHooks.end(event, function (gesture) {
             cancelPress(gesture)
         })
     }
 }
-avalon.gestureHooks.add('press', pressGesture)
+gestureHooks.add('press', pressGesture)
 
 
 // Register as a named AMD module, since avalon can be concatenated with other

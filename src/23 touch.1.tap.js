@@ -8,7 +8,7 @@ var fastClick = {
     tapDelay: 200,
     sendClick: function (targetElement, event) {
         // 在click之前触发tap事件
-        fireGesture(targetElement, 'tap', {
+        gestureHooks.fire(targetElement, 'tap', {
             fastclick: true
         })
         var clickEvent, touch
@@ -153,7 +153,7 @@ supportPointer = !!navigator.pointerEnabled || !!navigator.msPointerEnabled
 if (supportPointer) { // 支持pointer的设备可用样式来取消click事件的300毫秒延迟
     root.style.msTouchAction = root.style.touchAction = "none"
 }
-avalon.gestureHooks.add("tap", {
+gestureHooks.add("tap", {
     events: ['tap', 'click'],
     touchstart: function (event) {
         var targetElement, touch, selection;

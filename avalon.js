@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5.3 built in 2015.10.4
+ avalon.js 1.5.3 built in 2015.10.5
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {

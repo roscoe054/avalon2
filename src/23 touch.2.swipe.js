@@ -1,15 +1,15 @@
 var swipeGesture = {
     events: ['swipe', 'swipeleft', 'swiperight', 'swipeup', 'swipedown'],
     touchstart: function (event) {
-        startGesture(event, noop)
+        gestureHooks.start(event, noop)
     },
     touchmove: function (event) {
-        moveGesture(event, noop)
+        gestureHooks.move(event, noop)
     },
     touchend: function (event) {
-        endGesture(event, function (gesture, touch) {
+        gestureHooks.end(event, function (gesture, touch) {
             var now = Date.now()
-            var isflick = (gesture.distance > 100 && gesture.distance / gesture.duration > 0.65)
+            var isflick = (gesture.distance > 30 && gesture.distance / gesture.duration > 0.65)
 
             if (isflick) {
                 var displacementX = touch.clientX - gesture.startTouch.clientX
@@ -25,18 +25,18 @@ var swipeGesture = {
                 }
                 var target = gesture.element,
                         dir
-                fireGesture(target, 'swipe', extra)
+                gestureHooks.fire(target, 'swipe', extra)
 
                 if (gesture.isVertical) {
                     dir = displacementY > 0 ? 'down' : 'up'
                 } else {
                     dir = displacementY > 0 ? 'right' : 'left'
                 }
-                fireGesture(target, 'swipe' + dir, extra)
+                gestureHooks.fire(target, 'swipe' + dir, extra)
             }
         })
     }
 }
 
 swipeGesture.touchcancel = swipeGesture.touchend
-avalon.gestureHooks.add('swipe', swipeGesture)
+gestureHooks.add('swipe', swipeGesture)

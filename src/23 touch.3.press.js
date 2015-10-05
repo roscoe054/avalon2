@@ -6,11 +6,11 @@ function cancelPress(gesture) {
 var pressGesture = {
     events: ['longtap', 'doubletap'],
     touchstart: function (event) {
-        startGesture(event, function (gesture, event) {
+        gestureHooks.start(event, function (gesture, event) {
             gesture.pressingHandler = setTimeout(function () {
                 if (gesture.status === 'tapping') {
                     gesture.status = 'pressing'
-                    fireGesture(event.target, 'longtap', {
+                    gestureHooks.fire(event.target, 'longtap', {
                         touchEvent: event
                     })
                 }
@@ -19,7 +19,7 @@ var pressGesture = {
         })
     },
     touchmove: function (event) {
-        moveGesture(event, function (gesture) {
+        gestureHooks.move(event, function (gesture) {
 
             if (gesture.distance > 10 && gesture.pressingHandler) {
                 cancelPress(gesture)
@@ -31,14 +31,14 @@ var pressGesture = {
         })
     },
     touchend: function (event) {
-        endGesture(event, function (gesture, touch) {
+        gestureHooks.end(event, function (gesture, touch) {
             cancelPress(gesture)
 
             if (gesture.status === 'tapping') {
                 gesture.timestamp = Date.now()
 
                 if (lastTap && gesture.timestamp - lastTap.timestamp < 300) {
-                    fireGesture(gesture.element, 'doubletap', {
+                    gestureHooks.fire(gesture.element, 'doubletap', {
                         touch: touch,
                         touchEvent: event
                     })
@@ -50,9 +50,9 @@ var pressGesture = {
 
     },
     touchcancel: function (event) {
-        endGesture(event, function (gesture) {
+        gestureHooks.end(event, function (gesture) {
             cancelPress(gesture)
         })
     }
 }
-avalon.gestureHooks.add('press', pressGesture)
+gestureHooks.add('press', pressGesture)
