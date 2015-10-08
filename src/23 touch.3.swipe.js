@@ -30,26 +30,21 @@ var swipeGesture = {
             return
         }
         gestureHooks.end(event, function (gesture, touch) {
-            var now = Date.now()
             var isflick = (gesture.distance > 30 && gesture.distance / gesture.duration > 0.65)
-
             if (isflick) {
                 var deltaX = touch.clientX - gesture.startTouch.clientX
                 var deltaY = touch.clientY - gesture.startTouch.clientY
                 var extra = {
-                    duration: now - gesture.startTime,
                     deltaX : deltaX,
                     deltaY: deltaY,
                     touch: touch,
                     touchEvent: event,
+                    direction:  swipeGesture.getDirection(deltaX, deltaY),
                     isVertical: gesture.isVertical
                 }
                 var target = gesture.element
                 gestureHooks.fire(target, 'swipe', extra)
-                
-                var dir = swipeGesture.getDirection(deltaX, deltaY)
-
-                gestureHooks.fire(target, 'swipe' + dir, extra)
+                gestureHooks.fire(target, 'swipe' + extra.direction, extra)
             }
         })
     }

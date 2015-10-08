@@ -3316,7 +3316,7 @@ function scanExpr(str) {
 }
 
 function scanText(textNode, vmodels, index) {
-    var bindings = []
+    var bindings = [],
     tokens = scanExpr(textNode.data)
     if (tokens.length) {
         for (var i = 0; token = tokens[i++];) {

@@ -65,3 +65,4 @@ define(['avalon'], function (avalon) {
     gestureHooks.add('rotate', rotateGesture)
     return avalon
 })
+//https://github.com/Clouda-team/touch.code.baidu.com/blob/master/touch-0.2.10.js
