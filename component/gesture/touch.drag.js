@@ -6,33 +6,33 @@ define(['avalon'], function (avalon) {
             gestureHooks.start(event, avalon.noop)
         },
         touchmove: function (event) {
-            gestureHooks.move(event, function (gesture, touch) {
+            gestureHooks.move(event, function (pointer, touch) {
                 var extra = {
-                    deltaX: touch.clientX - gesture.startTouch.clientX,
-                    deltaY: touch.clientY - gesture.startTouch.clientY,
+                    deltaX: pointer.deltaX,
+                    deltaY: pointer.deltaY,
                     touch: touch,
                     touchEvent: event,
-                    isVertical: gesture.isVertical
+                    isVertical: pointer.isVertical
                 }
-                if ((gesture.status === 'tapping') && gesture.distance > 10) {
-                    gesture.status = 'panning';
-                    gestureHooks.fire(gesture.element, 'dragstart', extra)
-                } else if (gesture.status === 'panning') {
-                    gestureHooks.fire(gesture.element, 'drag', extra)
+                if ((pointer.status === 'tapping') && pointer.distance > 10) {
+                    pointer.status = 'panning';
+                    gestureHooks.fire(pointer.element, 'dragstart', extra)
+                } else if (pointer.status === 'panning') {
+                    gestureHooks.fire(pointer.element, 'drag', extra)
                 }
             })
 
             event.preventDefault();
         },
         touchend: function (event) {
-            gestureHooks.end(event, function (gesture, touch) {
-                if (gesture.status === 'panning') {
-                    gestureHooks.fire(gesture.element, 'dragend', {
-                        deltaX: touch.clientX - gesture.startTouch.clientX,
-                        deltaY: touch.clientY - gesture.startTouch.clientY,
+            gestureHooks.end(event, function (pointer, touch) {
+                if (pointer.status === 'panning') {
+                    gestureHooks.fire(pointer.element, 'dragend', {
+                        deltaX: pointer.deltaX,
+                        deltaY: pointer.deltaY,
                         touch: touch,
                         touchEvent: event,
-                        isVertical: gesture.isVertical
+                        isVertical: pointer.isVertical
                     })
                 }
             })

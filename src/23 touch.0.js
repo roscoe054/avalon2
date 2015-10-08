@@ -55,8 +55,7 @@ var gestureHooks = avalon.gestureHooks = {
             if (!("lastTouch" in pointer)) {
                 pointer.lastTouch = pointer.startTouch
                 pointer.lastTime = pointer.startTime
-                pointer.duration = 0
-                pointer.distance = 0
+                pointer.deltaX = pointer.deltaY = pointer.duration =  pointer.distance = 0
             }
            
             var time = Date.now() - pointer.lastTime
@@ -77,10 +76,12 @@ var gestureHooks = avalon.gestureHooks = {
 
                 pointer.lastTime = Date.now()
 
-                var displacementX = touch.clientX - pointer.startTouch.clientX
-                var displacementY = touch.clientY - pointer.startTouch.clientY
-                pointer.distance = Math.sqrt(Math.pow(displacementX, 2) + Math.pow(displacementY, 2))
-                pointer.isVertical = !(Math.abs(displacementX) > Math.abs(displacementY))
+                pointer.deltaX = touch.clientX - pointer.startTouch.clientX
+                pointer.deltaY = touch.clientY - pointer.startTouch.clientY
+                var x = pointer.deltaX * pointer.deltaX
+                var y = pointer.deltaY * pointer.deltaY
+                pointer.distance = Math.sqrt(x + y)
+                pointer.isVertical = !(x > y)
 
                 callback(pointer, touch)
             }

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>touch</title>
+        <script src="../../dist/avalon.mobile.js"></script>
+        <meta id="viewport" name="viewport" content="initial-scale=1.0,user-scalable=no,
+              minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            .pinch{
+                width:230px;
+                height:230px;
+                overflow: hidden;
+                display: inline-block;
+                background:red;
+            }
+        </style>
+    </head>
+    <body ms-controller="test">
+        <h1>pinch, pinchstart, pinchend, pinchin, pinchout</h1>
+        <div class="pinch" 
+             ms-on-pinchstart='pinch'
+             ms-on-pinchend='pinch'
+             ms-on-pinch="pinch"
+             ms-on-pinchin="scale"
+             ms-on-pinchout="scale">
+            <p>{{a}}</p>
+            <p>{{b}}</p>
+        </div>
+
+        <script type="text/javascript">
+require(["../component/gesture/touch.pinch"], function () {
+
+
+    var vm = avalon.define({
+        $id: "test",
+        a: "",
+        b: "",
+        pinch: function (e) {
+            vm.a = e.type
+        },
+        scale: function (e) {
+            vm.b = e.type + " " + e.scale
+            if ("transform" in this.style) {
+                this.style.transform = 'scale(' + e.scale + ')';
+            } else {
+                this.style.webkitTransform = 'scale(' + e.scale + ')';
+            }
+
+        }
+    })
+    avalon.scan()
+})
+
+
+
+        </script>
+    </body>
+</html>

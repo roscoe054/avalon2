@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>touch</title>
+        <script src="../../dist/avalon.mobile.js"></script>
+        <meta id="viewport" name="viewport" content="initial-scale=1.0,user-scalable=no,
+              minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            .swipeleft{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:aqua;
+            }
+            .swiperight{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:khaki;
+            }
+            .swipeup{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:blueviolet;
+            }
+            .swipedown{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:lawngreen;
+            }
+
+        </style>
+    </head>
+    <body ms-controller="test">
+        <h1>swipe</h1>
+        <div class="swipeleft" ms-on-swipeleft="swipe">
+            left
+        </div>
+        <div class="swiperight" ms-on-swiperight="swipe">
+            right
+        </div>
+        <div class="swipeup" ms-on-swipeup="swipe">
+            up
+        </div>
+        <div class="swipedown" ms-on-swipedown="swipe">
+            down
+        </div>
+        <script type="text/javascript">
+
+            var vm = avalon.define({
+                $id: "test",
+                swipe: function (e) {
+                    console.log(e.type)
+                    this.innerHTML = e.type + " " + (new Date - 0)
+                }
+            })
+
+
+
+
+        </script>
+    </body>
+</html>

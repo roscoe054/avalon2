@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>touch</title>
+        <script src="../../dist/avalon.mobile.js"></script>
+        <meta id="viewport" name="viewport" content="initial-scale=1.0,user-scalable=no,
+              minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            .longtap{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background: rosybrown
+            }
+            .doubletap{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:gold;
+            }
+
+        </style>
+    </head>
+    <body ms-controller="test">
+
+        <div class="longtap" ms-on-longtap="press">
+           长按
+        </div>
+        <div class="doubletap" ms-on-doubletap="press">
+            双击
+        </div>
+
+        <script type="text/javascript">
+
+            var vm = avalon.define({
+                $id: "test",
+                press: function (e) {
+                    console.log(e.type)
+                    this.innerHTML = e.type + " " + (new Date - 0)
+                }
+            })
+            
+     
+            
+
+        </script>
+    </body>
+</html>

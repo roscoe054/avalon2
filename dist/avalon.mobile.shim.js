@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.shim.js 1.5.3 built in 2015.10.8
+ avalon.mobile.shim.js 1.5.3 built in 2015.10.9
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -870,7 +870,7 @@ function observeObject(source, options) {
     options = options || nullObject
     var force = options.force || nullObject
     var old = options.old
-    var oldAccessors = typeof old === "object" ? old.$accessors : nullObject
+    var oldAccessors = old && old.$accessors || nullObject
     var $vmodel = new Component() //要返回的对象, 它在IE6-8下可能被偷龙转凤
     var accessors = {} //监控属性
     var hasOwn = {}
@@ -5080,8 +5080,7 @@ var gestureHooks = avalon.gestureHooks = {
             if (!("lastTouch" in pointer)) {
                 pointer.lastTouch = pointer.startTouch
                 pointer.lastTime = pointer.startTime
-                pointer.duration = 0
-                pointer.distance = 0
+                pointer.deltaX = pointer.deltaY = pointer.duration =  pointer.distance = 0
             }
            
             var time = Date.now() - pointer.lastTime
@@ -5102,10 +5101,12 @@ var gestureHooks = avalon.gestureHooks = {
 
                 pointer.lastTime = Date.now()
 
-                var displacementX = touch.clientX - pointer.startTouch.clientX
-                var displacementY = touch.clientY - pointer.startTouch.clientY
-                pointer.distance = Math.sqrt(Math.pow(displacementX, 2) + Math.pow(displacementY, 2))
-                pointer.isVertical = !(Math.abs(displacementX) > Math.abs(displacementY))
+                pointer.deltaX = touch.clientX - pointer.startTouch.clientX
+                pointer.deltaY = touch.clientY - pointer.startTouch.clientY
+                var x = pointer.deltaX * pointer.deltaX
+                var y = pointer.deltaY * pointer.deltaY
+                pointer.distance = Math.sqrt(x + y)
+                pointer.isVertical = !(x > y)
 
                 callback(pointer, touch)
             }
@@ -5557,20 +5558,18 @@ var swipeGesture = {
         if(event.changedTouches.length !== 1){
             return
         }
-        gestureHooks.end(event, function (gesture, touch) {
-            var isflick = (gesture.distance > 30 && gesture.distance / gesture.duration > 0.65)
+        gestureHooks.end(event, function (pointer, touch) {
+            var isflick = (pointer.distance > 30 && pointer.distance / pointer.duration > 0.65)
             if (isflick) {
-                var deltaX = touch.clientX - gesture.startTouch.clientX
-                var deltaY = touch.clientY - gesture.startTouch.clientY
                 var extra = {
-                    deltaX : deltaX,
-                    deltaY: deltaY,
+                    deltaX : pointer.deltaX,
+                    deltaY: pointer.deltaY,
                     touch: touch,
                     touchEvent: event,
-                    direction:  swipeGesture.getDirection(deltaX, deltaY),
-                    isVertical: gesture.isVertical
+                    direction:  swipeGesture.getDirection(pointer.deltaX, pointer.deltaY),
+                    isVertical: pointer.isVertical
                 }
-                var target = gesture.element
+                var target = pointer.element
                 gestureHooks.fire(target, 'swipe', extra)
                 gestureHooks.fire(target, 'swipe' + extra.direction, extra)
             }

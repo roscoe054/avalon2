@@ -6,7 +6,7 @@ define(['avalon'], function (avalon) {
         getAngle180: function (p1, p2) {
             // 角度， 范围在{0-180}， 用来识别旋转角度
             var agl = Math.atan((p2.pageY - p1.pageY) * -1 / (p2.pageX - p1.pageX)) * (180 / Math.PI)
-            return parseInt((agl < 0 ? (agl + 180) : agl),10)
+            return parseInt((agl < 0 ? (agl + 180) : agl), 10)
         },
         touchstart: function (event) {
             var pointers = gestureHooks.pointers
@@ -30,13 +30,11 @@ define(['avalon'], function (avalon) {
             }
             rotateGesture.startAngel = rotateGesture.getAngle180(rotateGesture.center, finger.startTouch)
         },
-        touchmove: function (event) {
-            gestureHooks.move(event, avalon.noop)
-        },
-        touchend: function (event) {
+        rotate: function (event, status) {
             var finger = rotateGesture.finger
             var endAngel = rotateGesture.getAngle180(rotateGesture.center, finger.lastTouch)
             var diff = rotateGesture.startAngel - endAngel
+            var direction =  (diff > 0 ? 'right' : 'left')
             var count = 0;
             var __rotation = ~~finger.element.__rotation
             while (Math.abs(diff - __rotation) > 90 && count++ < 50) {
@@ -52,10 +50,24 @@ define(['avalon'], function (avalon) {
                 touch: event.changedTouches[0],
                 touchEvent: event,
                 rotation: rotation,
-                direction: (rotation > 0 ? 'right' : 'left')
+                direction: direction
             }
-            gestureHooks.fire(finger.element, 'rotate', extra)
-            gestureHooks.fire(finger.element, 'rotate' + extra.direction, extra)
+            if (status === "end") {
+                gestureHooks.fire(finger.element, 'rotateend', extra)
+                finger.element.__rotation = 0
+            } else if (finger.status === 'tapping' && diff) {
+                finger.status = "panning"
+                gestureHooks.fire(finger.element, 'rotatestart', extra)
+            } else {
+                gestureHooks.fire(finger.element, 'rotate', extra)
+            }
+        },
+        touchmove: function (event) {
+            gestureHooks.move(event, avalon.noop)
+            rotateGesture.rotate(event)
+        },
+        touchend: function (event) {
+            rotateGesture.rotate(event, "end")
             gestureHooks.end(event, avalon.noop)
         }
     }
