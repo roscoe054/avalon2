@@ -14,9 +14,7 @@ define(['avalon'], function (avalon) {
                         touchEvent: event,
                         isVertical: gesture.isVertical
                     })
-                }
-
-                if (gesture.status === 'panning') {
+                }else if (gesture.status === 'panning') {
                     gestureHooks.fire(gesture.element, 'drag', {
                         touch: touch,
                         touchEvent: event,

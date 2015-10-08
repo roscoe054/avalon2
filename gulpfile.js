@@ -119,8 +119,8 @@ gulp.task('combo', function () {
         touchFiles.push(
                 lastFile.replace("24 outer", "23 touch.0"),
                 lastFile.replace("24 outer", "23 touch.1.tap"),
-                lastFile.replace("24 outer", "23 touch.2.swipe"),
-                lastFile.replace("24 outer", "23 touch.3.press"),
+                lastFile.replace("24 outer", "23 touch.2.press"),
+                lastFile.replace("24 outer", "23 touch.3.swipe"),
                 lastFile)
         console.log(touchFiles)
         gulp.src(touchFiles)

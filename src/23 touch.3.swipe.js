@@ -1,5 +1,24 @@
 var swipeGesture = {
     events: ['swipe', 'swipeleft', 'swiperight', 'swipeup', 'swipedown'],
+    getAngle: function (x, y) {
+        var r = Math.atan2(y, x) //radians
+        var angle = Math.round(r * 180 / Math.PI) //degrees
+        return angle < 0 ? 360 - Math.abs(angle) : angle
+    },
+    getDirection: function (startPoint, endPoint) {
+        var angle = swipeGesture.getAngle(startPoint, endPoint)
+        if ((angle <= 45) && (angle >= 0)) {
+            return "left"
+        } else if ((angle <= 360) && (angle >= 315)) {
+            return "left"
+        } else if ((angle >= 135) && (angle <= 225)) {
+            return "right"
+        } else if ((angle > 45) && (angle < 135)) {
+            return "down"
+        } else {
+            return "up"
+        }
+    },
     touchstart: function (event) {
         gestureHooks.start(event, noop)
     },
@@ -7,6 +26,9 @@ var swipeGesture = {
         gestureHooks.move(event, noop)
     },
     touchend: function (event) {
+        if(event.changedTouches.length !== 1){
+            return
+        }
         gestureHooks.end(event, function (gesture, touch) {
             var now = Date.now()
             var isflick = (gesture.distance > 30 && gesture.distance / gesture.duration > 0.65)
@@ -16,22 +38,17 @@ var swipeGesture = {
                 var displacementY = touch.clientY - gesture.startTouch.clientY
                 var extra = {
                     duration: now - gesture.startTime,
-                    isflick: isflick,
                     displacementX: displacementX,
                     displacementY: displacementY,
                     touch: touch,
                     touchEvent: event,
                     isVertical: gesture.isVertical
                 }
-                var target = gesture.element,
-                        dir
+                var target = gesture.element
                 gestureHooks.fire(target, 'swipe', extra)
+                
+                var dir = swipeGesture.getDirection(displacementX, displacementY)
 
-                if (gesture.isVertical) {
-                    dir = displacementY > 0 ? 'down' : 'up'
-                } else {
-                    dir = displacementY > 0 ? 'right' : 'left'
-                }
                 gestureHooks.fire(target, 'swipe' + dir, extra)
             }
         })
@@ -40,3 +57,4 @@ var swipeGesture = {
 
 swipeGesture.touchcancel = swipeGesture.touchend
 gestureHooks.add('swipe', swipeGesture)
+

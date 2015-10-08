@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.shim.js 1.5.3 built in 2015.10.5
+ avalon.mobile.shim.js 1.5.3 built in 2015.10.7
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -5052,46 +5052,39 @@ var deviceIsIOS = iOSversion()
 var gestureHooks = avalon.gestureHooks = {
     pointers: {},
     start: function (event, callback) {
+      
         //touches是当前屏幕上所有触摸点的列表;
         //targetTouches是当前对象上所有触摸点的列表;
         //changedTouches是涉及当前事件的触摸点的列表。
         for (var i = 0; i < event.changedTouches.length; i++) {
             var touch = event.changedTouches[i]
-
-            var gesture = {
+            var pointer = {
                 startTouch: mixTouchAttr({}, touch),
                 startTime: Date.now(),
                 status: 'tapping',
                 element: event.target
             }
-            gestureHooks.pointers[touch.identifier] = gesture;
-            callback(gesture, event)
+            gestureHooks.pointers[touch.identifier] = pointer;
+            callback(pointer, event)
 
         }
     },
     move: function (event, callback) {
         for (var i = 0; i < event.changedTouches.length; i++) {
-            var touch = event.changedTouches[i],
-                    gesture = gestureHooks.pointers[touch.identifier];
-            if (!gesture) {
-                return;
-            }
-            if (typeof gesture._movestart === 'boolean') {
-                gesture._movestart = !!gesture._movestart
+            var touch = event.changedTouches[i]
+            var pointer = gestureHooks.pointers[touch.identifier]
+            if (!pointer) {
+                return
             }
 
-            if (!gesture.lastTouch) {
-                gesture.lastTouch = gesture.startTouch
+            if (!("lastTouch" in pointer)) {
+                pointer.lastTouch = pointer.startTouch
+                pointer.lastTime = pointer.startTime
+                pointer.duration = 0
+                pointer.distance = 0
             }
-            if (!gesture.lastTime) {
-                gesture.lastTime = gesture.startTime
-            }
-
-            if (!gesture.duration) {
-                gesture.duration = 0
-            }
-
-            var time = Date.now() - gesture.lastTime
+           
+            var time = Date.now() - pointer.lastTime
 
             if (time > 0) {
 
@@ -5099,22 +5092,22 @@ var gestureHooks = avalon.gestureHooks = {
                 if (time > RECORD_DURATION) {
                     time = RECORD_DURATION
                 }
-                if (gesture.duration + time > RECORD_DURATION) {
-                    gesture.duration = RECORD_DURATION - time
+                if (pointer.duration + time > RECORD_DURATION) {
+                    pointer.duration = RECORD_DURATION - time
                 }
 
 
-                gesture.duration += time;
-                gesture.lastTouch = mixTouchAttr({}, touch)
+                pointer.duration += time;
+                pointer.lastTouch = mixTouchAttr({}, touch)
 
-                gesture.lastTime = Date.now()
+                pointer.lastTime = Date.now()
 
-                var displacementX = touch.clientX - gesture.startTouch.clientX
-                var displacementY = touch.clientY - gesture.startTouch.clientY
-                gesture.distance = Math.sqrt(Math.pow(displacementX, 2) + Math.pow(displacementY, 2));
-                gesture.isVertical = !(Math.abs(displacementX) > Math.abs(displacementY))
+                var displacementX = touch.clientX - pointer.startTouch.clientX
+                var displacementY = touch.clientY - pointer.startTouch.clientY
+                pointer.distance = Math.sqrt(Math.pow(displacementX, 2) + Math.pow(displacementY, 2))
+                pointer.isVertical = !(Math.abs(displacementX) > Math.abs(displacementY))
 
-                callback(gesture, touch)
+                callback(pointer, touch)
             }
         }
     },
@@ -5122,12 +5115,12 @@ var gestureHooks = avalon.gestureHooks = {
         for (var i = 0; i < event.changedTouches.length; i++) {
             var touch = event.changedTouches[i],
                     id = touch.identifier,
-                    gesture = gestureHooks.pointers[id]
+                    pointer = gestureHooks.pointers[id]
 
-            if (!gesture)
+            if (!pointer)
                 continue
 
-            callback(gesture, touch)
+            callback(pointer, touch)
 
             delete gestureHooks.pointers[id]
         }
@@ -5148,40 +5141,40 @@ var gestureHooks = avalon.gestureHooks = {
         function end(event) {
             gesture.touchend(event)
 
-            document.removeEventListener("touchmove", move, false)
+            document.removeEventListener('touchmove', move)
 
-            document.removeEventListener("touchend", end, false)
+            document.removeEventListener('touchend', end)
 
-            document.removeEventListener("touchcancel", cancel, false)
+            document.removeEventListener('touchcancel', cancel)
 
         }
 
         function cancel(event) {
             gesture.touchcancel(event)
 
-            document.removeEventListener("touchmove", move, false)
+            document.removeEventListener('touchmove', move)
 
-            document.removeEventListener("touchend", end, false)
+            document.removeEventListener('touchend', end)
 
-            document.removeEventListener("touchcancel", cancel, false)
+            document.removeEventListener('touchcancel', cancel)
 
         }
 
         gesture.events.forEach(function (eventName) {
             avalon.eventHooks[eventName] = {
                 fn: function (el, fn) {
-                    if (!el.getAttribute("data-" + name)) {
-                        el.setAttribute("data-" + name, "1")
-                        el.addEventListener("touchstart", function (event) {
+                    if (!el.getAttribute('data-' + name)) {
+                        el.setAttribute('data-' + name, '1')
+                        el.addEventListener('touchstart', function (event) {
                             gesture.touchstart(event)
 
-                            document.addEventListener("touchmove", move, false)
+                            document.addEventListener('touchmove', move)
 
-                            document.addEventListener("touchend", end, false)
+                            document.addEventListener('touchend', end)
 
-                            document.addEventListener("touchcancel", cancel, false)
+                            document.addEventListener('touchcancel', cancel)
 
-                        }, false)
+                        })
                     }
                     return fn
                 }
@@ -5205,40 +5198,20 @@ function mixTouchAttr(target, source) {
 }
 
 
+  
 
-var fastClick = {
-    trackingClick: false,
-    trackingClickStart: 0,
-    targetElement: null,
-    touchStartX: 0,
-    touchStartY: 0,
+var supportPointer = !!navigator.pointerEnabled || !!navigator.msPointerEnabled
+
+if (supportPointer) { // 支持pointer的设备可用样式来取消click事件的300毫秒延迟
+    root.style.msTouchAction = root.style.touchAction = 'none'
+}
+var tapGesture = {
+    events: ['tap', 'click'],
     touchBoundary: 10,
     tapDelay: 200,
-    sendClick: function (targetElement, event) {
-        // 在click之前触发tap事件
-        gestureHooks.fire(targetElement, 'tap', {
-            fastclick: true
-        })
-        var clickEvent, touch
-
-        // On some Android devices activeElement needs to be blurred otherwise the synthetic click will have no effect (#24)
-        if (document.activeElement && document.activeElement !== targetElement) {
-            document.activeElement.blur()
-        }
-
-        touch = event.changedTouches[0]
-
-        // Synthesise a click event, with an extra attribute so it can be tracked
-        clickEvent = document.createEvent('MouseEvents')
-        clickEvent.initMouseEvent('click', true, true, window, 1, touch.screenX,
-                touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null);
-        clickEvent.fastclick = true;
-        targetElement.dispatchEvent(clickEvent)
-    },
     needClick: function (target) {
+        //判定是否使用原生的点击事件, 否则使用sendClick方法手动触发一个人工的点击事件
         switch (target.nodeName.toLowerCase()) {
-
-            // Don't send a synthetic click to disabled inputs (issue #62)
             case 'button':
             case 'select':
             case 'textarea':
@@ -5248,8 +5221,7 @@ var fastClick = {
 
                 break;
             case 'input':
-
-                // File inputs need real clicks on iOS 6 due to a browser bug (issue #68)
+                // IOS6 pad 上选择文件，如果不是原生的click，弹出的选择界面尺寸错误
                 if ((deviceIsIOS && target.type === 'file') || target.disabled) {
                     return true
                 }
@@ -5262,18 +5234,6 @@ var fastClick = {
         }
 
         return false
-    },
-    focus: function (targetElement) {
-        var length;
-
-        // on iOS 7, some input elements (e.g. date datetime) throw a vague TypeError on setSelectionRange. These elements don't have an integer value for the selectionStart and selectionEnd properties, but unfortunately that can't be used for detection because accessing the properties also throws a TypeError. Just check the type instead. Filed as Apple bug #15122724.
-        if (deviceIsIOS && targetElement.setSelectionRange &&
-                targetElement.type.indexOf('date') !== 0 && targetElement.type !== 'time') {
-            length = targetElement.value.length
-            targetElement.setSelectionRange(length, length)
-        } else {
-            targetElement.focus()
-        }
     },
     needFocus: function (target) {
         switch (target.nodeName.toLowerCase()) {
@@ -5290,205 +5250,303 @@ var fastClick = {
                     case 'submit':
                         return false
                 }
-
-                // No point in attempting to focus disabled inputs
+                //如果是只读或disabled状态,就无须获得焦点了
                 return !target.disabled && !target.readOnly
             default:
                 return false
         }
     },
-    updateScrollParent: function (targetElement) {
-
-        var scrollParent = targetElement.fastClickScrollParent
-
-        // Attempt to discover whether the target element is contained within a scrollable layer. Re-check if the
-        // target element was moved to another parent.
-        if (!scrollParent || !scrollParent.contains(targetElement)) {
-            var parentElement = targetElement;
-            do {
-                if (parentElement.scrollHeight > parentElement.offsetHeight) {
-                    scrollParent = parentElement;
-                    targetElement.fastClickScrollParent = parentElement
-                    break;
-                }
-
-                parentElement = parentElement.parentElement
-            } while (parentElement);
-        }
-
-        // Always update the scroll top tracker if possible.
-        if (scrollParent) {
-            scrollParent.fastClickLastScrollTop = scrollParent.scrollTop
+    focus: function (targetElement) {
+        var length;
+        //在iOS7下, 对一些新表单元素(如date, datetime, time, month)调用focus方法会抛错,
+        //幸好的是,我们可以改用setSelectionRange获取焦点, 将光标挪到文字的最后
+        var type = targetElement.type
+        if (deviceIsIOS && targetElement.setSelectionRange &&
+                type.indexOf('date') !== 0 && type !== 'time' && type !== 'month') {
+            length = targetElement.value.length
+            targetElement.setSelectionRange(length, length)
+        } else {
+            targetElement.focus()
         }
     },
     findControl: function (labelElement) {
-        // Fast path for newer browsers supporting the HTML5 control attribute
+        // 获取label元素所对应的表单元素
+        // 可以能过control属性, getElementById, 或用querySelector直接找其内部第一表单元素实现
         if (labelElement.control !== undefined) {
             return labelElement.control
         }
 
-        // All browsers under test that support touch events also support the HTML5 htmlFor attribute
         if (labelElement.htmlFor) {
             return document.getElementById(labelElement.htmlFor)
         }
 
-        // If no for attribute exists, attempt to retrieve the first labellable descendant element
-        // the list of which is defined here: http://www.w3.org/TR/html5/forms.html#category-label
-        return labelElement.querySelector('button, input:not([type=hidden]), keygen,' +
-                'meter, output, progress, select, textarea')
-    },
-    touchHasMoved: function (event) {
-        var touch = event.changedTouches[0],
-                boundary = fastClick.touchBoundary
-
-        if (Math.abs(touch.pageX - fastClick.touchStartX) > boundary ||
-                Math.abs(touch.pageY - fastClick.touchStartY) > boundary) {
-            return true
-        }
-
-        return false
+        return labelElement.querySelector('button, input:not([type=hidden]), keygen, meter, output, progress, select, textarea')
     },
     fixTarget: function (target) {
+        if (target.nodeType === 3) {
+            return target.parentNode
+        }
         if (window.SVGElementInstance && (target instanceof SVGElementInstance)) {
-            target = target.correspondingUseElement;
+            return target.correspondingUseElement;
         }
 
         return target
-    }
-}
-supportPointer = !!navigator.pointerEnabled || !!navigator.msPointerEnabled
+    },
+    updateScrollParent: function (targetElement) {
+        //如果事件源元素位于某一个有滚动条的祖父元素中,那么保持其scrollParent与scrollTop值
+        var scrollParent = targetElement.tapScrollParent
 
-if (supportPointer) { // 支持pointer的设备可用样式来取消click事件的300毫秒延迟
-    root.style.msTouchAction = root.style.touchAction = "none"
-}
-gestureHooks.add("tap", {
-    events: ['tap', 'click'],
-    touchstart: function (event) {
-        var targetElement, touch, selection;
+        if (!scrollParent || !scrollParent.contains(targetElement)) {
+            var parentElement = targetElement
+            do {
+                if (parentElement.scrollHeight > parentElement.offsetHeight) {
+                    scrollParent = parentElement
+                    targetElement.tapScrollParent = parentElement
+                    break
+                }
 
-        // Ignore multiple touches, otherwise pinch-to-zoom is prevented if both fingers are on the fastClick element (issue #111).
-        if (event.targetTouches.length > 1) {
-            return true
+                parentElement = parentElement.parentElement
+            } while (parentElement)
         }
 
-        targetElement = fastClick.fixTarget(event.target);
-        touch = event.targetTouches[0];
+        if (scrollParent) {
+            scrollParent.lastScrollTop = scrollParent.scrollTop
+        }
+    },
+    touchHasMoved: function (event) {
+        // 判定是否发生移动,其阀值是10px
+        var touch = event.changedTouches[0],
+                boundary = tapGesture.touchBoundary
+        return Math.abs(touch.pageX - tapGesture.touchStartX) > boundary ||
+                Math.abs(touch.pageY - tapGesture.touchStartY) > boundary
 
+    },
+    findControl: function (labelElement) {
+        // 获取label元素所对应的表单元素
+        // 可以能过control属性, getElementById, 或用querySelector直接找其内部第一表单元素实现
+        if (labelElement.control !== undefined) {
+            return labelElement.control
+        }
+
+        if (labelElement.htmlFor) {
+            return document.getElementById(labelElement.htmlFor)
+        }
+
+        return labelElement.querySelector('button, input:not([type=hidden]), keygen, meter, output, progress, select, textarea')
+    },
+    findType: function (targetElement) {
+        // 安卓chrome浏览器上，模拟的 click 事件不能让 select 打开，故使用 mousedown 事件
+        return deviceIsAndroid && targetElement.tagName.toLowerCase() === 'select' ?
+                'mousedown' : 'click'
+    },
+    sendClick: function (targetElement, event) {
+        // 在click之前触发tap事件
+        gestureHooks.fire(targetElement, 'tap', {
+            fastclick: true
+        })
+        var clickEvent, touch
+        //某些安卓设备必须先移除焦点，之后模拟的click事件才能让新元素获取焦点
+        if (document.activeElement && document.activeElement !== targetElement) {
+            document.activeElement.blur()
+        }
+
+        touch = event.changedTouches[0]
+        // 手动触发点击事件,此时必须使用document.createEvent('MouseEvents')来创建事件
+        // 及使用initMouseEvent来初始化它
+        clickEvent = document.createEvent('MouseEvents')
+        clickEvent.initMouseEvent(tapGesture.findType(targetElement), true, true, window, 1, touch.screenX,
+                touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null)
+        clickEvent.fastclick = true
+        targetElement.dispatchEvent(clickEvent)
+    },
+    touchstart: function (event) {
+        //忽略多点触摸 
+        if (event.targetTouches.length !== 1) {
+            return true
+        }
+        //修正事件源对象
+        var targetElement = tapGesture.fixTarget(event.target)
+        var touch = event.targetTouches[0]
         if (deviceIsIOS) {
-
-            // Only trusted events will deselect text on iOS (issue #49)
-            selection = window.getSelection();
+            // 判断是否是点击文字，进行选择等操作，如果是，不需要模拟click
+            var selection = window.getSelection();
             if (selection.rangeCount && !selection.isCollapsed) {
                 return true
             }
+            var id = touch.identifier
+            //当 alert 或 confirm 时，点击其他地方，会触发touch事件，identifier相同，此事件应该被忽略
+            if (id && isFinite(tapGesture.lastTouchIdentifier) && tapGesture.lastTouchIdentifier === id) {
+                event.preventDefault()
+                return false
+            }
 
-            fastClick.updateScrollParent(targetElement);
+            tapGesture.lastTouchIdentifier = id
+
+            tapGesture.updateScrollParent(targetElement)
         }
-
-        fastClick.trackingClick = true
-        fastClick.trackingClickStart = event.timeStamp
-        fastClick.targetElement = targetElement
-
-
-        fastClick.touchStartX = touch.pageX
-        fastClick.touchStartY = touch.pageY
-
-        // Prevent phantom clicks on fast double-tap (issue #36)
-        if ((event.timeStamp - fastClick.lastClickTime) < fastClick.tapDelay) {
+        //收集触摸点的信息
+        tapGesture.status = "tapping"
+        tapGesture.startTime = Date.now()
+        tapGesture.element = targetElement
+        tapGesture.pageX = touch.pageX
+        tapGesture.pageY = touch.pageY
+        // 如果点击太快,阻止双击带来的放大收缩行为
+        if ((tapGesture.startTime - tapGesture.lastTime) < tapGesture.tapDelay) {
             event.preventDefault()
         }
-
-        return true
     },
     touchmove: function (event) {
-        if (!fastClick.trackingClick) {
+        if (tapGesture.status !== "tapping") {
             return true
         }
-
-        // If the touch has moved, cancel the click tracking
-        if (fastClick.targetElement !== fastClick.fixTarget(event.target) ||
-                fastClick.touchHasMoved(event)) {
-            fastClick.trackingClick = false
-            fastClick.targetElement = null
+        // 如果事件源元素发生改变,或者发生了移动,那么就取消触发点击事件
+        if (tapGesture.element !== tapGesture.fixTarget(event.target) ||
+                tapGesture.touchHasMoved(event)) {
+            tapGesture.status = tapGesture.element = 0
         }
 
     },
     touchend: function (event) {
-        var forElement, trackingClickStart, targetTagName, scrollParent,
-                targetElement = fastClick.targetElement;
-
-        if (event.timeStamp - fastClick.trackingClickStart > fastClick.tapDelay || !fastClick.trackingClick) {
-            return true;
+        var targetElement = tapGesture.element
+        var now = Date.now()
+        //如果是touchstart与touchend相隔太久,可以认为是长按,那么就直接返回
+        //或者是在touchstart, touchmove阶段,判定其不该触发点击事件,也直接返回
+        if (!targetElement || now - tapGesture.startTime > tapGesture.tapDelay) {
+            return true
         }
 
-        // Prevent phantom clicks on fast double-tap (issue #36)
-        if ((event.timeStamp - fastClick.lastClickTime) < fastClick.tapDelay) {
-            fastClick.cancelNextClick = true;
-            return true;
-        }
 
-        // Reset to prevent wrong click cancel on input (issue #156).
-        fastClick.cancelNextClick = false;
+        tapGesture.lastTime = now
 
-        fastClick.lastClickTime = event.timeStamp;
-
-        trackingClickStart = fastClick.trackingClickStart;
-        fastClick.trackingClick = false
-        fastClick.trackingClickStart = 0
+        var startTime = tapGesture.startTime
+        tapGesture.status = tapGesture.startTime = 0
 
         targetTagName = targetElement.tagName.toLowerCase()
         if (targetTagName === 'label') {
-            forElement = fastClick.findControl(targetElement)
+            //尝试触发label上可能绑定的tap事件
+            gestureHooks.fire(targetElement, 'tap', {
+                fastclick: true
+            })
+            var forElement = tapGesture.findControl(targetElement)
             if (forElement) {
-                fastClick.focus(targetElement)
-                if (deviceIsAndroid) {
-                    return false
-                }
-
+                tapGesture.focus(targetElement)
                 targetElement = forElement
             }
-        } else if (fastClick.needFocus(targetElement)) {
-
-            // Case 1: If the touch started a while ago (best guess is 100ms based on tests for issue #36) then focus will be triggered anyway. Return early and unset the target element reference so that the subsequent click will be allowed through.
-            // Case 2: Without this exception for input elements tapped when the document is contained in an iframe, then any inputted text won't be visible even though the value attribute is updated as the user types (issue #37).
-            if ((event.timeStamp - trackingClickStart) > 100 || (deviceIsIOS && window.top !== window && targetTagName === 'input')) {
-                fastClick.targetElement = null
-                return false;
+        } else if (tapGesture.needFocus(targetElement)) {
+            //  如果元素从touchstart到touchend经历时间过长,那么不应该触发点击事
+            //  或者此元素是iframe中的input元素,那么它也无法获点焦点
+            if ((now - startTime) > 100 || (deviceIsIOS && window.top !== window && targetTagName === 'input')) {
+                tapGesture.element = 0
+                return false
             }
 
-            fastClick.focus(targetElement)
-            deviceIsAndroid && fastClick.sendClick(targetElement, event)
+            tapGesture.focus(targetElement)
+            deviceIsAndroid && tapGesture.sendClick(targetElement, event)
 
-            return false;
+            return false
         }
 
         if (deviceIsIOS) {
-
-            // Don't send a synthetic click event if the target element is contained within a parent layer that was scrolled
-            // and this tap is being used to stop the scrolling (usually initiated by a fling - issue #42).
-            scrollParent = targetElement.fastClickScrollParent;
-            if (scrollParent && scrollParent.fastClickLastScrollTop !== scrollParent.scrollTop) {
+            //如果它的父容器的滚动条发生改变,那么应该识别为划动或拖动事件,不应该触发点击事件
+            var scrollParent = targetElement.tapScrollParent;
+            if (scrollParent && scrollParent.lastScrollTop !== scrollParent.scrollTop) {
                 return true
             }
         }
-
-        // Prevent the actual click from going though - unless the target node is marked as requiring
-        // real clicks or if it is in the whitelist in which case only non-programmatic clicks are permitted.
-        if (!fastClick.needClick(targetElement)) {
-            event.preventDefault();
-            fastClick.sendClick(targetElement, event)
+        //如果这不是一个需要使用原生click的元素，则屏蔽原生事件，避免触发两次click
+        if (!tapGesture.needClick(targetElement)) {
+            event.preventDefault()
+            // 触发一次模拟的click
+            tapGesture.sendClick(targetElement, event)
         }
-
-        return false;
     },
     touchcancel: function () {
-        fastClick.trackingClick = false
-        fastClick.targetElement = null
+        tapGesture.startTime = tapGesture.element = 0
     }
-})
+}
+
+gestureHooks.add("tap", tapGesture)
+
+
+var pressGesture = {
+    events: ['longtap', 'doubletap'],
+    cancelPress: function (pointer) {
+        clearTimeout(pointer.pressingHandler)
+        pointer.pressingHandler = null
+    },
+    touchstart: function (event) {
+        gestureHooks.start(event, function (pointer, event) {
+            pointer.pressingHandler = setTimeout(function () {
+                if (pointer.status === 'tapping') {
+                    gestureHooks.fire(event.target, 'longtap', {
+                        touchEvent: event
+                    })
+                }
+                pressGesture.cancelPress(pointer)
+            }, 500)
+            if (event.changedTouches.length !== 1) {
+                pointer.status = 0
+            }
+        })
+
+    },
+    touchmove: function (event) {
+        gestureHooks.move(event, function (pointer) {
+            if (pointer.distance > 10 && pointer.pressingHandler) {
+                pressGesture.cancelPress(pointer)
+                if (pointer.status === 'tapping') {
+                    pointer.status = 'panning'
+                }
+            }
+        })
+    },
+    touchend: function (event) {
+        gestureHooks.end(event, function (pointer, touch) {
+            pressGesture.cancelPress(pointer)
+            if (pointer.status === 'tapping') {
+                pointer.lastTime = Date.now()
+                console.log(pressGesture.lastTap && pointer.lastTime - pressGesture.lastTap.lastTime, pressGesture.lastTap&& pressGesture.lastTap.lastTime)
+                if (pressGesture.lastTap && pointer.lastTime - pressGesture.lastTap.lastTime < 300) {
+                    gestureHooks.fire(pointer.element, 'doubletap', {
+                        touch: touch,
+                        touchEvent: event
+                    })
+                }
+
+                pressGesture.lastTap = pointer
+            }
+        })
+
+    },
+    touchcancel: function (event) {
+        gestureHooks.end(event, function (pointer) {
+            pressGesture.cancelPress(pointer)
+        })
+    }
+}
+gestureHooks.add('press', pressGesture)
 
 var swipeGesture = {
     events: ['swipe', 'swipeleft', 'swiperight', 'swipeup', 'swipedown'],
+    getAngle: function (x, y) {
+        var r = Math.atan2(y, x) //radians
+        var angle = Math.round(r * 180 / Math.PI) //degrees
+        return angle < 0 ? 360 - Math.abs(angle) : angle
+    },
+    getDirection: function (startPoint, endPoint) {
+        var angle = swipeGesture.getAngle(startPoint, endPoint)
+        if ((angle <= 45) && (angle >= 0)) {
+            return "left"
+        } else if ((angle <= 360) && (angle >= 315)) {
+            return "left"
+        } else if ((angle >= 135) && (angle <= 225)) {
+            return "right"
+        } else if ((angle > 45) && (angle < 135)) {
+            return "down"
+        } else {
+            return "up"
+        }
+    },
     touchstart: function (event) {
         gestureHooks.start(event, noop)
     },
@@ -5512,15 +5570,11 @@ var swipeGesture = {
                     touchEvent: event,
                     isVertical: gesture.isVertical
                 }
-                var target = gesture.element,
-                        dir
+                var target = gesture.element
                 gestureHooks.fire(target, 'swipe', extra)
+                
+                var dir = swipeGesture.getDirection(displacementX, displacementY)
 
-                if (gesture.isVertical) {
-                    dir = displacementY > 0 ? 'down' : 'up'
-                } else {
-                    dir = displacementY > 0 ? 'right' : 'left'
-                }
                 gestureHooks.fire(target, 'swipe' + dir, extra)
             }
         })
@@ -5530,64 +5584,6 @@ var swipeGesture = {
 swipeGesture.touchcancel = swipeGesture.touchend
 gestureHooks.add('swipe', swipeGesture)
 
-var lastTap = null
-function cancelPress(gesture) {
-    clearTimeout(gesture.pressingHandler)
-    gesture.pressingHandler = null
-}
-var pressGesture = {
-    events: ['longtap', 'doubletap'],
-    touchstart: function (event) {
-        gestureHooks.start(event, function (gesture, event) {
-            gesture.pressingHandler = setTimeout(function () {
-                if (gesture.status === 'tapping') {
-                    gesture.status = 'pressing'
-                    gestureHooks.fire(event.target, 'longtap', {
-                        touchEvent: event
-                    })
-                }
-                cancelPress(gesture)
-            }, 500)
-        })
-    },
-    touchmove: function (event) {
-        gestureHooks.move(event, function (gesture) {
-
-            if (gesture.distance > 10 && gesture.pressingHandler) {
-                cancelPress(gesture)
-
-                if (gesture.status === 'tapping' || gesture.status === 'pressing') {
-                    gesture.status = 'panning'
-                }
-            }
-        })
-    },
-    touchend: function (event) {
-        gestureHooks.end(event, function (gesture, touch) {
-            cancelPress(gesture)
-
-            if (gesture.status === 'tapping') {
-                gesture.timestamp = Date.now()
-
-                if (lastTap && gesture.timestamp - lastTap.timestamp < 300) {
-                    gestureHooks.fire(gesture.element, 'doubletap', {
-                        touch: touch,
-                        touchEvent: event
-                    })
-                }
-
-                lastTap = gesture
-            }
-        })
-
-    },
-    touchcancel: function (event) {
-        gestureHooks.end(event, function (gesture) {
-            cancelPress(gesture)
-        })
-    }
-}
-gestureHooks.add('press', pressGesture)
 
 
 // Register as a named AMD module, since avalon can be concatenated with other

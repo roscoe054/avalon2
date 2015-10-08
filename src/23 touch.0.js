@@ -27,45 +27,39 @@ var deviceIsIOS = iOSversion()
 var gestureHooks = avalon.gestureHooks = {
     pointers: {},
     start: function (event, callback) {
+      
         //touches是当前屏幕上所有触摸点的列表;
         //targetTouches是当前对象上所有触摸点的列表;
         //changedTouches是涉及当前事件的触摸点的列表。
         for (var i = 0; i < event.changedTouches.length; i++) {
             var touch = event.changedTouches[i]
-            var gesture = {
+            var pointer = {
                 startTouch: mixTouchAttr({}, touch),
                 startTime: Date.now(),
                 status: 'tapping',
                 element: event.target
             }
-            gestureHooks.pointers[touch.identifier] = gesture;
-            callback(gesture, event)
+            gestureHooks.pointers[touch.identifier] = pointer;
+            callback(pointer, event)
 
         }
     },
     move: function (event, callback) {
         for (var i = 0; i < event.changedTouches.length; i++) {
-            var touch = event.changedTouches[i],
-                    gesture = gestureHooks.pointers[touch.identifier];
-            if (!gesture) {
-                return;
-            }
-            if (typeof gesture._movestart === 'boolean') {
-                gesture._movestart = !!gesture._movestart
+            var touch = event.changedTouches[i]
+            var pointer = gestureHooks.pointers[touch.identifier]
+            if (!pointer) {
+                return
             }
 
-            if (!gesture.lastTouch) {
-                gesture.lastTouch = gesture.startTouch
+            if (!("lastTouch" in pointer)) {
+                pointer.lastTouch = pointer.startTouch
+                pointer.lastTime = pointer.startTime
+                pointer.duration = 0
+                pointer.distance = 0
             }
-            if (!gesture.lastTime) {
-                gesture.lastTime = gesture.startTime
-            }
-
-            if (!gesture.duration) {
-                gesture.duration = 0
-            }
-
-            var time = Date.now() - gesture.lastTime
+           
+            var time = Date.now() - pointer.lastTime
 
             if (time > 0) {
 
@@ -73,22 +67,22 @@ var gestureHooks = avalon.gestureHooks = {
                 if (time > RECORD_DURATION) {
                     time = RECORD_DURATION
                 }
-                if (gesture.duration + time > RECORD_DURATION) {
-                    gesture.duration = RECORD_DURATION - time
+                if (pointer.duration + time > RECORD_DURATION) {
+                    pointer.duration = RECORD_DURATION - time
                 }
 
 
-                gesture.duration += time;
-                gesture.lastTouch = mixTouchAttr({}, touch)
+                pointer.duration += time;
+                pointer.lastTouch = mixTouchAttr({}, touch)
 
-                gesture.lastTime = Date.now()
+                pointer.lastTime = Date.now()
 
-                var displacementX = touch.clientX - gesture.startTouch.clientX
-                var displacementY = touch.clientY - gesture.startTouch.clientY
-                gesture.distance = Math.sqrt(Math.pow(displacementX, 2) + Math.pow(displacementY, 2));
-                gesture.isVertical = !(Math.abs(displacementX) > Math.abs(displacementY))
+                var displacementX = touch.clientX - pointer.startTouch.clientX
+                var displacementY = touch.clientY - pointer.startTouch.clientY
+                pointer.distance = Math.sqrt(Math.pow(displacementX, 2) + Math.pow(displacementY, 2))
+                pointer.isVertical = !(Math.abs(displacementX) > Math.abs(displacementY))
 
-                callback(gesture, touch)
+                callback(pointer, touch)
             }
         }
     },
@@ -96,12 +90,12 @@ var gestureHooks = avalon.gestureHooks = {
         for (var i = 0; i < event.changedTouches.length; i++) {
             var touch = event.changedTouches[i],
                     id = touch.identifier,
-                    gesture = gestureHooks.pointers[id]
+                    pointer = gestureHooks.pointers[id]
 
-            if (!gesture)
+            if (!pointer)
                 continue
 
-            callback(gesture, touch)
+            callback(pointer, touch)
 
             delete gestureHooks.pointers[id]
         }
@@ -122,40 +116,40 @@ var gestureHooks = avalon.gestureHooks = {
         function end(event) {
             gesture.touchend(event)
 
-            document.removeEventListener("touchmove", move, false)
+            document.removeEventListener('touchmove', move)
 
-            document.removeEventListener("touchend", end, false)
+            document.removeEventListener('touchend', end)
 
-            document.removeEventListener("touchcancel", cancel, false)
+            document.removeEventListener('touchcancel', cancel)
 
         }
 
         function cancel(event) {
             gesture.touchcancel(event)
 
-            document.removeEventListener("touchmove", move, false)
+            document.removeEventListener('touchmove', move)
 
-            document.removeEventListener("touchend", end, false)
+            document.removeEventListener('touchend', end)
 
-            document.removeEventListener("touchcancel", cancel, false)
+            document.removeEventListener('touchcancel', cancel)
 
         }
 
         gesture.events.forEach(function (eventName) {
             avalon.eventHooks[eventName] = {
                 fn: function (el, fn) {
-                    if (!el.getAttribute("data-" + name)) {
-                        el.setAttribute("data-" + name, "1")
-                        el.addEventListener("touchstart", function (event) {
+                    if (!el.getAttribute('data-' + name)) {
+                        el.setAttribute('data-' + name, '1')
+                        el.addEventListener('touchstart', function (event) {
                             gesture.touchstart(event)
 
-                            document.addEventListener("touchmove", move, false)
+                            document.addEventListener('touchmove', move)
 
-                            document.addEventListener("touchend", end, false)
+                            document.addEventListener('touchend', end)
 
-                            document.addEventListener("touchcancel", cancel, false)
+                            document.addEventListener('touchcancel', cancel)
 
-                        }, false)
+                        })
                     }
                     return fn
                 }
@@ -179,3 +173,4 @@ function mixTouchAttr(target, source) {
 }
 
 
+  
