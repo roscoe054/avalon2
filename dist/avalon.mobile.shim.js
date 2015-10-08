@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.shim.js 1.5.3 built in 2015.10.7
+ avalon.mobile.shim.js 1.5.3 built in 2015.10.8
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -5065,7 +5065,7 @@ var gestureHooks = avalon.gestureHooks = {
                 element: event.target
             }
             gestureHooks.pointers[touch.identifier] = pointer;
-            callback(pointer, event)
+            callback(pointer, touch)
 
         }
     },
@@ -5334,15 +5334,15 @@ var tapGesture = {
 
         return labelElement.querySelector('button, input:not([type=hidden]), keygen, meter, output, progress, select, textarea')
     },
-    findType: function (targetElement) {
-        // 安卓chrome浏览器上，模拟的 click 事件不能让 select 打开，故使用 mousedown 事件
-        return deviceIsAndroid && targetElement.tagName.toLowerCase() === 'select' ?
-                'mousedown' : 'click'
-    },
+            findType: function (targetElement) {
+                // 安卓chrome浏览器上，模拟的 click 事件不能让 select 打开，故使用 mousedown 事件
+                return deviceIsAndroid && targetElement.tagName.toLowerCase() === 'select' ?
+                        'mousedown' : 'click'
+            },
     sendClick: function (targetElement, event) {
         // 在click之前触发tap事件
         gestureHooks.fire(targetElement, 'tap', {
-            fastclick: true
+            touchEvent: event
         })
         var clickEvent, touch
         //某些安卓设备必须先移除焦点，之后模拟的click事件才能让新元素获取焦点
@@ -5356,7 +5356,7 @@ var tapGesture = {
         clickEvent = document.createEvent('MouseEvents')
         clickEvent.initMouseEvent(tapGesture.findType(targetElement), true, true, window, 1, touch.screenX,
                 touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null)
-        clickEvent.fastclick = true
+        clickEvent.touchEvent = event
         targetElement.dispatchEvent(clickEvent)
     },
     touchstart: function (event) {
@@ -5425,7 +5425,7 @@ var tapGesture = {
         if (targetTagName === 'label') {
             //尝试触发label上可能绑定的tap事件
             gestureHooks.fire(targetElement, 'tap', {
-                fastclick: true
+                touchEvent: event
             })
             var forElement = tapGesture.findControl(targetElement)
             if (forElement) {
@@ -5475,10 +5475,11 @@ var pressGesture = {
         pointer.pressingHandler = null
     },
     touchstart: function (event) {
-        gestureHooks.start(event, function (pointer, event) {
+        gestureHooks.start(event, function (pointer, touch) {
             pointer.pressingHandler = setTimeout(function () {
                 if (pointer.status === 'tapping') {
                     gestureHooks.fire(event.target, 'longtap', {
+                        touch: touch,
                         touchEvent: event
                     })
                 }
@@ -5505,7 +5506,6 @@ var pressGesture = {
             pressGesture.cancelPress(pointer)
             if (pointer.status === 'tapping') {
                 pointer.lastTime = Date.now()
-                console.log(pressGesture.lastTap && pointer.lastTime - pressGesture.lastTap.lastTime, pressGesture.lastTap&& pressGesture.lastTap.lastTime)
                 if (pressGesture.lastTap && pointer.lastTime - pressGesture.lastTap.lastTime < 300) {
                     gestureHooks.fire(pointer.element, 'doubletap', {
                         touch: touch,
@@ -5533,8 +5533,8 @@ var swipeGesture = {
         var angle = Math.round(r * 180 / Math.PI) //degrees
         return angle < 0 ? 360 - Math.abs(angle) : angle
     },
-    getDirection: function (startPoint, endPoint) {
-        var angle = swipeGesture.getAngle(startPoint, endPoint)
+    getDirection: function (x, y) {
+        var angle = swipeGesture.getAngle(x, y)
         if ((angle <= 45) && (angle >= 0)) {
             return "left"
         } else if ((angle <= 360) && (angle >= 315)) {
@@ -5554,18 +5554,20 @@ var swipeGesture = {
         gestureHooks.move(event, noop)
     },
     touchend: function (event) {
+        if(event.changedTouches.length !== 1){
+            return
+        }
         gestureHooks.end(event, function (gesture, touch) {
             var now = Date.now()
             var isflick = (gesture.distance > 30 && gesture.distance / gesture.duration > 0.65)
 
             if (isflick) {
-                var displacementX = touch.clientX - gesture.startTouch.clientX
-                var displacementY = touch.clientY - gesture.startTouch.clientY
+                var deltaX = touch.clientX - gesture.startTouch.clientX
+                var deltaY = touch.clientY - gesture.startTouch.clientY
                 var extra = {
                     duration: now - gesture.startTime,
-                    isflick: isflick,
-                    displacementX: displacementX,
-                    displacementY: displacementY,
+                    deltaX : deltaX,
+                    deltaY: deltaY,
                     touch: touch,
                     touchEvent: event,
                     isVertical: gesture.isVertical
@@ -5573,7 +5575,7 @@ var swipeGesture = {
                 var target = gesture.element
                 gestureHooks.fire(target, 'swipe', extra)
                 
-                var dir = swipeGesture.getDirection(displacementX, displacementY)
+                var dir = swipeGesture.getDirection(deltaX, deltaY)
 
                 gestureHooks.fire(target, 'swipe' + dir, extra)
             }

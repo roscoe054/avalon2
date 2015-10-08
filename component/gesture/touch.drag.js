@@ -7,19 +7,18 @@ define(['avalon'], function (avalon) {
         },
         touchmove: function (event) {
             gestureHooks.move(event, function (gesture, touch) {
+                var extra = {
+                    deltaX: touch.clientX - gesture.startTouch.clientX,
+                    deltaY: touch.clientY - gesture.startTouch.clientY,
+                    touch: touch,
+                    touchEvent: event,
+                    isVertical: gesture.isVertical
+                }
                 if ((gesture.status === 'tapping') && gesture.distance > 10) {
                     gesture.status = 'panning';
-                    gestureHooks.fire(gesture.element, 'dragstart', {
-                        touch: touch,
-                        touchEvent: event,
-                        isVertical: gesture.isVertical
-                    })
-                }else if (gesture.status === 'panning') {
-                    gestureHooks.fire(gesture.element, 'drag', {
-                        touch: touch,
-                        touchEvent: event,
-                        isVertical: gesture.isVertical
-                    })
+                    gestureHooks.fire(gesture.element, 'dragstart', extra)
+                } else if (gesture.status === 'panning') {
+                    gestureHooks.fire(gesture.element, 'drag', extra)
                 }
             })
 
@@ -29,8 +28,11 @@ define(['avalon'], function (avalon) {
             gestureHooks.end(event, function (gesture, touch) {
                 if (gesture.status === 'panning') {
                     gestureHooks.fire(gesture.element, 'dragend', {
+                        deltaX: touch.clientX - gesture.startTouch.clientX,
+                        deltaY: touch.clientY - gesture.startTouch.clientY,
                         touch: touch,
-                        touchEvent: event
+                        touchEvent: event,
+                        isVertical: gesture.isVertical
                     })
                 }
             })

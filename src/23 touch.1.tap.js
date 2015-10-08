@@ -133,15 +133,15 @@ var tapGesture = {
 
         return labelElement.querySelector('button, input:not([type=hidden]), keygen, meter, output, progress, select, textarea')
     },
-    findType: function (targetElement) {
-        // 安卓chrome浏览器上，模拟的 click 事件不能让 select 打开，故使用 mousedown 事件
-        return deviceIsAndroid && targetElement.tagName.toLowerCase() === 'select' ?
-                'mousedown' : 'click'
-    },
+            findType: function (targetElement) {
+                // 安卓chrome浏览器上，模拟的 click 事件不能让 select 打开，故使用 mousedown 事件
+                return deviceIsAndroid && targetElement.tagName.toLowerCase() === 'select' ?
+                        'mousedown' : 'click'
+            },
     sendClick: function (targetElement, event) {
         // 在click之前触发tap事件
         gestureHooks.fire(targetElement, 'tap', {
-            fastclick: true
+            touchEvent: event
         })
         var clickEvent, touch
         //某些安卓设备必须先移除焦点，之后模拟的click事件才能让新元素获取焦点
@@ -155,7 +155,7 @@ var tapGesture = {
         clickEvent = document.createEvent('MouseEvents')
         clickEvent.initMouseEvent(tapGesture.findType(targetElement), true, true, window, 1, touch.screenX,
                 touch.screenY, touch.clientX, touch.clientY, false, false, false, false, 0, null)
-        clickEvent.fastclick = true
+        clickEvent.touchEvent = event
         targetElement.dispatchEvent(clickEvent)
     },
     touchstart: function (event) {
@@ -224,7 +224,7 @@ var tapGesture = {
         if (targetTagName === 'label') {
             //尝试触发label上可能绑定的tap事件
             gestureHooks.fire(targetElement, 'tap', {
-                fastclick: true
+                touchEvent: event
             })
             var forElement = tapGesture.findControl(targetElement)
             if (forElement) {

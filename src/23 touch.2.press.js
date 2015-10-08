@@ -6,10 +6,11 @@ var pressGesture = {
         pointer.pressingHandler = null
     },
     touchstart: function (event) {
-        gestureHooks.start(event, function (pointer, event) {
+        gestureHooks.start(event, function (pointer, touch) {
             pointer.pressingHandler = setTimeout(function () {
                 if (pointer.status === 'tapping') {
                     gestureHooks.fire(event.target, 'longtap', {
+                        touch: touch,
                         touchEvent: event
                     })
                 }

@@ -158,7 +158,7 @@ require(['../component/gesture/touch.pinch', '../component/gesture/touch.drag'],
             this.value += " label2"
         },
         tap: function (e) {
-            console.log(e.type)
+            console.log(e)
             this.innerHTML = e.type + " " + (new Date - 0)
         },
         dragstart: function (e) {
@@ -166,6 +166,7 @@ require(['../component/gesture/touch.pinch', '../component/gesture/touch.drag'],
             this.style.backgroundColor = 'blue'
         },
         drag: function (e) {
+          
             this.innerHTML = this.innerHTML.slice(0, 22) + " " + e.type + " " + (new Date - 0)
         },
         pinchin: function (e) {

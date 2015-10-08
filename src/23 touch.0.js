@@ -40,7 +40,7 @@ var gestureHooks = avalon.gestureHooks = {
                 element: event.target
             }
             gestureHooks.pointers[touch.identifier] = pointer;
-            callback(pointer, event)
+            callback(pointer, touch)
 
         }
     },

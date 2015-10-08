@@ -5,8 +5,8 @@ var swipeGesture = {
         var angle = Math.round(r * 180 / Math.PI) //degrees
         return angle < 0 ? 360 - Math.abs(angle) : angle
     },
-    getDirection: function (startPoint, endPoint) {
-        var angle = swipeGesture.getAngle(startPoint, endPoint)
+    getDirection: function (x, y) {
+        var angle = swipeGesture.getAngle(x, y)
         if ((angle <= 45) && (angle >= 0)) {
             return "left"
         } else if ((angle <= 360) && (angle >= 315)) {
@@ -34,12 +34,12 @@ var swipeGesture = {
             var isflick = (gesture.distance > 30 && gesture.distance / gesture.duration > 0.65)
 
             if (isflick) {
-                var displacementX = touch.clientX - gesture.startTouch.clientX
-                var displacementY = touch.clientY - gesture.startTouch.clientY
+                var deltaX = touch.clientX - gesture.startTouch.clientX
+                var deltaY = touch.clientY - gesture.startTouch.clientY
                 var extra = {
                     duration: now - gesture.startTime,
-                    displacementX: displacementX,
-                    displacementY: displacementY,
+                    deltaX : deltaX,
+                    deltaY: deltaY,
                     touch: touch,
                     touchEvent: event,
                     isVertical: gesture.isVertical
@@ -47,7 +47,7 @@ var swipeGesture = {
                 var target = gesture.element
                 gestureHooks.fire(target, 'swipe', extra)
                 
-                var dir = swipeGesture.getDirection(displacementX, displacementY)
+                var dir = swipeGesture.getDirection(deltaX, deltaY)
 
                 gestureHooks.fire(target, 'swipe' + dir, extra)
             }
