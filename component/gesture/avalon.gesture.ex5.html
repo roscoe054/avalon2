@@ -55,8 +55,8 @@ require(["../component/gesture/touch.drag"], function () {
         },
         dragend: function (e) {
             vm.a = " "
-            dx = e.deltaX
-            dy = e.deltaY
+            dx = e.touch.pageX 
+            dy = e.touch.pageY 
             vm.c = e.type
         }
     })

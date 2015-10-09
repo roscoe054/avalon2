@@ -43,7 +43,6 @@ avalon.directive("include", {
 
         binding.recoverNodes = binding.recoverNodes || avalon.noop
 
-        var tpl = outer && _ele.cloneNode()
         var scanTemplate = function (text) {
             var _stamp = binding._stamp = +(new Date()) // 过滤掉频繁操作
             if (loaded) {
@@ -128,7 +127,6 @@ avalon.directive("include", {
 
             avalon.effect.apply(enterEl, "enter", before, after)
 
-
         }
 
 
@@ -147,6 +145,9 @@ avalon.directive("include", {
                         fn(text)
                     }
                     templatePool[val] = text
+                }
+                xhr.onerror = function () {
+                    log("ms-include load [" + val + "] error")
                 }
                 templatePool[val] = [scanTemplate]
                 xhr.open("GET", val, true)

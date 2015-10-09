@@ -42,8 +42,6 @@ avalon.directive("include", {
         var _ele = binding._element // data-include-replace binding.element === binding.end
 
         binding.recoverNodes = binding.recoverNodes || avalon.noop
-
-        var tpl = outer && _ele.cloneNode()
         var scanTemplate = function (text) {
             var _stamp = binding._stamp = +(new Date()) // 过滤掉频繁操作
             if (loaded) {
@@ -60,12 +58,11 @@ avalon.directive("include", {
 
             binding.includeLastID = val
             var leaveEl = templateCache && templateCache[lastID] || DOC.createElement(elem.tagName || binding._element.tagName) // 创建一个离场元素
-
             if (effectClass) {
                 leaveEl.className = effectClass
                 target.insertBefore(leaveEl, binding.start) // 插入到start之前，防止被错误的移动
             }
-
+                
             // cache or animate，移动节点
             (templateCache || {})[lastID] = leaveEl
             var fragOnDom = binding.recoverNodes() // 恢复动画中的节点
@@ -126,9 +123,6 @@ avalon.directive("include", {
             }
 
             avalon.effect.apply(enterEl, "enter", before, after)
-
-
-
         }
 
         if (binding.param === "src") {
@@ -149,6 +143,8 @@ avalon.directive("include", {
                                 fn(text)
                             }
                             templatePool[val] = text
+                        }else{
+                            log("ms-include load ["+ val +"] error")
                         }
                     }
                 }
