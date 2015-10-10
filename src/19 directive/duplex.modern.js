@@ -131,6 +131,7 @@ var duplexBinding = avalon.directive("duplex", {
                 break
         }
         if (binding.xtype === "input" && /^(text|password|hidden)/.test(elem.type)) {
+            elem.avalonSetter = updateVModel //#765
             watchValueInTimer(function () {
                 if (root.contains(elem)) {
                     if (binding.oldValue !== elem.value) {
@@ -141,8 +142,12 @@ var duplexBinding = avalon.directive("duplex", {
                 }
             })
         }
-
-        elem.avalonSetter = updateVModel //#765
+        if (!binding.getter) {
+            try {
+                binding.getter = parseExpr(binding.expr, binding.vmodels, binding)
+            } catch (e) {
+            }
+        }
         for (var i in avalon.vmodels) {
             var v = avalon.vmodels[i]
             v.$fire("avalon-ms-duplex-init", binding)
