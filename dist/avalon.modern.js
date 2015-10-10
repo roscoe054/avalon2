@@ -3193,7 +3193,6 @@ var duplexBinding = avalon.directive("duplex", {
             params.push("string")
         }
         binding.param = params.join("-")
-        binding.changed = getBindingCallback(elem, "binding-duplex-changed", vmodels) || noop
         if (!binding.xtype) {
             binding.xtype = elem.tagName === "SELECT" ? "select" :
                     elem.type === "checkbox" ? "checkbox" :
@@ -3285,11 +3284,17 @@ var duplexBinding = avalon.directive("duplex", {
                 })
                 break
         }
+        binding.bound("focus", function () {
+            elem.msFocus = true
+        })
+        binding.bound("blur", function () {
+            elem.msFocus = false
+        })
         if (binding.xtype === "input" && /^(text|password|hidden)/.test(elem.type)) {
             elem.avalonSetter = updateVModel //#765
             watchValueInTimer(function () {
                 if (root.contains(elem)) {
-                    if (binding.oldValue !== elem.value) {
+                    if (!elem.msFocus && binding.oldValue !== elem.value) {
                         updateVModel()
                     }
                 } else if (!elem.msRetain) {
@@ -3429,7 +3434,7 @@ new function () { // jshint ignore:line
         var bproto = HTMLTextAreaElement.prototype
         function newSetter(value) { // jshint ignore:line
             setters[this.tagName].call(this, value)
-            if ((typeof this.avalonSetter === "function") && this.oldValue !== value) {
+            if (!this.msFocus &&  this.avalonSetter && this.oldValue !== value) {
                 this.avalonSetter()
             }
         }
