@@ -15,7 +15,7 @@ define(['avalon'], function (avalon) {
                     isVertical: pointer.isVertical
                 }
                 if ((pointer.status === 'tapping') && pointer.distance > 10) {
-                    pointer.status = 'panning';
+                    pointer.status = 'panning'
                     gestureHooks.fire(pointer.element, 'dragstart', extra)
                 } else if (pointer.status === 'panning') {
                     gestureHooks.fire(pointer.element, 'drag', extra)

@@ -81,7 +81,7 @@ var gestureHooks = avalon.gestureHooks = {
                 var x = pointer.deltaX * pointer.deltaX
                 var y = pointer.deltaY * pointer.deltaY
                 pointer.distance = Math.sqrt(x + y)
-                pointer.isVertical = !(x > y)
+                pointer.isVertical = x < y
 
                 callback(pointer, touch)
             }

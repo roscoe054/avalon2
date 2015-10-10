@@ -12,8 +12,8 @@ var duplexBinding = avalon.directive("duplex", {
         if (elem.type === "radio" && binding.param === "") {
             binding.param = "checked"
         }
-       
-   
+
+
         binding.param.replace(rw20g, function (name) {
             if (rduplexType.test(elem.type) && rduplexParam.test(name)) {
                 if (name === "radio")
@@ -71,7 +71,7 @@ var duplexBinding = avalon.directive("duplex", {
             composing = false
         }
         var updateVModel = function () {
-             var val = elem.value //防止递归调用形成死循环
+            var val = elem.value //防止递归调用形成死循环
             if (composing || val === binding.oldValue) //处理中文输入法在minlengh下引发的BUG
                 return
             var lastValue = binding.pipe(val, binding, "get")
@@ -170,7 +170,12 @@ var duplexBinding = avalon.directive("duplex", {
                 }
             })
         }
-
+        if (!binding.getter) {
+            try {
+                binding.getter = parseExpr(binding.expr, binding.vmodels, binding)
+            } catch (e) {
+            }
+        }
         for (var i in avalon.vmodels) {
             var v = avalon.vmodels[i]
             v.$fire("avalon-ms-duplex-init", binding)

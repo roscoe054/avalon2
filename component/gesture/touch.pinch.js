@@ -35,7 +35,6 @@ define(['avalon'], function (avalon) {
                     touches: event.touches,
                     touchEvent: event
                 })
-
             }
         },
         touchmove: function (event) {
@@ -49,7 +48,8 @@ define(['avalon'], function (avalon) {
                     current.push([touch.clientX, touch.clientY]);
                 }
 
-                var scale = pinchGesture.getScale(position[0][0], position[0][1], position[1][0], position[1][1], current[0][0], current[0][1], current[1][0], current[1][1]);
+                var scale = pinchGesture.getScale(position[0][0], position[0][1], position[1][0], position[1][1],
+                current[0][0], current[0][1], current[1][0], current[1][1]);
                 pinchGesture.scale = scale
                 gestureHooks.fire(pinchGesture.element, 'pinch', {
                     scale: scale,
