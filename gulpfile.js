@@ -122,7 +122,6 @@ gulp.task('combo', function () {
                 lastFile.replace("24 outer", "23 touch.2.press"),
                 lastFile.replace("24 outer", "23 touch.3.swipe"),
                 lastFile)
-        console.log(touchFiles)
         gulp.src(touchFiles)
                 .pipe(concat('avalon.mobile.js'))
                 .pipe(replace(/version:\s+([\d\.]+)/, function (a, b) {
