@@ -4,7 +4,7 @@ if (supportPointer) { // 支持pointer的设备可用样式来取消click事件�
   root.style.msTouchAction = root.style.touchAction = 'none'
 }
 var tapGesture = {
-  events: ['tap', 'click'],
+  events: ['tap'],
   touchBoundary: 10,
   tapDelay: 200,
   needClick: function(target) {
