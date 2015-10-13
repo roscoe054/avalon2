@@ -1,57 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
     <head>
+        <title>使用CSS</title>
         <meta charset="UTF-8">
-        <title>touch</title>
-        <script src="dist/avalon.mobile.js"></script>
-        <meta id="viewport" name="viewport" content="initial-scale=1.0,user-scalable=no,
-              minimum-scale=1.0, maximum-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-            html{
-                width:100%;
-            }
-            body{
-                width:96%;
-                margin: 0 auto;
-            }
-
-            .longtap{
-                width:200px;
-                height:200px;
-                overflow: hidden;
-                display: inline-block;
-                background: rosybrown
-            }
-
-            .doubletap{
-                width:200px;
-                height:200px;
-                overflow: hidden;
-                display: inline-block;
-                background:gold;
-            }
+            .box { width:100px; height:100px; overflow:hidden;background: red; }
+            .toggle{ transition: all 1s ease; }
+            .toggle-enter, .toggle-leave{ width:0; height:0; }
 
         </style>
+        <script src="avalon.js"></script>
+        <script src="jquery.js"></script>
     </head>
-    <body ms-controller="test">
+    <body>
+        <script>
 
-        <div class="longtap" ms-on-longtap="press">
+            avalon.effect('toggle', {enterClass: 'toggle-enter', leaveClass: 'toggle-leave'});
 
-        </div>
-        <div class="doubletap" ms-on-doubletap="press">
-            双击
-        </div>
-
-        <script type="text/javascript">
+          //在leave动画还没有结束时,强制结束时可能出BUG
 
             var vm = avalon.define({
-                $id: "test",
-                press: function (e) {
-                    console.log(e.type)
-                    this.innerHTML = e.type + " " + (new Date - 0)
+                $id: 'xxx',
+                toggle: false,
+                click: function () {
+                    vm.toggle = !vm.toggle;
                 }
-            })
+            });
 
         </script>
+        <div ms-controller="xxx">
+            <div class="box toggle" ms-effect="toggle" ms-visible="toggle">hello</div>
+            <button ms-click="click" type="button">btn</button>
+        </div>
+
     </body>
 </html>

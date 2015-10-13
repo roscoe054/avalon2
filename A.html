@@ -1,18 +1,45 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>TODO supply a title</title>
+        <title>使用JS</title>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="dist/avalon.modern.js"></script>
-        <script>
-            avalon.define({
-                $id:"test",
-                a: false
-            })
-        </script>
+        <style>
+            .box { width:100px; height:100px; overflow:hidden;background: red; }
+      
+
+        </style>
+        <script src="avalon.js"></script>
+  <script src="jquery.js"></script>
     </head>
-    <body ms-controller="test">
-      <input type="checkbox" ms-duplex-checked="a"/>{{a}}
+    <body>
+        <script>
+
+            avalon.effect("toggle", {
+                enter: function (elem, done) {
+                    $(elem).show(500, done)
+                },
+                leave: function (elem, done) {
+                    $(elem).hide(500, done)
+                }
+
+            })
+  
+
+
+            var vm = avalon.define({
+                $id: 'xxx',
+                toggle: false,
+                click: function () {
+                    vm.toggle = !vm.toggle;
+                }
+            });
+
+        </script>
+        <div ms-controller="xxx">
+            <div class="box" ms-effect="toggle" ms-visible="toggle">hello</div>
+            <button ms-click="click" type="button">btn</button>
+        </div>
+
     </body>
 </html>
