@@ -7,19 +7,20 @@ var beginTime = new Date()
 var oldInfo = {}
 
 function getUid(data) { //IE9+,标准浏览器
-    if (!data.uuid) {
+    if (!data.uniqueNumber) {
         var elem = data.element
         if (elem) {
             if (elem.nodeType !== 1) {
-                data.uuid = data.type + (data.pos || 0) + "-" + getUid(elem.parentNode)
+                //如果是注释节点,则data.pos不存在,当一个元素下有两个注释节点就会出问题
+                data.uniqueNumber = data.type + "-" + getUid(elem.parentNode) + "-" + (++disposeCount)
             } else {
-                data.uuid = data.name + "-" + getUid(elem)
+                data.uniqueNumber = data.name + "-" + getUid(elem)
             }
         } else {
-            data.uuid = ++disposeCount
+            data.uniqueNumber = ++disposeCount
         }
     }
-    return data.uuid
+    return data.uniqueNumber
 }
 
 //添加到回收列队中
@@ -67,7 +68,7 @@ function rejectDisposeQueue(data) {
             }
             if (iffishTypes[data.type] && shouldDispose(data.element)) { //如果它没有在DOM树
                 disposeQueue.splice(i, 1)
-                delete disposeQueue[data.uuid]
+                delete disposeQueue[data.uniqueNumber]
                 var lists = data.lists
                 for (var k = 0, list; list = lists[k++]; ) {
                     avalon.Array.remove(lists, list)
@@ -82,7 +83,7 @@ function rejectDisposeQueue(data) {
 }
 
 function disposeData(data) {
-    delete disposeQueue[data.uuid] // 先清除，不然无法回收了
+    delete disposeQueue[data.uniqueNumber] // 先清除，不然无法回收了
     data.element = null
     data.rollback && data.rollback()
     for (var key in data) {

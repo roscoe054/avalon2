@@ -49,7 +49,7 @@ define(["avalon", "text!./avalon.spinner.html", "css!../chameleon/oniui-common.c
 
             // init value
             if(vm.min > vm.max){
-                console.log("ERROR: 配置项min应小于max")
+                avalon.log("ERROR: 配置项min应小于max")
                 vm.value = ""
                 vm.disabled = true
                 return

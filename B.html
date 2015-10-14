@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>使用CSS</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            .box { width:100px; height:100px; overflow:hidden;background: red; }
+            .toggle{ transition: all 1s ease; }
+            .toggle-enter, .toggle-leave{ width:0; height:0; }
+
+        </style>
+        <script src="avalon.js"></script>
+        <script src="jquery.js"></script>
+    </head>
+    <body>
+        <script>
+
+            avalon.effect('toggle', {enterClass: 'toggle-enter', leaveClass: 'toggle-leave'});
+
+          //在leave动画还没有结束时,强制结束时可能出BUG
+
+            var vm = avalon.define({
+                $id: 'xxx',
+                toggle: false,
+                click: function () {
+                    vm.toggle = !vm.toggle;
+                }
+            });
+
+        </script>
+        <div ms-controller="xxx">
+            <div class="box toggle" ms-effect="toggle" ms-visible="toggle">hello</div>
+            <button ms-click="click" type="button">btn</button>
+        </div>
+
+    </body>
+</html>

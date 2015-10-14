@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>touch</title>
+        <script src="../../dist/avalon.mobile.js"></script>
+        <meta id="viewport" name="viewport" content="initial-scale=1.0,user-scalable=no,
+              minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            .rotate{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:aqua;
+                border-radius: 100px;
+            }
+
+        </style>
+    </head>
+    <body ms-controller="test">
+        <h1>drag,dragstart,dragend</h1>
+        <div class="rotate" 
+             ms-on-rotate="rotate" 
+             ms-on-rotatestart="rotatestart" 
+             ms-on-rotateend="rotateend" 
+             >
+            <p>000000</p>
+            <p>111111</p>
+            <p>222222 {{a}}</p>
+            <p>333333 {{b}}</p>
+            <p>{{c}}</p>
+        </div>
+
+        <script type="text/javascript">
+require(["../component/gesture/touch.rotate"], function () {
+
+    var vm = avalon.define({
+        $id: "test",
+        a: "",
+        b: "",
+        c: "",
+        rotatestart: function (e) {
+            vm.a = e.type
+            vm.b = vm.c = ""
+        },
+        rotateend: function (e) {
+            vm.a = e.type
+            vm.b = e.direction
+        },
+        rotate: function (e) {
+            var a = e.rotation
+            vm.c = "旋转了" + a + " 度"
+            this.style.webkitTransform = 'rotate(' + a + 'deg)';
+        }
+    })
+    avalon.scan()
+})
+
+        </script>
+    </body>
+</html>

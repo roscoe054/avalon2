@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>touch</title>
+        <script src="../../dist/avalon.mobile.js"></script>
+        <meta id="viewport" name="viewport" content="initial-scale=1.0,user-scalable=no,
+              minimum-scale=1.0, maximum-scale=1.0">
+        <style>
+            .drag{
+                width:200px;
+                height:200px;
+                overflow: hidden;
+                display: inline-block;
+                background:aqua;
+            }
+
+        </style>
+    </head>
+    <body ms-controller="test">
+        <h1>drag,dragstart,dragend</h1>
+        <div class="drag" 
+             ms-on-dragstart="dragstart" 
+             ms-on-drag="drag" 
+             ms-on-dragend="dragend">
+            <p>{{a}}</p>
+            <p>{{b}}</p>
+            <p>{{c}}</p>
+        </div>
+
+        <script type="text/javascript">
+require(["../component/gesture/touch.drag"], function () {
+    var dx = 0, dy = 0;
+
+    var vm = avalon.define({
+        $id: "test",
+        a: "",
+        b: "",
+        c: "",
+        dragstart: function (e) {
+            vm.a = e.type
+            vm.c = " "
+        },
+        drag: function (e) {
+            var x = dx + e.deltaX
+            var y = dy + e.deltaY
+            var offx = x + "px";
+            var offy = y + "px";
+            vm.b = offx + " drag " + offy
+            if ("transform" in this.style) {
+                this.style.transform = "translate3d(" + offx + "," + offy + ",0)";
+            } else {
+                this.style.webkitTransform = "translate3d(" + offx + "," + offy + ",0)";
+            }
+        },
+        dragend: function (e) {
+            vm.a = " "
+            dx = e.touch.pageX 
+            dy = e.touch.pageY 
+            vm.c = e.type
+        }
+    })
+    avalon.scan()
+})
+
+
+
+
+        </script>
+    </body>
+</html>

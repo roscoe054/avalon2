@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+<meta http-equiv="x-ua-compatible" content="ie=edge" />
+<title>dialog demo 9</title>
+        <link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/>
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/>
+        <script src="../highlight/shCore.js"></script>
+        <script src="../../avalon.js"></script>
+</head>
+<body>
+     <div class="wrapper">
+      <h1>dialog demo 9</h1>
+        <p class="example">修改dialog的title、content</p>
+        <p><span class="useDescription">说明：</span>想修改现有弹出层的title, content,直接在$ready方法得到它的title, content修改就行了,
+            不再提供setTitle, setContent, setModel这样笨重的方法</p>
+
+        <div class="demo-show" ms-controller="demo">
+            <fieldset>  
+                <legend>动态修改dialog的title、content或者重新渲染</legend>
+                    <button ms-click="show('aa')">打开对话框</button>
+                    <button ms-click="changeContent('aa')">改变对话框内容</button>
+                    <button ms-click="changeTitle('aa')">改变对话框title</button>
+                    <oni:dialog $id="aa" config="$aaOpts">
+                        可以动态改变对话框的内容{{a}}，点击不同的按钮，试试看它的灵活性呗
+                    </oni:dialog>
+            </fieldset>
+            <script> 
+                require(["./component/dialog/avalon.dialog"], function () {
+               
+                    avalon.define({
+                        $id: "demo",
+                        $aaOpts: {
+                            title: "title1",
+                            showClose: false,
+                            $slot: "content",
+                            modal: false,
+                            container: document.getElementById("modalWrapper")
+                        },
+                        a: "这是内容",
+                        show: function( id ){
+                            avalon.vmodels[id].toggle = true;
+                        },
+                        changeTitle: function(id){
+                            var dialog = avalon.vmodels[id];
+                            if(!dialog) {
+                                return;
+                            }
+                            dialog.title = "新标题"
+                        },
+                        changeContent: function(id){
+                            var dialog = avalon.vmodels[id];
+                            if(!dialog) {
+                                return;
+                            }
+                            console.log("----")
+                            dialog.content = "<strong>{{a}}</strong>"
+                        },
+                    })
+                    avalon.scan();
+                })
+               
+            </script>
+        </div>
+        <div ms-skip>
+<pre class="brush: html; gutter: false; toolbar: false">
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;meta http-equiv="content-type" content="text/html;charset=utf-8" /&gt;
+&lt;meta http-equiv="x-ua-compatible" content="ie=edge" /&gt;
+&lt;title&gt;dialog demo 8&lt;/title&gt;
+        &lt;link type="text/css" rel="stylesheet"  href="../highlight/shCore.css"/&gt;
+        &lt;link type="text/css" rel="stylesheet" href="../style/avalon.doc.css"/&gt;
+        &lt;script src="../highlight/shCore.js"&gt;&lt;/script&gt;
+        &lt;script src="../../avalon.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+        &lt;div class="demo-show" ms-controller="demo"&gt;
+            &lt;fieldset&gt;  
+                &lt;legend&gt;动态修改dialog的title、content或者重新渲染&lt;/legend&gt;
+                    &lt;button ms-click="show('aa')"&gt;打开对话框&lt;/button&gt;
+                    &lt;button ms-click="changeContent('aa')"&gt;改变对话框内容&lt;/button&gt;
+                    &lt;button ms-click="changeTitle('aa')"&gt;改变对话框title&lt;/button&gt;
+                    &lt;oni:dialog $id="aa" config="$aaOpts"&gt;
+                        可以动态改变对话框的内容{{a}}，点击不同的按钮，试试看它的灵活性呗
+                    &lt;/oni:dialog&gt;
+            &lt;/fieldset&gt;
+            &lt;script&gt; 
+                require(["./component/dialog/avalon.dialog"], function () {
+               
+                    avalon.define({
+                        $id: "demo",
+                        $aaOpts: {
+                            title: "title1",
+                            showClose: false,
+                            $slot: "content",
+                            container: document.getElementById("modalWrapper")
+                        },
+                        a: "这是内容",
+                        show: function( id ){
+                            avalon.vmodels[id].toggle = true;
+                        },
+                        changeTitle: function(id){
+                            var dialog = avalon.vmodels[id];
+                            if(!dialog) {
+                                return;
+                            }
+                            dialog.title = "新标题"
+                        },
+                        changeContent: function(id){
+                            var dialog = avalon.vmodels[id];
+                            if(!dialog) {
+                                return;
+                            }
+                           dialog.content = "&lt;strong&gt;{{a}}&lt;/strong&gt;"
+                        },
+                    })
+                    avalon.scan();
+                })
+               
+            &lt;/script&gt;
+        &lt;/div&gt;
+    &lt;/body&gt;
+&lt;/html&gt;
+            </pre>
+        </div>
+    </div>
+</body>
+</html>
+

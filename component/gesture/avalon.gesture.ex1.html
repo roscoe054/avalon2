@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="../../dist/avalon.mobile.js"></script>
+        <script>
+            avalon.define({
+                $id: "test",
+                fn: function (e) {
+                    console.log(e.target)
+                    console.log("----")
+                }
+            })
+        </script>
+    </head>
+    <body ms-controller="test">
+        <h1>doubletap, longtap</h1>
+        <form action='/'>
+            <p><label ms-on-tap='fn' for="aaa" >触发两次</label><input id="aaa" ms-on-tap='fn' /></p>
+            <p><label ms-on-tap='fn' for="bbb" >触发三次<textarea id='bbb' ms-on-tap='fn'></textarea></label></p>
+            <p><select ms-on-tap="fn"><option>aaa</option><option>bbbb</option><option>cccc</option></select></p>
+            <button ms-on-tap="fn" type="submit">提交</button>
+        </form>
+    </body>
+</html>

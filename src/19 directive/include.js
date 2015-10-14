@@ -22,7 +22,7 @@ function getTemplateContainer(binding, id, text) {
 }
 function nodesToFrag(nodes) {
     var frag = DOC.createDocumentFragment()
-    for(var i = 0, len = nodes.length; i < len; i++) {
+    for (var i = 0, len = nodes.length; i < len; i++) {
         frag.appendChild(nodes[i])
     }
     return frag
@@ -42,8 +42,6 @@ avalon.directive("include", {
         var _ele = binding._element // data-include-replace binding.element === binding.end
 
         binding.recoverNodes = binding.recoverNodes || avalon.noop
-
-        var tpl = outer && _ele.cloneNode()
         var scanTemplate = function (text) {
             var _stamp = binding._stamp = +(new Date()) // 过滤掉频繁操作
             if (loaded) {
@@ -60,62 +58,60 @@ avalon.directive("include", {
 
             binding.includeLastID = val
             var leaveEl = templateCache && templateCache[lastID] || DOC.createElement(elem.tagName || binding._element.tagName) // 创建一个离场元素
-
             if (effectClass) {
                 leaveEl.className = effectClass
                 target.insertBefore(leaveEl, binding.start) // 插入到start之前，防止被错误的移动
             }
-
+                
             // cache or animate，移动节点
-            if(effectClass || templateCache) {
-                (templateCache || {})[lastID] = leaveEl
-                var fragOnDom = binding.recoverNodes() // 恢复动画中的节点
-                if(fragOnDom) {
-                    target.insertBefore(fragOnDom, binding.end)
-                }
-                while (true) {
-                    var node = binding.start.nextSibling
-                    if (node && node !== leaveEl && node !== binding.end) {
-                        leaveEl.appendChild(node)
-                    } else {
-                        break
-                    }
+            (templateCache || {})[lastID] = leaveEl
+            var fragOnDom = binding.recoverNodes() // 恢复动画中的节点
+            if (fragOnDom) {
+                target.insertBefore(fragOnDom, binding.end)
+            }
+            while (true) {
+                var node = binding.start.nextSibling
+                if (node && node !== leaveEl && node !== binding.end) {
+                    leaveEl.appendChild(node)
+                } else {
+                    break
                 }
             }
             // 元素退场
             avalon.effect.remove(leaveEl, target, function () {
                 if (templateCache) { // write cache
-                    if(_stamp === binding._stamp) ifGroup.appendChild(leaveEl)
-                    leaveEl.setAttribute("sb", lastID)
+                    if (_stamp === binding._stamp)
+                        ifGroup.appendChild(leaveEl)
                 }
             }, binding)
 
 
             var enterEl = target,
-                before = avalon.noop,
-                after = avalon.noop
+                    before = avalon.noop,
+                    after = avalon.noop
 
             var fragment = getTemplateContainer(binding, val, text)
             var nodes = avalon.slice(fragment.childNodes)
 
-            if(outer && effectClass) {
+            if (outer && effectClass) {
                 enterEl = _ele
                 enterEl.innerHTML = "" // 清空
                 enterEl.setAttribute("ms-skip", "true")
                 target.insertBefore(enterEl, binding.end.nextSibling) // 插入到bingding.end之后避免被错误的移动
-                before = function() {
+                before = function () {
                     enterEl.insertBefore(fragment, null) // 插入节点
                 }
-                after = function() {
+                after = function () {
                     binding.recoverNodes = avalon.noop
-                    if(_stamp === binding._stamp) {
+                    if (_stamp === binding._stamp) {
                         fragment = nodesToFrag(nodes)
                         target.insertBefore(fragment, binding.end) // 插入真实element
                         scanNodeArray(nodes, vmodels)
                     }
-                    if(enterEl.parentNode === target) target.removeChild(enterEl) // 移除入场动画元素
+                    if (enterEl.parentNode === target)
+                        target.removeChild(enterEl) // 移除入场动画元素
                 }
-                binding.recoverNodes = function() {
+                binding.recoverNodes = function () {
                     binding.recoverNodes = avalon.noop
                     return nodesToFrag(nodes)
                 }
@@ -125,11 +121,8 @@ avalon.directive("include", {
                     scanNodeArray(nodes, vmodels)
                 }
             }
-           
+
             avalon.effect.apply(enterEl, "enter", before, after)
-            
-
-
         }
 
         if (binding.param === "src") {
@@ -150,6 +143,8 @@ avalon.directive("include", {
                                 fn(text)
                             }
                             templatePool[val] = text
+                        }else{
+                            log("ms-include load ["+ val +"] error")
                         }
                     }
                 }
@@ -168,7 +163,7 @@ avalon.directive("include", {
             if (el) {
                 if (el.tagName === "NOSCRIPT" && !(el.innerHTML || el.fixIE78)) { //IE7-8 innerText,innerHTML都无法取得其内容，IE6能取得其innerHTML
                     xhr = getXHR() //IE9-11与chrome的innerHTML会得到转义的内容，它们的innerText可以
-                    xhr.open("GET", location, false) 
+                    xhr.open("GET", location, false)
                     xhr.send(null)
                     //http://bbs.csdn.net/topics/390349046?page=1#post-393492653
                     var noscripts = DOC.getElementsByTagName("noscript")

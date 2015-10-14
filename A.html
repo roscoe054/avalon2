@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>使用JS</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            .box { width:100px; height:100px; overflow:hidden;background: red; }
+      
+
+        </style>
+        <script src="avalon.js"></script>
+  <script src="jquery.js"></script>
+    </head>
+    <body>
+        <script>
+
+            avalon.effect("toggle", {
+                enter: function (elem, done) {
+                    $(elem).show(500, done)
+                },
+                leave: function (elem, done) {
+                    $(elem).hide(500, done)
+                }
+
+            })
+  
+
+
+            var vm = avalon.define({
+                $id: 'xxx',
+                toggle: false,
+                click: function () {
+                    vm.toggle = !vm.toggle;
+                }
+            });
+
+        </script>
+        <div ms-controller="xxx">
+            <div class="box" ms-effect="toggle" ms-visible="toggle">hello</div>
+            <button ms-click="click" type="button">btn</button>
+        </div>
+
+    </body>
+</html>
