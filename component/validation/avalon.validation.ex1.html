@@ -35,13 +35,7 @@
                     next.innerHTML = data.getMessage()
                 }
                 var validationVM
-                avalon.library("oni", {
-                    $ready: function (vm) {
-                        if (vm.$id === "v") {
-                            validationVM = vm
-                        }
-                    }
-                })
+             
                 function removeError(el) {
                     var next = el.nextSibling
                     if (next && next.className === "error-tip") {
@@ -64,6 +58,9 @@
                     },
                     $skipArray:["validation"],
                     validation: {
+                        onInit: function(vm){
+                            validationVM = vm
+                        },
                         onReset: function (e, data) {
                             data.valueResetor && data.valueResetor()
                             avalon(this).removeClass("error success")

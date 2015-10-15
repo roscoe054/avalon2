@@ -485,6 +485,7 @@ define(["avalon", "../mmPromise/mmPromise"], function(avalon) {
     var _interface = function() {}
     avalon.component("oni:validation", {
       validationHooks: {}, //@config {Object} 空对象，用于放置验证规则
+      onInit:avalon.noop,//@config {Function} 空函数，用于帮你获取当前VM,参数为vm
       onSuccess: avalon.noop, //@config {Function} 空函数，单个验证成功时触发，this指向被验证元素this指向被验证元素，传参为一个对象数组外加一个可能存在的事件对象
       onError: avalon.noop, //@config {Function} 空函数，单个验证失败时触发，this与传参情况同上
       onComplete: avalon.noop, //@config {Function} 空函数，单个验证无论成功与否都触发，this与传参情况同上
@@ -518,7 +519,7 @@ define(["avalon", "../mmPromise/mmPromise"], function(avalon) {
         }
         //收集下方表单元素的数据
         vm.$watch("avalon-ms-duplex-init", function(data) {
-
+          vm.onInit(vm, elem)
           var inwardHooks = vm.validationHooks
 
 

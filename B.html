@@ -1,38 +1,52 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>使用CSS</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            .box { width:100px; height:100px; overflow:hidden;background: red; }
-            .toggle{ transition: all 1s ease; }
-            .toggle-enter, .toggle-leave{ width:0; height:0; }
+        <title></title>
 
+        <style type="text/css">
+            [ms-controller],[ms-important],.ms-controller, .ms-important{visibility:hidden;}
         </style>
-        <script src="avalon.js"></script>
-        <script src="jquery.js"></script>
+
     </head>
     <body>
-        <script>
+        <script type="avalon" id="testTemplate">
+            <div>
+            <div ms-repeat-r1="bb[current]">
+            {{r1.a}}
+            </div>
+            </div>
 
-            avalon.effect('toggle', {enterClass: 'toggle-enter', leaveClass: 'toggle-leave'});
+            -------
 
-          //在leave动画还没有结束时,强制结束时可能出BUG
+            <div>
+            {{bb[current][0].a}}
+            </div>
+        </script>
 
-            var vm = avalon.define({
-                $id: 'xxx',
-                toggle: false,
-                click: function () {
-                    vm.toggle = !vm.toggle;
-                }
+        <div ms-controller="testModel" ms-include="'testTemplate'"></div>
+
+        <script type="text/javascript" src="avalon.js"></script>
+
+        <script type="text/javascript">
+            avalon.ready(function () {
+                var model = avalon.define({
+                    $id: "testModel",
+                    bb: [[{'a': 'c1'}], [{'a': 'd2'}], [{'a': 'e3'}]],
+                    current: 0
+                });
+
+                avalon.scan(document.body);
+    //  model.current=1;
+    //
+                setTimeout(function () {
+    //      alert(1);
+                    //model.bb = [[{'a':'C1'}],[{'a':'D2'}],[{'a':'E3'}]];
+                    model.current = 2;
+
+                }, 1000);
             });
 
         </script>
-        <div ms-controller="xxx">
-            <div class="box toggle" ms-effect="toggle" ms-visible="toggle">hello</div>
-            <button ms-click="click" type="button">btn</button>
-        </div>
 
     </body>
 </html>
