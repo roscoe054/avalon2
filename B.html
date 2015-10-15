@@ -9,44 +9,27 @@
 
     </head>
     <body>
-        <script type="avalon" id="testTemplate">
-            <div>
-            <div ms-repeat-r1="bb[current]">
-            {{r1.a}}
-            </div>
-            </div>
+      
 
-            -------
-
-            <div>
-            {{bb[current][0].a}}
-            </div>
-        </script>
-
-        <div ms-controller="testModel" ms-include="'testTemplate'"></div>
+       
 
         <script type="text/javascript" src="avalon.js"></script>
 
         <script type="text/javascript">
             avalon.ready(function () {
                 var model = avalon.define({
-                    $id: "testModel",
-                    bb: [[{'a': 'c1'}], [{'a': 'd2'}], [{'a': 'e3'}]],
-                    current: 0
+                    $id: "test",
+                    arr: [1,2,3,4],
+                    callback: function(a){
+                        console.log(a, this)
+                    }
                 });
 
                 avalon.scan(document.body);
-    //  model.current=1;
-    //
-                setTimeout(function () {
-    //      alert(1);
-                    //model.bb = [[{'a':'C1'}],[{'a':'D2'}],[{'a':'E3'}]];
-                    model.current = 2;
 
-                }, 1000);
             });
 
         </script>
-
+        <div ms-controller="test" ms-repeat="arr" data-repeat-rendered="callback">{{el}}</div>
     </body>
 </html>

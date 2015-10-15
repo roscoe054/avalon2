@@ -63,7 +63,6 @@ avalon.component = function (name, opts) {
                 delete componentDefinition.$slot
                 delete componentDefinition.$replace
                 delete componentDefinition.$container
-                delete componentDefinition.$template
                 delete componentDefinition.$construct
 
                 var vmodel = avalon.define(componentDefinition) || {}
@@ -133,8 +132,9 @@ avalon.component = function (name, opts) {
                     if (dependencies === 0) {
                         var id1 = setTimeout(function () {
                             clearTimeout(id1)
-                            vmodel.$ready(vmodel, elem)
-                            global.$ready(vmodel, elem)
+                            
+                            vmodel.$ready(vmodel, elem, host.vmodels)
+                            global.$ready(vmodel, elem, host.vmodels)
                         }, children ? Math.max(children * 17, 100) : 17)
                         avalon.unbind(elem, "datasetchanged", removeFn)
                         //==================
@@ -155,8 +155,8 @@ avalon.component = function (name, opts) {
 
                     }
                 })
-
                 scanTag(elem, [vmodel].concat(host.vmodels))
+
                 avalon.vmodels[vmodel.$id] = vmodel
                 if (!elem.childNodes.length) {
                     avalon.fireDom(elem, "datasetchanged", {library: library, vm: vmodel, childReady: -1})

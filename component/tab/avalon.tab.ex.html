@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>tab组件</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
+        <script src="../../avalon.js"></script>
+        <script src="../style/highlight/shCore.js"></script>
+        <script>
+            require(["./component/tab/avalon.tab"], function (avalon) {
+                
+                avalon.define({
+                    $id: "test"
+                })
+                avalon.scan()
+            })
+        </script>
+    </head>
+    <body>
+        <div ms-controller="test">
+            <h1>扫描dom树获取数据</h1>
+            <oni:tabs removable="false" auto-switch="1500">
+                <div title="水果<i>非国产经典品牌</i>十分流弊" slot="tab">
+                    line 1 -
+                    <a href="#" ms-click="add(peaple)">
+                        点击我添加一个tab!
+                    </a>
+                </div>
+                <div title="服装非国产经典品牌" slot="tab">
+                    line 2 -
+                    <a href="#" ms-click="enable(4)">
+                        点击我激活动一个tab!
+                    </a>
+                </div>
+                <oni:tab title="电器" removable="true" slot="tab">
+                    line 3 -
+                    <a href="#" ms-click="add(peaple2)" >
+                        点击我添加一个不能删除的tab!
+                    </a>
+                </div>
+                <div title="动物" disabled="true" slot="tab">
+                    line 4
+                </div>
+            </oni:tabs>
+
+        </div>
+    </body>
+</html>
