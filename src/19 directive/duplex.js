@@ -1,7 +1,7 @@
 //双工绑定
 var rduplexType = /^(?:checkbox|radio)$/
 var rduplexParam = /^(?:radio|checked)$/
-var rnoduplexInput = /^(file|button|reset|submit|checkbox|radio)$/
+var rnoduplexInput = /^(file|button|reset|submit|checkbox|radio|range)$/
 var duplexBinding = avalon.directive("duplex", {
     priority: 2000,
     init: function (binding, hasCast) {
@@ -158,13 +158,15 @@ var duplexBinding = avalon.directive("duplex", {
                 })
                 break
         }
-        binding.bound("focus", function() {
-            elem.msFocus = true
-        })
-        binding.bound("blur", function() {
-            elem.msFocus = false
-        })
         if (binding.xtype === "input" && !rnoduplexInput.test(elem.type)) {
+            if (elem.type !== "hidden") {
+                binding.bound("focus", function () {
+                    elem.msFocus = true
+                })
+                binding.bound("blur", function () {
+                    elem.msFocus = false
+                })
+            }
             elem.avalonSetter = updateVModel //#765
             watchValueInTimer(function () {
                 if (elem.contains(elem)) {
@@ -194,7 +196,18 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set")  //fix #673
                 if (curValue !== this.oldValue) {
+                    var fixCaret = false
+                    if (elem.msFocus) {
+                        var pos = getCaret(elem)
+                        if (pos.start === pos.end) {
+                            pos = pos.start
+                            fixCaret = true
+                        }
+                    }
                     elem.value = this.oldValue = curValue
+                    if (fixCaret) {
+                        setCaret(element, pos, pos)
+                    }
                 }
                 break
             case "radio":
@@ -328,7 +341,7 @@ new function () { // jshint ignore:line
         var bproto = HTMLTextAreaElement.prototype
         function newSetter(value) { // jshint ignore:line
             setters[this.tagName].call(this, value)
-            if (!this.msFocus &&  this.avalonSetter && this.oldValue !== value) {
+            if (!this.msFocus && this.avalonSetter && this.oldValue !== value) {
                 this.avalonSetter()
             }
         }
@@ -350,3 +363,31 @@ new function () { // jshint ignore:line
         watchValueInTimer = avalon.tick
     }
 } // jshint ignore:line
+function getCaret(ctrl, start, end) {
+    if (ctrl.setSelectionRange) {
+        start = ctrl.selectionStart
+        end = ctrl.selectionEnd
+    } else if (document.selection && document.selection.createRange) {
+        var range = document.selection.createRange()
+        start = 0 - range.duplicate().moveStart('character', -100000)
+        end = start + range.text.length
+    }
+    return {
+        start: start,
+        end: end
+    }
+}
+function setCaret(ctrl, begin, end) {
+    if (!ctrl.value || ctrl.readOnly)
+        return
+    if (ctrl.setSelectionRange) {
+        ctrl.selectionStart = begin
+        ctrl.selectionEnd = end
+    } else {
+        var range = ctrl.createTextRange()
+        range.collapse(true);
+        range.moveStart("character", begin)
+        range.moveEnd("character", end - begin)
+        range.select()
+    }
+}

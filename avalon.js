@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5.4 built in 2015.10.15
+ avalon.js 1.5.4 built in 2015.10.16
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1803,7 +1803,6 @@ avalon.injectBinding = function (binding) {
         } catch (e) {
             delete binding.getter
             log("warning:exception throwed in [avalon.injectBinding] ", e)
-            log(e)
             var node = binding.element
             if (node && node.nodeType === 3) {
                 node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
@@ -3511,7 +3510,7 @@ avalon.component = function (name, opts) {
 
                     }
                 })
-                                            scanTag(elem, [vmodel].concat(host.vmodels))
+                scanTag(elem, [vmodel].concat(host.vmodels))
 
                 avalon.vmodels[vmodel.$id] = vmodel
                 if (!elem.childNodes.length) {

@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.shim.js 1.5.4 built in 2015.10.15
+ avalon.shim.js 1.5.4 built in 2015.10.16
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -3510,7 +3510,7 @@ avalon.component = function (name, opts) {
 
                     }
                 })
-                                            scanTag(elem, [vmodel].concat(host.vmodels))
+                scanTag(elem, [vmodel].concat(host.vmodels))
 
                 avalon.vmodels[vmodel.$id] = vmodel
                 if (!elem.childNodes.length) {

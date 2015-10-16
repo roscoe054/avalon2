@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.js 1.5.4 built in 2015.10.15
+ avalon.mobile.js 1.5.4 built in 2015.10.16
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -2872,7 +2872,7 @@ avalon.component = function (name, opts) {
 
                     }
                 })
-                                            scanTag(elem, [vmodel].concat(host.vmodels))
+                scanTag(elem, [vmodel].concat(host.vmodels))
 
                 avalon.vmodels[vmodel.$id] = vmodel
                 if (!elem.childNodes.length) {
