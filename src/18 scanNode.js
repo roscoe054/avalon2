@@ -9,12 +9,12 @@ function scanNodeArray(nodes, vmodels) {
         switch (node.nodeType) {
             case 1:
                 var elem = node, fn
-
-                scanTag(node, vmodels) //扫描元素节点
+               
 
                 if (!elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1) {
                     var library = isWidget(elem)
                     if (library) {
+                        console.log("library----")
                         var widget = elem.localName ? elem.localName.replace(library + ":", "") : elem.nodeName
                         var fullName = library + ":" + camelize(widget)
                         componentQueue.push({
@@ -30,6 +30,7 @@ function scanNodeArray(nodes, vmodels) {
                         }
                     }
                 }
+                 scanTag(node, vmodels) //扫描元素节点
                 if (node.msHasEvent) {
                     avalon.fireDom(node, "datasetchanged", {
                         bubble: node.msHasEvent

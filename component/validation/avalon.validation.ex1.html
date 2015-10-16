@@ -5,7 +5,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width">
         <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
-        <script src="../../avalon.js"></script>
+    
+       <script src="../../avalon.js"></script>
         <script src="../style/highlight/shCore.js"></script>
         <style >
             .error{
@@ -23,8 +24,8 @@
 
             if (document.namespace)
                 document.namespaces.add("oni", 'http://www.w3.org/1999/xhtml')
-
-            require(["./component/validation/avalon.validation", "domReady!"], function () {
+       require(["./component/validation/avalon.validation", "domReady!"], function () {
+       
                 function showError(el, data) {
                     var next = el.nextSibling
                     if (!(next && next.className === "error-tip")) {
@@ -93,7 +94,7 @@
         </script>
     </head>
     <body>
-        <h1>&lt;oni:validation&gt;标签应该放在form底下,现在除了没有onInit方法,其他照旧</h1>
+        <h1>&lt;oni:validation&gt;标签应该放在form底下</h1>
         <form ms-controller="test" >
             <oni:validation $id='v' >
                 <h3>验证组件</h3>

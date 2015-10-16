@@ -69,6 +69,7 @@ avalon.component = function (name, opts) {
                 elem.msResolved = 1
                 vmodel.$init(vmodel, elem)
                 global.$init(vmodel, elem)
+                console.log("init")
                 var nodes = elem.childNodes
                 //收集插入点
                 var slots = {}, snode
@@ -128,7 +129,7 @@ avalon.component = function (name, opts) {
                             e.stopPropagation()
                         }
                     }
-
+                    console.log("dependencies "+dependencies)
                     if (dependencies === 0) {
                         var id1 = setTimeout(function () {
                             clearTimeout(id1)
@@ -158,6 +159,7 @@ avalon.component = function (name, opts) {
                 scanTag(elem, [vmodel].concat(host.vmodels))
 
                 avalon.vmodels[vmodel.$id] = vmodel
+                avalon.log("添加组件VM: "+vmodel.$id)
                 if (!elem.childNodes.length) {
                     avalon.fireDom(elem, "datasetchanged", {library: library, vm: vmodel, childReady: -1})
                 } else {

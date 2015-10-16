@@ -5,7 +5,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width">
         <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
-        <script src="../../avalon.js"></script>
+        <!--        <script src="../../avalon.js"></script>-->
+        <script src="../../dist/avalon.modern.js"></script>
         <script src="../style/highlight/shCore.js"></script>
         <style >
             .error{
@@ -23,10 +24,10 @@
         <script>
             if (document.namespace)
                 document.namespaces.add("oni", 'http://www.w3.org/1999/xhtml')
-
-            require(["./component/validation/avalon.validation", "domReady!"], function () {
+            require(["../component/validation/avalon.validation", "domReady!"], function () {
+                //   require(["./component/validation/avalon.validation", "domReady!"], function () {
                 var validationVM
-   
+
                 function showError(el, data) {
                     var next = el.nextSibling
                     if (!(next && next.className === "error-tip")) {
@@ -60,7 +61,7 @@
                         validationVM && validationVM.resetAll()
                     },
                     validation: {
-                        onInit: function(vm){
+                        onInit: function (vm) {
                             validationVM = vm
                         },
                         onReset: function () {

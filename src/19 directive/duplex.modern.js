@@ -152,9 +152,11 @@ var duplexBinding = avalon.directive("duplex", {
     },
     update: function (value) {
         var elem = this.element, binding = this, curValue
+        console.log("xxxxxxx")
         if (!this.init) {
             for (var i in avalon.vmodels) {
                 var v = avalon.vmodels[i]
+                console.log(i)
                 v.$fire("avalon-ms-duplex-init", binding)
             }
             var cpipe = binding.pipe || (binding.pipe = pipe)

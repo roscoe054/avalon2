@@ -1803,7 +1803,6 @@ avalon.injectBinding = function (binding) {
         } catch (e) {
             delete binding.getter
             log("warning:exception throwed in [avalon.injectBinding] ", e)
-            log(e)
             var node = binding.element
             if (node && node.nodeType === 3) {
                 node.nodeValue = openTag + (binding.oneTime ? "::" : "") + binding.expr + closeTag
@@ -3170,12 +3169,13 @@ function scanNodeArray(nodes, vmodels) {
         switch (node.nodeType) {
             case 1:
                 var elem = node, fn
-
-                scanTag(node, vmodels) //扫描元素节点
+                 console.log(elem.nodeName)
+               
 
                 if (!elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1) {
                     var library = isWidget(elem)
                     if (library) {
+                        console.log("library----")
                         var widget = elem.localName ? elem.localName.replace(library + ":", "") : elem.nodeName
                         var fullName = library + ":" + camelize(widget)
                         componentQueue.push({
@@ -3191,6 +3191,7 @@ function scanNodeArray(nodes, vmodels) {
                         }
                     }
                 }
+                 scanTag(node, vmodels) //扫描元素节点
                 if (node.msHasEvent) {
                     avalon.fireDom(node, "datasetchanged", {
                         bubble: node.msHasEvent
@@ -3425,6 +3426,7 @@ avalon.component = function (name, opts) {
                 elem.msResolved = 1
                 vmodel.$init(vmodel, elem)
                 global.$init(vmodel, elem)
+                console.log("init")
                 var nodes = elem.childNodes
                 //收集插入点
                 var slots = {}, snode
@@ -3484,7 +3486,7 @@ avalon.component = function (name, opts) {
                             e.stopPropagation()
                         }
                     }
-
+                    console.log("dependencies "+dependencies)
                     if (dependencies === 0) {
                         var id1 = setTimeout(function () {
                             clearTimeout(id1)
@@ -3511,9 +3513,10 @@ avalon.component = function (name, opts) {
 
                     }
                 })
-                                            scanTag(elem, [vmodel].concat(host.vmodels))
+                scanTag(elem, [vmodel].concat(host.vmodels))
 
                 avalon.vmodels[vmodel.$id] = vmodel
+                avalon.log("添加组件VM: "+vmodel.$id)
                 if (!elem.childNodes.length) {
                     avalon.fireDom(elem, "datasetchanged", {library: library, vm: vmodel, childReady: -1})
                 } else {
@@ -3974,8 +3977,11 @@ var duplexBinding = avalon.directive("duplex", {
     },
     update: function (value) {
         var elem = this.element, binding = this, curValue
+        console.log("xxxxxx")
         if (!this.init) {
+            
             for (var i in avalon.vmodels) {
+                console.log(i)
                 var v = avalon.vmodels[i]
                 v.$fire("avalon-ms-duplex-init", binding)
             }
