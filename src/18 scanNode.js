@@ -9,12 +9,9 @@ function scanNodeArray(nodes, vmodels) {
         switch (node.nodeType) {
             case 1:
                 var elem = node, fn
-               
-
                 if (!elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1) {
                     var library = isWidget(elem)
                     if (library) {
-                        console.log("library----")
                         var widget = elem.localName ? elem.localName.replace(library + ":", "") : elem.nodeName
                         var fullName = library + ":" + camelize(widget)
                         componentQueue.push({

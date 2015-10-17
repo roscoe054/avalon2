@@ -127,6 +127,15 @@ var duplexBinding = avalon.directive("duplex", {
                         callback.call(elem, val)
                     }
                 })
+                binding.bound("datasetchanged", function (e) {
+                    if (e.bubble === "selectDuplex") {
+                        var value = binding._value
+                        var curValue = Array.isArray(value) ? value.map(String) : value + ""
+                        avalon(elem).val(curValue)
+                        elem.oldValue = curValue + ""
+                        binding.changed.call(elem, curValue)
+                    }
+                })
                 break
         }
         if (binding.xtype === "input" && !rnoduplexInput.test(elem.type)) {
@@ -153,11 +162,9 @@ var duplexBinding = avalon.directive("duplex", {
     },
     update: function (value) {
         var elem = this.element, binding = this, curValue
-        console.log("xxxxxxx")
         if (!this.init) {
             for (var i in avalon.vmodels) {
                 var v = avalon.vmodels[i]
-                console.log(i)
                 v.$fire("avalon-ms-duplex-init", binding)
             }
             var cpipe = binding.pipe || (binding.pipe = pipe)
@@ -196,17 +203,14 @@ var duplexBinding = avalon.directive("duplex", {
             case "select":
                 //必须变成字符串后才能比较
                 binding._value = value
-                elem.msHasEvent = "selectDuplex"
-                //必须等到其孩子准备好才触发
-                avalon.bind(elem, "datasetchanged", function (e) {
-                    if (e.bubble === "selectDuplex") {
-                        var value = binding._value
-                        var curValue = Array.isArray(value) ? value.map(String) : value + ""
-                        avalon(elem).val(curValue)
-                        elem.oldValue = curValue + ""
-                        binding.changed.call(elem, curValue)
-                    }
-                })
+                if(!elem.msHasEvent){
+                    elem.msHasEvent = "selectDuplex"
+                    //必须等到其孩子准备好才触发
+                }else{
+                    avalon.fireDom(elem, "datasetchanged", {
+                        bubble: elem.msHasEvent
+                    })
+                }
                 break
         }
         if (binding.xtype !== "select") {
