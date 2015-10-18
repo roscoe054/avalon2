@@ -90,12 +90,16 @@ avalon.directive("repeat", {
             if (!proxy) {
                 
                 proxy = getProxyVM(this)
-                proxy.$up = value
+                proxy.$up = null
                 if (xtype === "array") {
                     action = "add"
                     proxy.$id = keyOrId
-
-                    proxy[param] = value[i] //index
+                    var valueItem = value[i]
+                    proxy[param] = valueItem //index
+                    if(Object(valueItem) === valueItem){
+                        valueItem.$ups = valueItem.$ups || {}
+                        valueItem.$ups[param] = proxy
+                    }
 
                 } else {
                     action = "append"

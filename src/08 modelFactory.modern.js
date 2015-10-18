@@ -128,7 +128,7 @@ function observeObject(source, options) {
     })
 
     /* jshint ignore:start */
-    hideProperty($vmodel, "$ups", {})
+    hideProperty($vmodel, "$ups", null)
     hideProperty($vmodel, "$id", "anonymous")
     hideProperty($vmodel, "$up", old ? old.$up : null)
     hideProperty($vmodel, "$track", Object.keys(hasOwn))
@@ -264,7 +264,6 @@ function observeArray(array, old, watch) {
         for (var i in newProto) {
             array[i] = newProto[i]
         }
-        hideProperty(array, "$ups", {})
         hideProperty(array, "$up", null)
         hideProperty(array, "$pathname", "")
         hideProperty(array, "$track", createTrack(array.length))

@@ -1,36 +1,60 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>复杂</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!--<script src="../avalon.js"></script>-->
+        <script src="avalon.js"></script>
 
-        <style type="text/css">
-            [ms-controller],[ms-important],.ms-controller, .ms-important{visibility:hidden;}
+        <style>
+            .active{
+                border: 5px outset red ;
+            }
         </style>
-
-    </head>
-    <body>
-
-
-
-
-        <script type="text/javascript" src="avalon.js"></script>
-
-        <script type="text/javascript">
-            avalon.ready(function () {
-                var model = avalon.define({
-                    $id: "test",
-                    arr: [{a: {
-                                d:33
-                            }
-                        }],
-                    change: function (el) {
-                        el.d = new Date - 0
+        <script>
+            var vm = avalon.define({
+                $id: "test",
+                all:true,
+                arr:[{
+                    name:"n1",
+                    obj:{
+                        key:"k1",
+                        flag:false
                     }
-                });
-                avalon.scan(document.body);
-            });
+                },{
+                    name:"n2",
+                    obj:{
+                        key:"k2",
+                        flag:false
+                    }
+                }],
+                click: function () {
+                    vm.all = !vm.all
+                },
+                item_click:function(obj){
+                    console.log("========")
+                    obj.flag =  !obj.flag
+                }
+            })
 
         </script>
-        <div ms-controller="test" ms-repeat="arr" ms-click="change(el.a)">{{el.a.d}}</div>
+    </head>
+    <body ms-controller="test">
+        <p><button ms-click="click" type="button" ms-class-1="active:all">button</button></p>
+
+        <table>
+            <tr ms-repeat-item="arr">
+                <td>name:{{item.name}}</td>
+                <td>
+                    <span style="width: 10px;height: 10px;" ms-class-1="active:item.obj.flag"
+                          ms-click="item_click(item.obj)">
+                       FLAG
+                    </span>
+
+                </td>
+            </tr>
+
+        </table>
+
     </body>
 </html>

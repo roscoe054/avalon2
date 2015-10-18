@@ -1,9 +1,9 @@
 function $watch(expr, binding) {
     var $events = this.$events || (this.$events = {})
-    if (this.$id.indexOf("$proxy$") === 0 && /^\w+\./.test(expr)) {
-        expr = expr.replace(/^\w+\./, "*.") //处理代理VM
-        this.$up && (this.$up.$ups[expr] = this)
-    }
+//    if (this.$id.indexOf("$proxy$") === 0 && /^\w+\./.test(expr)) {
+//        expr = expr.replace(/^\w+\./, "*.") //处理代理VM
+//        this.$up && (this.$up.$ups[expr] = this)
+//    }
     var queue = $events[expr] || ($events[expr] = [])
     if (typeof binding === "function") {
         var backup = binding
@@ -54,7 +54,7 @@ function $emit(key, args) {
         var arr = event[key]
         notifySubscribers(arr, args)
         var parent = this.$up
-        if (parent && !/\*\./.test(key)) {
+        if (parent) {
             if (this.$pathname) {
                 $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
             }
@@ -63,15 +63,19 @@ function $emit(key, args) {
         }
     } else {
         parent = this.$up
+       
+        if(this.$ups ){
+            for(var i in this.$ups){
+                $emit.call(this.$ups[i], i+"."+key, args)//以确切的值往上冒泡
+            }
+            return
+        }
         if (parent) {
             var p = this.$pathname
             if (p === "")
                 p = "*"
             var path = p + "." + key
-            if (parent.$ups && parent.$ups[path]) {
-                parent = parent.$ups[path]
-            }
-            var arr = path.split(".")
+            arr = path.split(".")
             if (arr.indexOf("*") === -1) {
                 $emit.call(parent, path, args)//以确切的值往上冒泡
                 arr[1] = "*"
