@@ -11,7 +11,7 @@ avalon.define = function (source) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors")
+var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors,$ups")
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -137,6 +137,7 @@ function observeObject(source, options) {
     })
 
     /* jshint ignore:start */
+    hideProperty($vmodel, "$ups", {})
     hideProperty($vmodel, "$id", "anonymous")
     hideProperty($vmodel, "$up", old ? old.$up : null)
     hideProperty($vmodel, "$track", Object.keys(hasOwn))
@@ -281,7 +282,7 @@ function observeArray(array, old, watch) {
         for (var i in newProto) {
             array[i] = newProto[i]
         }
-
+        hideProperty(array, "$ups", {})
         hideProperty(array, "$up", null)
         hideProperty(array, "$pathname", "")
         hideProperty(array, "$track", createTrack(array.length))

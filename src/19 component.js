@@ -69,7 +69,6 @@ avalon.component = function (name, opts) {
                 elem.msResolved = 1
                 vmodel.$init(vmodel, elem)
                 global.$init(vmodel, elem)
-                console.log("init")
                 var nodes = elem.childNodes
                 //收集插入点
                 var slots = {}, snode
@@ -129,7 +128,6 @@ avalon.component = function (name, opts) {
                             e.stopPropagation()
                         }
                     }
-                    console.log("dependencies "+dependencies)
                     if (dependencies === 0) {
                         var id1 = setTimeout(function () {
                             clearTimeout(id1)

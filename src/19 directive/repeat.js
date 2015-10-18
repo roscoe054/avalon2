@@ -11,7 +11,6 @@ avalon.directive("repeat", {
             effectBinding(elem, binding)
             binding.param = binding.param || "el"
             binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", binding.vmodels)
-            // binding.renderedCallback = 
             var rendered = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
 
             var signature = generateID(type)
@@ -89,8 +88,9 @@ avalon.directive("repeat", {
             var keyOrId = track[i] //array为随机数, object 为keyName
             var proxy = retain[keyOrId]
             if (!proxy) {
+                
                 proxy = getProxyVM(this)
-
+                proxy.$up = value
                 if (xtype === "array") {
                     action = "add"
                     proxy.$id = keyOrId

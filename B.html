@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title></title>
+        <title>复杂</title>
 
         <style type="text/css">
             [ms-controller],[ms-important],.ms-controller, .ms-important{visibility:hidden;}
@@ -9,9 +9,9 @@
 
     </head>
     <body>
-      
 
-       
+
+
 
         <script type="text/javascript" src="avalon.js"></script>
 
@@ -19,17 +19,18 @@
             avalon.ready(function () {
                 var model = avalon.define({
                     $id: "test",
-                    arr: [1,2,3,4],
-                    callback: function(a){
-                        console.log(a, this)
+                    arr: [{a: {
+                                d:33
+                            }
+                        }],
+                    change: function (el) {
+                        el.d = new Date - 0
                     }
                 });
-
                 avalon.scan(document.body);
-
             });
 
         </script>
-        <div ms-controller="test" ms-repeat="arr" data-repeat-rendered="callback">{{el}}</div>
+        <div ms-controller="test" ms-repeat="arr" ms-click="change(el.a)">{{el.a.d}}</div>
     </body>
 </html>

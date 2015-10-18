@@ -940,6 +940,10 @@ kernel.maxRepeatSize = 100
 avalon.config = kernel
 function $watch(expr, binding) {
     var $events = this.$events || (this.$events = {})
+    if (this.$id.indexOf("$proxy$") === 0 && /^\w+\./.test(expr)) {
+        expr = expr.replace(/^\w+\./, "*.") //处理代理VM
+        this.$up && (this.$up.$ups[expr] = this)
+    }
     var queue = $events[expr] || ($events[expr] = [])
     if (typeof binding === "function") {
         var backup = binding
@@ -954,7 +958,7 @@ function $watch(expr, binding) {
         }
         binding.wildcard = /\*/.test(expr)
     }
-   
+
     if (!binding.update) {
         if (/\w\.*\B/.test(expr)) {
             binding.getter = noop
@@ -981,31 +985,37 @@ function $watch(expr, binding) {
         binding.element = DOC.createElement("a")
     }
 }
-
 function $emit(key, args) {
     var event = this.$events
     if (event && event[key]) {
         if (args) {
             args[2] = key
         }
-        notifySubscribers(event[key], args)
+        var arr = event[key]
+        notifySubscribers(arr, args)
         var parent = this.$up
-        if (parent) {
+        if (parent && !/\*\./.test(key)) {
             if (this.$pathname) {
                 $emit.call(parent, this.$pathname + "." + key, args)//以确切的值往上冒泡
             }
 
-           $emit.call(parent, "*." + key, args)//以模糊的值往上冒泡
+            $emit.call(parent, "*." + key, args)//以模糊的值往上冒泡
         }
     } else {
         parent = this.$up
         if (parent) {
-            var path = this.$pathname + "." + key
+            var p = this.$pathname
+            if (p === "")
+                p = "*"
+            var path = p + "." + key
+            if (parent.$ups && parent.$ups[path]) {
+                parent = parent.$ups[path]
+            }
             var arr = path.split(".")
             if (arr.indexOf("*") === -1) {
                 $emit.call(parent, path, args)//以确切的值往上冒泡
                 arr[1] = "*"
-                $emit.call(parent, arr.join("."), args)//以确切的值往上冒泡
+                $emit.call(parent, arr.join("."), args)//以模糊的值往上冒泡
             } else {
                 $emit.call(parent, path, args)//以确切的值往上冒泡
             }
@@ -1086,7 +1096,7 @@ avalon.define = function (source) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors")
+var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors,$ups")
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -1212,6 +1222,7 @@ function observeObject(source, options) {
     })
 
     /* jshint ignore:start */
+    hideProperty($vmodel, "$ups", {})
     hideProperty($vmodel, "$id", "anonymous")
     hideProperty($vmodel, "$up", old ? old.$up : null)
     hideProperty($vmodel, "$track", Object.keys(hasOwn))
@@ -1356,7 +1367,7 @@ function observeArray(array, old, watch) {
         for (var i in newProto) {
             array[i] = newProto[i]
         }
-
+        hideProperty(array, "$ups", {})
         hideProperty(array, "$up", null)
         hideProperty(array, "$pathname", "")
         hideProperty(array, "$track", createTrack(array.length))
@@ -3422,7 +3433,6 @@ avalon.component = function (name, opts) {
                 elem.msResolved = 1
                 vmodel.$init(vmodel, elem)
                 global.$init(vmodel, elem)
-                console.log("init")
                 var nodes = elem.childNodes
                 //收集插入点
                 var slots = {}, snode
@@ -3482,7 +3492,6 @@ avalon.component = function (name, opts) {
                             e.stopPropagation()
                         }
                     }
-                    console.log("dependencies "+dependencies)
                     if (dependencies === 0) {
                         var id1 = setTimeout(function () {
                             clearTimeout(id1)
@@ -4906,7 +4915,6 @@ avalon.directive("repeat", {
             effectBinding(elem, binding)
             binding.param = binding.param || "el"
             binding.sortedCallback = getBindingCallback(elem, "data-with-sorted", binding.vmodels)
-            // binding.renderedCallback = 
             var rendered = getBindingCallback(elem, "data-" + type + "-rendered", binding.vmodels)
 
             var signature = generateID(type)
@@ -4984,8 +4992,9 @@ avalon.directive("repeat", {
             var keyOrId = track[i] //array为随机数, object 为keyName
             var proxy = retain[keyOrId]
             if (!proxy) {
+                
                 proxy = getProxyVM(this)
-
+                proxy.$up = value
                 if (xtype === "array") {
                     action = "add"
                     proxy.$id = keyOrId

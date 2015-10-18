@@ -11,7 +11,7 @@ avalon.define = function (source) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors")
+var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$ups,$track,$accessors")
 
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
 //标准浏览器使用__defineGetter__, __defineSetter__实现
@@ -128,6 +128,7 @@ function observeObject(source, options) {
     })
 
     /* jshint ignore:start */
+    hideProperty($vmodel, "$ups", {})
     hideProperty($vmodel, "$id", "anonymous")
     hideProperty($vmodel, "$up", old ? old.$up : null)
     hideProperty($vmodel, "$track", Object.keys(hasOwn))
@@ -140,14 +141,14 @@ function observeObject(source, options) {
             return $watch.apply($vmodel, arguments)
         })
         hideProperty($vmodel, "$fire", function (path, a) {
-            if(path.indexOf("all!") === 0 ){
+            if (path.indexOf("all!") === 0) {
                 var ee = path.slice(4)
-                for(var i in avalon.vmodels){
+                for (var i in avalon.vmodels) {
                     var v = avalon.vmodels[i]
                     v.$fire && v.$fire.apply(v, [ee, a])
                 }
-            }else{
-               $emit.call($vmodel, path, [a])
+            } else {
+                $emit.call($vmodel, path, [a])
             }
         })
     }
@@ -263,7 +264,7 @@ function observeArray(array, old, watch) {
         for (var i in newProto) {
             array[i] = newProto[i]
         }
-
+        hideProperty(array, "$ups", {})
         hideProperty(array, "$up", null)
         hideProperty(array, "$pathname", "")
         hideProperty(array, "$track", createTrack(array.length))
@@ -321,7 +322,7 @@ function toJson(val) {
         for (i in val) {
             if (val.hasOwnProperty(i)) {
                 var value = val[i]
-                obj[i] = value && value.nodeType ? value :toJson(value)
+                obj[i] = value && value.nodeType ? value : toJson(value)
             }
         }
         return obj
