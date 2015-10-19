@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.modern.js 1.5.4 built in 2015.10.18
+ avalon.modern.js 1.5.4 built in 2015.10.19
  support IE10+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -2801,7 +2801,6 @@ avalon.component = function (name, opts) {
                 var nodes = elem.childNodes
                 //收集插入点
                 var slots = {}, snode
-
                 for (var s = 0, el; el = nodes[s++]; ) {
                     var type = el.nodeType === 1 && el.getAttribute("slot") || keepSolt
                     if (type) {

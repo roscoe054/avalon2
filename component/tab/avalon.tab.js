@@ -30,7 +30,9 @@ define(["avalon", "text!./avalon.tab.html",
 
     var _interface = avalon.noop
     avalon.component("oni:tabs", {
+        $skipArray: ["tab"],
         tabs: [],
+        tab: "",
         tabpanels: [],
         sliderIndex: 0,
         sliderLength: 0,
@@ -82,7 +84,7 @@ define(["avalon", "text!./avalon.tab.html",
         $construct: function (a, b, c) {
             return avalon.mix(a, b, c)
         },
-        _tabTitle:_interface,
+        _tabTitle: _interface,
         $init: function (vm, elem) {
             vm.$template = vm.$$template(vm.$template)
 
@@ -380,6 +382,22 @@ define(["avalon", "text!./avalon.tab.html",
             }
             vm.onInit(vm)
         },
+        //收集<div slot='tab'>上面的数据
+        collectData: function (vm, elem) {
+            vm.tabs.push({
+                title: elem.title || "notitle",
+                removable: !!elem.getAttribute("removable"),
+                linkOnly: !!elem.getAttribute("link-only"),
+                target: !!elem.getAttribute("target") || "_self",
+                disabled: elem.getAttribute("disabled") === "true",
+                href: elem.getAttribute("href")
+            })
+
+            vm.tabpanels.push({
+                content: elem.innerHTML,
+                contentType: elem.getAttribute("content-type") || "content"
+            })
+        },
         $childReady: function (vm, elem, e) {
             console.log(elem.innerHTML)
             vm.tabs.push({
@@ -390,7 +408,7 @@ define(["avalon", "text!./avalon.tab.html",
                 disabled: elem.getAttribute("disabled") === "true",
                 href: elem.getAttribute("href")
             })
-            
+
             vm.tabpanels.push({
                 content: elem.innerHTML,
                 contentType: elem.getAttribute("content-type") || "content"
@@ -398,49 +416,49 @@ define(["avalon", "text!./avalon.tab.html",
             vm.$refs[e.vm.$id] = e.vm
         },
         $ready: function (vm, elem, vs) {
-            console.log(vm.tabs)
+            if (vm.tab && vm.tab.nodeType === 11) {
+                for (var i = 0, node; node = vm.tab.childNodes[i++]; ) {
+                    if (node.nodeType === 1) {
+                        vm.collectData(vm, node)
+                    }
+                }
+                vm.tab = ""
+            }
+
             vm.active = vm.active >= vm.tabs.length && vm.tabs.length - 1 ||
                     vm.active < 0 && 0 || parseInt(vm.active) >> 0
 
             avalon(elem).addClass("oni-tab oni-widget oni-widget-content" +
-                    (vm.event == "click" ? " oni-tab-click" : "") + (vm.dir == "v" ?
-                    " oni-tab-vertical" : "") + (vm.dir != "v" && vm.uiSize == "small" ? " oni-tab-small" : ""))
+                    (vm.event === "click" ? " oni-tab-click" : "") + (vm.dir === "v" ?
+                    " oni-tab-vertical" : "") + (vm.dir != "v" && vm.uiSize === "small" ? " oni-tab-small" : ""))
             // tab列表
             var string = vm.$template
             var arr = string.split("MS_OPTION_SPLIT")
-          //  console.log(arr)
             var tabFrag = _getTemplate(arr[0], vm);
             var panelFrag = _getTemplate(arr[1] || "", vm)
             elem.innerHTML = vm.bottom ? panelFrag + tabFrag : tabFrag + panelFrag
-         //   avalon.scan(elem, [vm].concat(vs))
+            avalon.scan(elem, [vm].concat(vs))
             if (vm.autoSwitch) {
                 vm._autoSwitch()
             }
 
         }
     })
-    avalon.component("oni:tab", {
-        disabled: false,
-        $$template:false,
-        $ready: function (vm, elem) {
-            vm.$dispose()
-            elem.parentNode.removeChild(elem)
-        }
-    })
+
     return avalon
 })
 /*
  <oni:tabs class="tabs-positive tabs-icon-only">
  
- <oni:tab title="Home" >
+ <oni:tab title="Home" slot="tab" >
  <!-- Tab 1 content -->
  </oni:tab>
  
- <oni:tab title="About">
+ <oni:tab title="About" slot="tab">
  <!-- Tab 2 content -->
  </oni:tab>
  
- <oni:tab title="Settings" >
+ <oni:tab title="Settings" slot="tab">
  <!-- Tab 3 content -->
  </oni:tab>
  

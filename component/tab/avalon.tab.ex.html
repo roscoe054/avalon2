@@ -11,7 +11,17 @@
             require(["./component/tab/avalon.tab"], function (avalon) {
                 
                 avalon.define({
-                    $id: "test"
+                    $id: "test",
+                    peaple: {
+                        title: "人类",
+                        content: "我是来搞笑的"
+                    },
+
+                    peaple2: {
+                        title: "人类",
+                        removable: false,
+                        content: "我是来搞笑的"
+                    }
                 })
                 avalon.scan()
             })
@@ -33,7 +43,7 @@
                         点击我激活动一个tab!
                     </a>
                 </div>
-                <oni:tab title="电器" removable="true" slot="tab">
+                <div title="电器" removable="true" slot="tab">
                     line 3 -
                     <a href="#" ms-click="add(peaple2)" >
                         点击我添加一个不能删除的tab!
