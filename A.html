@@ -1,71 +1,24 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>使用JS</title>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            .box { width:100px; height:100px; overflow:hidden;background: red; }
-
-
-        </style>
-        <script src="avalon.js"></script>
-        <script src="jquery.js"></script>
-    </head>
-    <body>
+        <meta name="viewport" content="width=device-width">
+        <script src="avalon.js" ></script>
         <script>
-
-            avalon.component("oni:tabs", {
-                tabs: [],
-                tabpanels: [],
-                active: 0,
-                $init: function (vm) {
-                    vm.$$template = false
-                },
-                $childReady: function (vm, elem) {
-                    vm.tabs.push({
-                        title: elem.title || "notitle",
-                        removable: !!elem.getAttribute("removable"),
-                        linkOnly: :!!elem.getAttribute("link-only"),
-                        target: !!elem.getAttribute("target") || "_self",
-                        disabled: elem.getAttribute("disabled") === "true",
-                        href: elem.getAttribute("href")
-                    })
-                    vm.tabpanels.push({
-                        content: elem.innerHTML,
-                        contentType: elem.getAttribute("content-type") || "content"
-                    })
-                },
-                $ready: function () {
-                }
+            var model = avalon.define({
+                $id: "test",
+                aaa: {b: "2"}
             })
-            avalon.component("oni:tab", {
-                disabled: false,
-                $ready: function (vm, elem) {
-                   
-                    vm.$dispose()
-                    elem.parentNode.removeChild(elem)
-                }
+            model.$watch("aaa.b", function (a, b) {
+                console.log("aaa.b is ", a, b)
             })
-
-
-            var vm = avalon.define({
-                $id: 'xxx',
-                toggle: false,
-                click: function () {
-                    vm.toggle = !vm.toggle;
-                }
-            });
+            setTimeout(function () {
+                model.aaa = {b: "3", c: 1}
+            }, 2000)
 
         </script>
-        <div ms-controller="xxx">
-            <oni:tabs>
-                <oni:tab>1111</oni:tab>
-                <oni:tab>1111</oni:tab>
-
-                <oni:tab>1111</oni:tab>
-            </oni:tabs>
-        </div>
-
+    </head>
+    <body ms-controller="test" class='ms-hover'>
+        <input type="text" ms-duplex-string="aaa.b"></input>
     </body>
 </html>

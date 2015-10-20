@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.js 1.5.4 built in 2015.10.19
+ avalon.mobile.js 1.5.4 built in 2015.10.20
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -996,12 +996,13 @@ function observeObject(source, options) {
 
     //必须设置了$active,$events
     simple.forEach(function (name) {
+        var oldVal = old && old[name]
         var val = $vmodel[name] = source[name]
         if (val && typeof val === "object") {
             val.$up = $vmodel
             val.$pathname = name
         }
-        $emit.call($vmodel, name)
+        $emit.call($vmodel, name,[val,oldVal])
     })
     for (name in computed) {
         value = $vmodel[name]

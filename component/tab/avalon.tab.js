@@ -398,23 +398,7 @@ define(["avalon", "text!./avalon.tab.html",
                 contentType: elem.getAttribute("content-type") || "content"
             })
         },
-        $childReady: function (vm, elem, e) {
-            console.log(elem.innerHTML)
-            vm.tabs.push({
-                title: elem.title || "notitle",
-                removable: !!elem.getAttribute("removable"),
-                linkOnly: !!elem.getAttribute("link-only"),
-                target: !!elem.getAttribute("target") || "_self",
-                disabled: elem.getAttribute("disabled") === "true",
-                href: elem.getAttribute("href")
-            })
-
-            vm.tabpanels.push({
-                content: elem.innerHTML,
-                contentType: elem.getAttribute("content-type") || "content"
-            })
-            vm.$refs[e.vm.$id] = e.vm
-        },
+ 
         $ready: function (vm, elem, vs) {
             if (vm.tab && vm.tab.nodeType === 11) {
                 for (var i = 0, node; node = vm.tab.childNodes[i++]; ) {
@@ -436,6 +420,7 @@ define(["avalon", "text!./avalon.tab.html",
             var arr = string.split("MS_OPTION_SPLIT")
             var tabFrag = _getTemplate(arr[0], vm);
             var panelFrag = _getTemplate(arr[1] || "", vm)
+            //console.log(tabFrag + panelFrag)
             elem.innerHTML = vm.bottom ? panelFrag + tabFrag : tabFrag + panelFrag
             avalon.scan(elem, [vm].concat(vs))
             if (vm.autoSwitch) {
@@ -450,17 +435,17 @@ define(["avalon", "text!./avalon.tab.html",
 /*
  <oni:tabs class="tabs-positive tabs-icon-only">
  
- <oni:tab title="Home" slot="tab" >
+ <div title="Home" slot="tab" >
  <!-- Tab 1 content -->
- </oni:tab>
+ </div>
  
- <oni:tab title="About" slot="tab">
+ <div title="About" slot="tab">
  <!-- Tab 2 content -->
- </oni:tab>
+ </div>
  
- <oni:tab title="Settings" slot="tab">
+ <div title="Settings" slot="tab">
  <!-- Tab 3 content -->
- </oni:tab>
+ </div>
  
  </oni:tabs>
  */
