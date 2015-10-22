@@ -1,9 +1,6 @@
 function $watch(expr, binding) {
     var $events = this.$events || (this.$events = {})
-//    if (this.$id.indexOf("$proxy$") === 0 && /^\w+\./.test(expr)) {
-//        expr = expr.replace(/^\w+\./, "*.") //处理代理VM
-//        this.$up && (this.$up.$ups[expr] = this)
-//    }
+
     var queue = $events[expr] || ($events[expr] = [])
     if (typeof binding === "function") {
         var backup = binding

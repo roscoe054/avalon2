@@ -14,47 +14,44 @@
         <script>
             var vm = avalon.define({
                 $id: "test",
-                all:true,
-                arr:[{
-                    name:"n1",
-                    obj:{
-                        key:"k1",
-                        flag:false
-                    }
-                },{
-                    name:"n2",
-                    obj:{
-                        key:"k2",
-                        flag:false
-                    }
-                }],
-                click: function () {
-                    vm.all = !vm.all
-                },
-                item_click:function(obj){
-                    console.log("========")
-                    obj.flag =  !obj.flag
-                }
+                arr: ["111", "222", "333"],
+                num: [1, 2, 3],
+                arrtext: "111,222,333",
+                numtext: "1,2,3"
+            })
+            vm.$watch("arr.length", function () {
+                vm.arrtext = vm.arr.join(",")
+            })
+            vm.$watch("num.length", function () {
+                vm.numtext = vm.num.join(",")
             })
 
         </script>
     </head>
     <body ms-controller="test">
-        <p><button ms-click="click" type="button" ms-class-1="active:all">button</button></p>
-
-        <table>
-            <tr ms-repeat-item="arr">
-                <td>name:{{item.name}}</td>
-                <td>
-                    <span style="width: 10px;height: 10px;" ms-class-1="active:item.obj.flag"
-                          ms-click="item_click(item.obj)">
-                       FLAG
-                    </span>
-
-                </td>
-            </tr>
-
-        </table>
-
+        <select ms-duplex-string="arr" multiple="multiple">
+            <option>
+                111
+            </option>
+            <option>
+                222
+            </option>
+            <option>
+                333
+            </option>
+        </select>
+        <p>{{arrtext}}</p>
+        <select ms-duplex-number="num" multiple="multiple">
+            <option>
+                1
+            </option>
+            <option>
+                2
+            </option>
+            <option>
+                3
+            </option>
+        </select>
+        <p>{{numtext}}</p>
     </body>
 </html>
