@@ -133,7 +133,7 @@ var duplexBinding = avalon.directive("duplex", {
                         var curValue = Array.isArray(value) ? value.map(String) : value + ""
                         avalon(elem).val(curValue)
                         elem.oldValue = curValue + ""
-                        binding.changed.call(elem, curValue)
+                        callback.call(elem, curValue)
                     }
                 })
                 break
@@ -214,7 +214,7 @@ var duplexBinding = avalon.directive("duplex", {
                 break
         }
         if (binding.xtype !== "select") {
-            binding.changed.call(elem, curValue)
+            binding.changed.call(elem, curValue, binding)
         }
     }
 })

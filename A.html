@@ -1,24 +1,137 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width">
-        <script src="avalon.js" ></script>
-        <script>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ms-duplex 2.0</title>
+    <style>
+        td {padding:0 20px;border: solid 1px #666;}
+    </style>
+    <script src="avalon.js"></script>
+    <script>
+        avalon.ready(function(){
             var model = avalon.define({
                 $id: "test",
-                aaa: {b: "2"}
-            })
-            model.$watch("aaa.b", function (a, b) {
-                console.log("aaa.b is ", a, b)
-            })
-            setTimeout(function () {
-                model.aaa = {b: "3", c: 1}
-            }, 2000)
-
-        </script>
-    </head>
-    <body ms-controller="test" class='ms-hover'>
-        <input type="text" ms-duplex-string="aaa.b"></input>
-    </body>
+                a: true,
+                b: true,
+                c: "",
+                d: "",
+                e: 10,
+                f: true,
+                g: ["a","b","c"],
+                h: [1,4],
+                i: [false],
+                j: "cc",
+                k: 2222,
+                l: false,
+                m: ["bbbb", "dddd"],
+                n: [11, 44],
+                o: 111,
+                p: "",
+                changedCallback: function(value, data) {
+                    console.log("value:", value);
+                    console.log("data:", data);
+                },
+                q: ""
+            });
+            avalon.scan();
+        })
+    </script>
+</head>
+<body>
+    <div ms-controller="test">
+        <h3 style="text-align: center">ms-duplex 2.0</h3>
+        <table>
+            <tr>
+                <td>
+                    <p>ms-duplex-checked<input ms-duplex-checked="a" type="radio" />{{a}} {{typeof a}}</p>
+                    <p>ms-duplex-checked<input ms-duplex-checked="b" type="checkbox" />{{b}} {{typeof b}}</p>
+                    <p>ms-duplex-string<input ms-duplex-string="c" />{{c}} {{typeof c}}</p>
+                    <p>ms-duplex-string<input ms-duplex-string="d" />{{d}} {{typeof d}}</p>
+                    <p>ms-duplex-number<input ms-duplex-number="e" data-duplex-number="weak"/>{{e}} {{typeof e}}</p>
+                    <p>ms-duplex-boolean<input ms-duplex-boolean="f" />{{f}} {{typeof f}}</p>
+                </td>
+                <td>
+                    <p>ms-duplex-string
+                        <input ms-duplex-string="g" type="checkbox" value="a" />
+                        <input ms-duplex-string="g" type="checkbox" value="b" />
+                        <input ms-duplex-string="g" type="checkbox" value="c" />
+                        <input ms-duplex-string="g" type="checkbox" value="d" />
+                        {{g}}
+                    </p>
+                    <p>ms-duplex-number
+                        <input ms-duplex-number="h" type="checkbox" value="1" />
+                        <input ms-duplex-number="h" type="checkbox" value="2" />
+                        <input ms-duplex-number="h" type="checkbox" value="3" />
+                        <input ms-duplex-number="h" type="checkbox" value="4" />
+                        {{h}}
+                    </p>
+                    <p>ms-duplex-number
+                        <input ms-duplex-boolean="i" type="checkbox" value="false" />
+                        <input ms-duplex-boolean="i" type="checkbox" value="true" />
+                        {{i}}
+                    </p>
+                    <p>ms-duplex-string/ms-duplex
+                        <select ms-duplex-string="j">
+                            <option value="aa">1111</option>
+                            <option value="bb">2222</option>
+                            <option value="cc">3333</option>
+                        </select>
+                        {{j}}
+                    </p>
+                    <p>ms-duplex-number
+                        <select ms-duplex-number="k">
+                            <option >1111</option>
+                            <option >2222</option>
+                            <option >3333</option>
+                        </select>
+                        {{k}}
+                    </p>
+                    <p>ms-duplex-boolean
+                        <select ms-duplex-boolean="l">
+                            <option >true</option>
+                            <option >false</option>
+                        </select>
+                        {{l}}
+                    </p>
+                </td>
+                <td>
+                    <p>ms-duplex-string/ms-duplex
+                        <select ms-duplex-string="m" multiple>
+                            <option>aaaa</option>
+                            <option>bbbb</option>
+                            <option>cccc</option>
+                            <option>dddd</option>
+                        </select>
+                        {{m}}
+                    </p>
+                        <p>ms-duplex-number
+                        <select ms-duplex-number="n" multiple>
+                            <option>11</option>
+                            <option>22</option>
+                            <option>33</option>
+                            <option>44</option>
+                        </select>
+                        {{n}}
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <p>data-duplex-observe</p>
+                    <p>data-duplex-focus</p>
+                    <input ms-duplex="o" ms-data-duplex-observe="false"
+                    data-duplex-focus="true" />{{o}}
+                </td>
+                <td>
+                    <p>data-duplex-changed</p>
+                    <input ms-duplex="p" data-duplex-changed="changedCallback" />{{p}}
+                </td>
+                <td>adf
+                    <p>data-duplex-event</p>
+                    <input ms-duplex="q" data-duplex-event="blur" />{{q}}
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
 </html>

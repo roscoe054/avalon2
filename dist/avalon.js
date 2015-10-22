@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5.4 built in 2015.10.21
+ avalon.js 1.5.4 built in 2015.10.22
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -1331,7 +1331,7 @@ function observe(obj, old, hasReturn, watch) {
     if (Array.isArray(obj)) {
         return observeArray(obj, old, watch)
     } else if (avalon.isPlainObject(obj)) {
-        if (old) {
+        if (old && typeof old === 'object') {
             var keys = getKeys(obj)
             var keys2 = getKeys(old)
             if (keys.join(";") === keys2.join(";")) {
@@ -3966,7 +3966,7 @@ var duplexBinding = avalon.directive("duplex", {
                         var curValue = Array.isArray(value) ? value.map(String) : value + ""
                         avalon(elem).val(curValue)
                         elem.oldValue = curValue + ""
-                        binding.changed.call(elem, curValue)
+                        callback.call(elem, curValue)
                     }
                 })
                 break
@@ -4019,7 +4019,7 @@ var duplexBinding = avalon.directive("duplex", {
                     }
                     elem.value = this.oldValue = curValue
                     if (fixCaret) {
-                        setCaret(element, pos, pos)
+                        setCaret(elem, pos, pos)
                     }
                 }
                 break
@@ -4056,7 +4056,7 @@ var duplexBinding = avalon.directive("duplex", {
                 break
         }
         if (binding.xtype !== "select") {
-            binding.changed.call(elem, curValue)
+            binding.changed.call(elem, curValue,binding)
         }
     }
 })
