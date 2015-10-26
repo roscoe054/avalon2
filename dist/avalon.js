@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5.4 built in 2015.10.22
+ avalon.js 1.5.4 built in 2015.10.26
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -4191,7 +4191,7 @@ function setCaret(ctrl, begin, end) {
             var range = ctrl.createTextRange()
             range.collapse(true);
             range.moveStart("character", begin)
-            range.moveEnd("character", end)
+           // range.moveEnd("character", end) #1125
             range.select()
         }, 17)
     } else {
