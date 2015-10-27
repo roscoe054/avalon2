@@ -207,10 +207,13 @@ var duplexBinding = avalon.directive("duplex", {
                 if (curValue !== this.oldValue) {
                     var fixCaret = false
                     if (elem.msFocus) {
-                        var pos = getCaret(elem)
-                        if (pos.start === pos.end) {
-                            pos = pos.start
-                            fixCaret = true
+                        try {
+                            var pos = getCaret(elem)
+                            if (pos.start === pos.end) {
+                                pos = pos.start
+                                fixCaret = true
+                            }
+                        } catch (e) {
                         }
                     }
                     elem.value = this.oldValue = curValue
@@ -241,10 +244,10 @@ var duplexBinding = avalon.directive("duplex", {
             case "select":
                 //必须变成字符串后才能比较
                 binding._value = value
-                if(!elem.msHasEvent){
+                if (!elem.msHasEvent) {
                     elem.msHasEvent = "selectDuplex"
                     //必须等到其孩子准备好才触发
-                }else{
+                } else {
                     avalon.fireDom(elem, "datasetchanged", {
                         bubble: elem.msHasEvent
                     })
@@ -252,7 +255,7 @@ var duplexBinding = avalon.directive("duplex", {
                 break
         }
         if (binding.xtype !== "select") {
-            binding.changed.call(elem, curValue,binding)
+            binding.changed.call(elem, curValue, binding)
         }
     }
 })
@@ -390,7 +393,7 @@ function setCaret(ctrl, begin, end) {
             var range = ctrl.createTextRange()
             range.collapse(true);
             range.moveStart("character", begin)
-           // range.moveEnd("character", end) #1125
+            // range.moveEnd("character", end) #1125
             range.select()
         }, 17)
     } else {

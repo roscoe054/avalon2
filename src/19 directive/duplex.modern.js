@@ -178,11 +178,14 @@ var duplexBinding = avalon.directive("duplex", {
                 if (curValue !== this.oldValue) {
                     var fixCaret = false
                     if (elem.msFocus) {
-                        var start = elem.selectionStart
-                        var end = elem.selectionEnd
-                        if (start === end) {
-                            var pos = start
-                            fixCaret = true
+                        try {
+                            var start = elem.selectionStart
+                            var end = elem.selectionEnd
+                            if (start === end) {
+                                var pos = start
+                                fixCaret = true
+                            }
+                        } catch (e) {
                         }
                     }
                     elem.value = this.oldValue = curValue
@@ -203,10 +206,10 @@ var duplexBinding = avalon.directive("duplex", {
             case "select":
                 //必须变成字符串后才能比较
                 binding._value = value
-                if(!elem.msHasEvent){
+                if (!elem.msHasEvent) {
                     elem.msHasEvent = "selectDuplex"
                     //必须等到其孩子准备好才触发
-                }else{
+                } else {
                     avalon.fireDom(elem, "datasetchanged", {
                         bubble: elem.msHasEvent
                     })

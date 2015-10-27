@@ -56,7 +56,7 @@ avalon.component = function (name, opts) {
                 componentDefinition.$id = $id
 
                 //==========构建VM=========
-                var keepSolt = componentDefinition.$slot
+                var keepSlot = componentDefinition.$slot
                 var keepReplace = componentDefinition.$replace
                 var keepContainer = componentDefinition.$container
                 var keepTemplate = componentDefinition.$template
@@ -73,7 +73,7 @@ avalon.component = function (name, opts) {
                 //收集插入点
                 var slots = {}, snode
                 for (var s = 0, el; el = nodes[s++]; ) {
-                    var type = el.nodeType === 1 && el.getAttribute("slot") || keepSolt
+                    var type = el.nodeType === 1 && el.getAttribute("slot") || keepSlot
                     if (type) {
                         if (slots[type]) {
                             slots[type].push(el)
@@ -156,7 +156,6 @@ avalon.component = function (name, opts) {
                 scanTag(elem, [vmodel].concat(host.vmodels))
 
                 avalon.vmodels[vmodel.$id] = vmodel
-                avalon.log("添加组件VM: "+vmodel.$id)
                 if (!elem.childNodes.length) {
                     avalon.fireDom(elem, "datasetchanged", {library: library, vm: vmodel, childReady: -1})
                 } else {
