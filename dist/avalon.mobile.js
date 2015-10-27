@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.js 1.5.4 built in 2015.10.26
+ avalon.mobile.js 1.5.5 built in 2015.10.27
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -249,7 +249,7 @@ function _number(a, len) { //用于模拟slice, splice的效果
 avalon.mix({
     rword: rword,
     subscribers: subscribers,
-    version: 1.54,
+    version: 1.55,
     ui: {},
     log: log,
     slice: function (nodes, start, end) {
@@ -2311,7 +2311,7 @@ function parseExpr(expr, vmodels, binding) {
 }
 //========
 
-function stringifyExpr(code) {
+function normalizeExpr(code) {
     var hasExpr = rexpr.test(code) //比如ms-class="width{{w}}"的情况
     if (hasExpr) {
         var array = scanExpr(code)
@@ -2326,6 +2326,7 @@ function stringifyExpr(code) {
     }
 }
 
+avalon.normalizeExpr = normalizeExpr
 avalon.parseExprProxy = parseExpr
 
 var rthimRightParentheses = /\)\s*$/
@@ -2998,7 +2999,7 @@ var attrDir = avalon.directive("attr", {
     init: function (binding) {
         //{{aaa}} --> aaa
         //{{aaa}}/bbb.html --> (aaa) + "/bbb.html"
-        binding.expr = stringifyExpr(binding.expr.trim())
+        binding.expr = normalizeExpr(binding.expr.trim())
         if (binding.type === "include") {
             var elem = binding.element
             effectBinding(elem, binding)
@@ -3505,7 +3506,7 @@ avalon.directive("effect", {
         if (!rexpr.test(text)) {
             className = quote(className)
         } else {
-            className = stringifyExpr(className)
+            className = normalizeExpr(className)
         }
         binding.expr = "[" + className + "," + rightExpr + "]"
     },

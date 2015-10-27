@@ -231,7 +231,7 @@ function parseExpr(expr, vmodels, binding) {
 }
 //========
 
-function stringifyExpr(code) {
+function normalizeExpr(code) {
     var hasExpr = rexpr.test(code) //比如ms-class="width{{w}}"的情况
     if (hasExpr) {
         var array = scanExpr(code)
@@ -246,6 +246,7 @@ function stringifyExpr(code) {
     }
 }
 
+avalon.normalizeExpr = normalizeExpr
 avalon.parseExprProxy = parseExpr
 
 var rthimRightParentheses = /\)\s*$/
