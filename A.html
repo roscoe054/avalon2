@@ -1,21 +1,31 @@
+<!DOCTYPE html>
 <html>
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width">
-        <script src="dist/avalon.modern.js" ></script>
-        <script>
-            avalon.define({
-                $id: 'demo',
-                count: 0
-            })
-            window.onload = function () {
-               var el = document.getElementById("aa")
-              // console.log(el.selectionStart)
-             // console.log( Object.prototype.hasOwnProperty.call(el,"selectionStart") )
-            }
-        </script>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title></title>
+
     </head>
-    <body ms-controller="demo" class='ms-hover'>
-        <input id="aa" ms-duplex-number="count" type="number" step="1" class="form-control" placeholder="请输入数量">
+    <body ms-controller="demo">
+
+        <select ms-duplex="selectData" data-duplex-changed="selectDataChange">
+            <option value="1">数据1</option>
+            <option value="2">数据2</option>
+            <option value="3">数据3</option>
+            <option value="4">数据4</option>
+        </select>
+
+
+        <script type="text/javascript" src="avalon.js"></script>
+        <script type="text/javascript">
+            var demoVm = avalon.define({
+                $id: "demo",
+                selectDataChange: function (val) {
+                    console.log(val);
+                },
+                selectData: "1",
+            });
+        </script>
+
     </body>
 </html>

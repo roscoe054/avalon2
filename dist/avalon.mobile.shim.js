@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.shim.js 1.5.5 built in 2015.10.27
+ avalon.mobile.shim.js 1.5.5 built in 2015.10.28
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -3287,8 +3287,11 @@ var duplexBinding = avalon.directive("duplex", {
                         val = binding.pipe(val, binding, "get")
                     }
                     if (val + "" !== binding.oldValue) {
-                        binding.setter(val)
-                        callback.call(elem, val)
+                        try {
+                            binding.setter(val)
+                        } catch (ex) {
+                            log(ex)
+                        }
                     }
                 })
                 binding.bound("datasetchanged", function (e) {

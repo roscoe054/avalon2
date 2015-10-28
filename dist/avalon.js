@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5.5 built in 2015.10.27
+ avalon.js 1.5.5 built in 2015.10.28
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -3951,7 +3951,6 @@ var duplexBinding = avalon.directive("duplex", {
                     if (val + "" !== binding.oldValue) {
                         try {
                             binding.setter(val)
-                            callback.call(elem, val)
                         } catch (ex) {
                             log(ex)
                         }
