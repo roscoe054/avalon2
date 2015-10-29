@@ -1,3 +1,8 @@
+#avalon1.5.5
+1. fix 光标问题
+2. fix data-duplex-changed回调在select标签执行两次的BUG
+3. 启动全新的UI库 [avalon.bootstrap](https://github.com/RubyLouvre/avalon.bootstrap) 欢迎大家踊跃参与
+
 #avalon1.5.4(新touch模块)
 
 1. 修正oldAccessors BUG https://github.com/RubyLouvre/avalon/issues/1091
