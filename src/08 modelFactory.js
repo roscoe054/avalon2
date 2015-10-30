@@ -38,7 +38,7 @@ function Component() {
 }
 
 function observeObject(source, options) {
-    if (!source || (source.$id && source.$accessors)) {
+    if (!source || (source.$id && source.$accessors) || (source.nodeName && source.nodeType > 0)) {
         return source
     }
     //source为原对象,不能是元素节点或null
@@ -91,7 +91,7 @@ function observeObject(source, options) {
         var value = source[name]
         if (!$$skipArray[name])
             hasOwn[name] = true
-        if (typeof value === "function" || (value && value.nodeType) ||
+        if (typeof value === "function" || (value && value.nodeName && value.nodeType > 0) ||
                 (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name]))) {
             skip.push(name)
         } else if (isComputed(value)) {
