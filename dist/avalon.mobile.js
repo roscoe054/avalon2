@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.js 1.5.5 built in 2015.10.30
+ avalon.mobile.js 1.5.5 built in 2015.10.31
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -2558,6 +2558,7 @@ function scanNodeArray(nodes, vmodels) {
                     if (library) {
                         var widget = elem.localName ? elem.localName.replace(library + ":", "") : elem.nodeName
                         var fullName = library + ":" + camelize(widget)
+                        scanTag(node, vmodels) //扫描元素节点
                         componentQueue.push({
                             library: library,
                             element: elem,
@@ -2571,7 +2572,9 @@ function scanNodeArray(nodes, vmodels) {
                         }
                     }
                 }
-                 scanTag(node, vmodels) //扫描元素节点
+                if (!widget) {
+                    scanTag(node, vmodels) //扫描元素节点
+                }
                 if (node.msHasEvent) {
                     avalon.fireDom(node, "datasetchanged", {
                         bubble: node.msHasEvent
