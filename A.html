@@ -6,25 +6,35 @@
         <title></title>
 
     </head>
-    <body ms-controller="demo">
+    <body ms-controller="test">
 
-        <select ms-duplex="selectData" data-duplex-changed="selectDataChange">
-            <option value="1">数据1</option>
-            <option value="2">数据2</option>
-            <option value="3">数据3</option>
-            <option value="4">数据4</option>
-        </select>
+    
 
 
         <script type="text/javascript" src="avalon.js"></script>
         <script type="text/javascript">
-            var demoVm = avalon.define({
-                $id: "demo",
-                selectDataChange: function (val) {
-                    console.log(val);
-                },
-                selectData: "1",
-            });
+            var a = avalon.define({
+                $id:"test",
+                a: 1,
+                b: 2,
+                c: 3
+            })
+           a.$watch("*", function(a1, b1, c1){
+               console.log(a1,b1,c1)
+           })
+           
+           setTimeout(function(){
+               a.a = 222
+               
+           })
+            setTimeout(function(){
+               a.b = 222
+               
+           }, 1000)
+            setTimeout(function(){
+               a.c = 222
+               
+           }, 2000)
         </script>
 
     </body>

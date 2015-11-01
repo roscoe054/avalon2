@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.shim.js 1.5.5 built in 2015.10.31
+ avalon.shim.js 1.5.5 built in 2015.11.1
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -3180,13 +3180,12 @@ function scanNodeArray(nodes, vmodels) {
     for (var i = 0, node; node = nodes[i++]; ) {
         switch (node.nodeType) {
             case 1:
-                var elem = node, fn
+                var elem = node
                 if (!elem.msResolved && elem.parentNode && elem.parentNode.nodeType === 1) {
                     var library = isWidget(elem)
                     if (library) {
                         var widget = elem.localName ? elem.localName.replace(library + ":", "") : elem.nodeName
                         var fullName = library + ":" + camelize(widget)
-                        scanTag(node, vmodels) //扫描元素节点
                         componentQueue.push({
                             library: library,
                             element: elem,
@@ -3200,9 +3199,9 @@ function scanNodeArray(nodes, vmodels) {
                         }
                     }
                 }
-                if (!widget) {
-                    scanTag(node, vmodels) //扫描元素节点
-                }
+               
+                scanTag(node, vmodels) //扫描元素节点
+                
                 if (node.msHasEvent) {
                     avalon.fireDom(node, "datasetchanged", {
                         bubble: node.msHasEvent
@@ -3470,12 +3469,17 @@ avalon.component = function (name, opts) {
                     }
                 }
                 slots = null
-                var child = elem.firstChild
+                var child = elem.children[0] || elem.firstChild
                 if (keepReplace) {
-                    child = elem.firstChild
                     elem.parentNode.replaceChild(child, elem)
                     child.msResolved = 1
+                    var cssText = elem.style.cssText
+                    var className = elem.className
                     elem = host.element = child
+                    elem.style.cssText = cssText
+                    if(className){
+                       avalon(elem).addClass(className)
+                    }
                 }
                 if (keepContainer) {
                     keepContainer.appendChild(elem)
