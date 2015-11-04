@@ -65,7 +65,7 @@ var duplexBinding = avalon.directive("duplex", {
         function compositionEnd() {
             composing = false
         }
-        var updateVModel = function () {
+        var updateVModel = function (e) {
             var val = elem.value //防止递归调用形成死循环
             if (composing || val === binding.oldValue || binding.pipe === null) //处理中文输入法在minlengh下引发的BUG
                 return
@@ -218,9 +218,6 @@ var duplexBinding = avalon.directive("duplex", {
                     })
                 }
                 break
-        }
-        if (binding.xtype !== "select") {
-            binding.changed.call(elem, curValue, binding)
         }
     }
 })

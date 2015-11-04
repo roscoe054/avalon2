@@ -1,41 +1,23 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html>
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="utf-8">
         <title></title>
-
+        <script src="avalon.js"></script>
+        <script>
+            avalon.ready(function(){
+                var vm = avalon.define({
+                    $id:'test',
+                    c:'xxx',
+                    change:function(){
+                        console.log(vm.c);
+                    }
+                })
+                avalon.scan();
+            })
+        </script>
     </head>
     <body ms-controller="test">
-
-    
-
-
-        <script type="text/javascript" src="avalon.js"></script>
-        <script type="text/javascript">
-            var a = avalon.define({
-                $id:"test",
-                a: 1,
-                b: 2,
-                c: 3
-            })
-           a.$watch("*", function(a1, b1, c1){
-               console.log(a1,b1,c1)
-           })
-           
-           setTimeout(function(){
-               a.a = 222
-               
-           })
-            setTimeout(function(){
-               a.b = 222
-               
-           }, 1000)
-            setTimeout(function(){
-               a.c = 222
-               
-           }, 2000)
-        </script>
-
+        <input type="text" ms-duplex-string="c" data-duplex-changed="change" />
     </body>
 </html>

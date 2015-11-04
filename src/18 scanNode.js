@@ -23,13 +23,17 @@ function scanNodeArray(nodes, vmodels) {
                             name: "widget"
                         })
                         if (avalon.components[fullName]) {
-                            avalon.component(fullName)
+                            (function (name) {//确保所有ms-attr-name扫描完再处理
+                                setTimeout(function () {
+                                    avalon.component(name)
+                                })
+                            })(fullName)
                         }
                     }
                 }
-               
+
                 scanTag(node, vmodels) //扫描元素节点
-                
+
                 if (node.msHasEvent) {
                     avalon.fireDom(node, "datasetchanged", {
                         bubble: node.msHasEvent
