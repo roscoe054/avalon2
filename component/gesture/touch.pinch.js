@@ -1,7 +1,7 @@
 define(['avalon'], function (avalon) {
-    var gestureHooks = avalon.gestureHooks
+    var Recognizer = avalon.gestureHooks
 
-    var pinchGesture = {
+    var pinchRecognizer = {
         events: ['pinchstart', 'pinch', 'pinchin', 'pinchuot', 'pinchend'],
         getScale: function (x1, y1, x2, y2, x3, y3, x4, y4) {
             return Math.sqrt((Math.pow(y4 - y3, 2) + Math.pow(x4 - x3, 2)) / (Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2)))
@@ -17,8 +17,8 @@ define(['avalon'], function (avalon) {
             return null
         },
         touchstart: function (event) {
-            var pointers = gestureHooks.pointers
-            gestureHooks.start(event, avalon.noop)
+            var pointers = Recognizer.pointers
+            Recognizer.start(event, avalon.noop)
             var elements = []
             for (var p in pointers) {
                 if (pointers[p].startTime) {
@@ -29,8 +29,8 @@ define(['avalon'], function (avalon) {
             }
             pointers.elements = elements
             if (elements.length === 2) {
-                pinchGesture.element = pinchGesture.getCommonAncestor(elements)
-                gestureHooks.fire(pinchGesture.getCommonAncestor(elements), 'pinchstart', {
+                pinchRecognizer.element = pinchRecognizer.getCommonAncestor(elements)
+                Recognizer.fire(pinchRecognizer.getCommonAncestor(elements), 'pinchstart', {
                     scale: 1,
                     touches: event.touches,
                     touchEvent: event
@@ -38,34 +38,34 @@ define(['avalon'], function (avalon) {
             }
         },
         touchmove: function (event) {
-            if (pinchGesture.element && event.touches.length > 1) {
+            if (pinchRecognizer.element && event.touches.length > 1) {
                 var position = [],
                         current = []
                 for (var i = 0; i < event.touches.length; i++) {
                     var touch = event.touches[i];
-                    var gesture = gestureHooks.pointers[touch.identifier];
+                    var gesture = Recognizer.pointers[touch.identifier];
                     position.push([gesture.startTouch.clientX, gesture.startTouch.clientY]);
                     current.push([touch.clientX, touch.clientY]);
                 }
 
-                var scale = pinchGesture.getScale(position[0][0], position[0][1], position[1][0], position[1][1],
+                var scale = pinchRecognizer.getScale(position[0][0], position[0][1], position[1][0], position[1][1],
                 current[0][0], current[0][1], current[1][0], current[1][1]);
-                pinchGesture.scale = scale
-                gestureHooks.fire(pinchGesture.element, 'pinch', {
+                pinchRecognizer.scale = scale
+                Recognizer.fire(pinchRecognizer.element, 'pinch', {
                     scale: scale,
                     touches: event.touches,
                     touchEvent: event
                 })
 
                 if (scale > 1) {
-                    gestureHooks.fire(pinchGesture.element, 'pinchout', {
+                    Recognizer.fire(pinchRecognizer.element, 'pinchout', {
                         scale: scale,
                         touches: event.touches,
                         touchEvent: event
                     })
 
                 } else {
-                    gestureHooks.fire(pinchGesture.element, 'pinchin', {
+                    Recognizer.fire(pinchRecognizer.element, 'pinchin', {
                         scale: scale,
                         touches: event.touches,
                         touchEvent: event
@@ -75,20 +75,27 @@ define(['avalon'], function (avalon) {
             event.preventDefault()
         },
         touchend: function (event) {
-            if (pinchGesture.element) {
-                gestureHooks.fire(pinchGesture.element, 'pinchend', {
-                    scale: pinchGesture.scale,
+            if (pinchRecognizer.element) {
+                Recognizer.fire(pinchRecognizer.element, 'pinchend', {
+                    scale: pinchRecognizer.scale,
                     touches: event.touches,
                     touchEvent: event
                 })
-                pinchGesture.element = null
+                pinchRecognizer.element = null
             }
-            gestureHooks.end(event, avalon.noop)
+            Recognizer.end(event, avalon.noop)
         }
     }
 
-    pinchGesture.touchcancel = pinchGesture.touchend
+    pinchRecognizer.touchcancel = pinchRecognizer.touchend
 
-    gestureHooks.add('pinch', pinchGesture)
+    Recognizer.add('pinch', pinchRecognizer)
     return avalon
 })
+/*
+ *
+在iOS中事件分为三类：
+触摸事件：通过触摸、手势进行触发（例如手指点击、缩放）
+运动事件：通过加速器进行触发（例如手机晃动）
+远程控制事件：通过其他远程设备触发（例如耳机控制按钮）
+*/

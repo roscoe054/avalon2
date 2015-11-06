@@ -1,12 +1,12 @@
 define(['avalon'], function (avalon) {
-    var gestureHooks = avalon.gestureHooks
-    var dragGesture = {
+    var Recognizer = avalon.gestureHooks
+    var dragRecognizer = {
         events: ['dragstart', 'drag', 'dragend'],
         touchstart: function (event) {
-            gestureHooks.start(event, avalon.noop)
+            Recognizer.start(event, avalon.noop)
         },
         touchmove: function (event) {
-            gestureHooks.move(event, function (pointer, touch) {
+            Recognizer.move(event, function (pointer, touch) {
                 var extra = {
                     deltaX: pointer.deltaX,
                     deltaY: pointer.deltaY,
@@ -16,18 +16,18 @@ define(['avalon'], function (avalon) {
                 }
                 if ((pointer.status === 'tapping') && pointer.distance > 10) {
                     pointer.status = 'panning'
-                    gestureHooks.fire(pointer.element, 'dragstart', extra)
+                    Recognizer.fire(pointer.element, 'dragstart', extra)
                 } else if (pointer.status === 'panning') {
-                    gestureHooks.fire(pointer.element, 'drag', extra)
+                    Recognizer.fire(pointer.element, 'drag', extra)
                 }
             })
 
             event.preventDefault();
         },
         touchend: function (event) {
-            gestureHooks.end(event, function (pointer, touch) {
+            Recognizer.end(event, function (pointer, touch) {
                 if (pointer.status === 'panning') {
-                    gestureHooks.fire(pointer.element, 'dragend', {
+                    Recognizer.fire(pointer.element, 'dragend', {
                         deltaX: pointer.deltaX,
                         deltaY: pointer.deltaY,
                         touch: touch,
@@ -36,11 +36,11 @@ define(['avalon'], function (avalon) {
                     })
                 }
             })
-            gestureHooks.pointers = {}
+            Recognizer.pointers = {}
         }
     }
-    dragGesture.touchcancel = dragGesture.touchend
+    dragRecognizer.touchcancel = dragRecognizer.touchend
 
-    gestureHooks.add('drag', dragGesture)
+    Recognizer.add('drag', dragRecognizer)
     return avalon
 })

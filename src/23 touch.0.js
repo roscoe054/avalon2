@@ -29,7 +29,7 @@ function iOSversion() {
 
 var deviceIsAndroid = ua.indexOf('android') > 0
 var deviceIsIOS = iOSversion()
-var gestureHooks = avalon.gestureHooks = {
+var Recognizer = avalon.gestureHooks = {
     pointers: {},
     start: function (event, callback) {
       
@@ -39,12 +39,12 @@ var gestureHooks = avalon.gestureHooks = {
         for (var i = 0; i < event.changedTouches.length; i++) {
             var touch = event.changedTouches[i]
             var pointer = {
-                startTouch: mixTouchAttr({}, touch),
+                startTouch: mixLocations({}, touch),
                 startTime: Date.now(),
                 status: 'tapping',
                 element: event.target
             }
-            gestureHooks.pointers[touch.identifier] = pointer;
+            Recognizer.pointers[touch.identifier] = pointer;
             callback(pointer, touch)
 
         }
@@ -52,7 +52,7 @@ var gestureHooks = avalon.gestureHooks = {
     move: function (event, callback) {
         for (var i = 0; i < event.changedTouches.length; i++) {
             var touch = event.changedTouches[i]
-            var pointer = gestureHooks.pointers[touch.identifier]
+            var pointer = Recognizer.pointers[touch.identifier]
             if (!pointer) {
                 return
             }
@@ -77,7 +77,7 @@ var gestureHooks = avalon.gestureHooks = {
 
 
                 pointer.duration += time;
-                pointer.lastTouch = mixTouchAttr({}, touch)
+                pointer.lastTouch = mixLocations({}, touch)
 
                 pointer.lastTime = Date.now()
 
@@ -96,14 +96,14 @@ var gestureHooks = avalon.gestureHooks = {
         for (var i = 0; i < event.changedTouches.length; i++) {
             var touch = event.changedTouches[i],
                     id = touch.identifier,
-                    pointer = gestureHooks.pointers[id]
+                    pointer = Recognizer.pointers[id]
 
             if (!pointer)
                 continue
 
             callback(pointer, touch)
 
-            delete gestureHooks.pointers[id]
+            delete Recognizer.pointers[id]
         }
     },
     fire: function (elem, type, props) {
@@ -114,13 +114,13 @@ var gestureHooks = avalon.gestureHooks = {
             elem.dispatchEvent(event)
         }
     },
-    add: function (name, gesture) {
+    add: function (name, recognizer) {
         function move(event) {
-            gesture.touchmove(event)
+            recognizer.touchmove(event)
         }
 
         function end(event) {
-            gesture.touchend(event)
+            recognizer.touchend(event)
 
             document.removeEventListener('touchmove', move)
 
@@ -131,7 +131,7 @@ var gestureHooks = avalon.gestureHooks = {
         }
 
         function cancel(event) {
-            gesture.touchcancel(event)
+            recognizer.touchcancel(event)
 
             document.removeEventListener('touchmove', move)
 
@@ -141,13 +141,13 @@ var gestureHooks = avalon.gestureHooks = {
 
         }
 
-        gesture.events.forEach(function (eventName) {
+        recognizer.events.forEach(function (eventName) {
             avalon.eventHooks[eventName] = {
                 fn: function (el, fn) {
                     if (!el['touch-' + name]) {
                         el['touch-' + name] = '1'
                         el.addEventListener('touchstart', function (event) {
-                            gesture.touchstart(event)
+                            recognizer.touchstart(event)
 
                             document.addEventListener('touchmove', move)
 
@@ -166,12 +166,12 @@ var gestureHooks = avalon.gestureHooks = {
 
 
 
-var touchkeys = ['screenX', 'screenY', 'clientX', 'clientY', 'pageX', 'pageY']
+var locations = ['screenX', 'screenY', 'clientX', 'clientY', 'pageX', 'pageY']
 
 // 复制 touch 对象上的有用属性到固定对象上
-function mixTouchAttr(target, source) {
+function mixLocations(target, source) {
     if (source) {
-        touchkeys.forEach(function (key) {
+        locations.forEach(function (key) {
             target[key] = source[key]
         })
     }
