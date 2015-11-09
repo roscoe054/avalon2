@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.mobile.js 1.5.5 built in 2015.11.6
+ avalon.mobile.js 1.5.5 built in 2015.11.9
  mobile
  ==================================================*/
 (function(global, factory) {
@@ -2444,6 +2444,26 @@ function bindingSorter(a, b) {
     return a.priority - b.priority
 }
 
+
+var rnoCollect = /^(ms-\S+|data-\S+|on[a-z]+|id|style|class)$/
+var ronattr = /^on\-[\w-]+$/
+function getOptionsFromTag(elem, vmodels) {
+    var attributes = elem.attributes
+    var ret = {}
+    for (var i = 0, attr; attr = attributes[i++]; ) {
+        var name = attr.name
+        if (attr.specified && !rnoCollect.test(name)) {
+            var camelizeName = camelize(attr.name)
+            if (/^on\-[\w-]+$/.test(name)) {
+                ret[camelizeName] = getBindingCallback(elem, name, vmodels) 
+            } else {
+                ret[camelizeName] = parseData(attr.value)
+            }
+        }
+
+    }
+    return ret
+}
 function scanAttr(elem, vmodels, match) {
     var scanNode = true
     if (vmodels.length) {
@@ -2531,17 +2551,7 @@ function scanAttr(elem, vmodels, match) {
 var rnoscanAttrBinding = /^if|widget|repeat$/
 var rnoscanNodeBinding = /^each|with|html|include$/
 
-var rnoCollect = /^(ms-\S+|data-\S+|on[a-z]+|id|style|class|tabindex)$/
-function getOptionsFromTag(elem) {
-    var attributes = elem.attributes
-    var ret = {}
-    for (var i = 0, attr; attr = attributes[i++]; ) {
-        if (attr.specified && !rnoCollect.test(attr.name)) {
-            ret[camelize(attr.name)] = parseData(attr.value)
-        }
-    }
-    return ret
-}
+
 function scanNodeList(parent, vmodels) {
     var nodes = avalon.slice(parent.childNodes)
     scanNodeArray(nodes, vmodels)
@@ -2769,7 +2779,7 @@ avalon.component = function (name, opts) {
 
                 //===========收集各种配置=======
 
-                var elemOpts = getOptionsFromTag(elem)
+                var elemOpts = getOptionsFromTag(elem, host.vmodels)
                 var vmOpts = getOptionsFromVM(host.vmodels, elemOpts.config || host.widget)
                 var $id = elemOpts.$id || elemOpts.identifier || generateID(widget)
                 delete elemOpts.config
