@@ -1,56 +1,28 @@
 <!DOCTYPE html>
-<html>
-    <head lang="en">
-        <meta charset="UTF-8">
-        <title></title>
-        <script type="text/javascript" src="../../vendor/avalon/avalon.js"></script>
-        <script type="text/javascript">
-            //avalon.library("test");
-            var tabVm, btnVm
-            avalon.component("test:tab", {
-                $slot: "content",//或者使用插入点机制
-                $template: '<div ms-click="onClick">{{content|html}}</div>',
-                content: "",
-                _element: {},
-                $skipArray: ["_element"],
-                onClick:function(){
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    <div class="demo" ms-controller="rank">
+        <a ms-attr-href="abc.html?id={{id}}">链接</a>
+        <a href="abc.html?id=2">链接</a>
+        <a href="abc.html?id=2">链接</a>
+        <ul>
+            <li ms-repeat="data">这里是内容_${{el}}</li>
+        </ul>
+    </div>
+    <!-- 1.5.5 | build 2015-11-09 -->
+    <script src="avalon.js"></script>
+    <script>
 
-                },
-                $ready: function (vm, el) {
-                    vm.onClick=function(){
-                        console.log('想要在点击组件的时候改变子组件str的值 （不给子组件手动配置$id，也不用/^button/i.test()匹配');
-                    }
-                    vm.onInit(vm)
-                }
-            });
-           
-            avalon.component("test:button", {
-                str: "AAA",
-                $template: '<span>{{ str }}</span>',
-                _element: {},
-                $skipArray: ["_element"],
-                $ready: function (vm, el) {
-                    vm.$watch("str", function(a){
-                        console.log(a)
-                    })
-                  
-                }
-            });
-        </script>
-        <script type="text/javascript">
-            avalon.ready(function () {
-                var vm = avalon.define({
-                    $id: "test",
+        var rank = avalon.define({
+            $id:'rank',
+            data:avalon.range(5),
+            id:1
+        });
 
-                    str: 111
-                });
-                avalon.scan(document.body, vm);
-            });
-        </script>
-    </head>
-    <body ms-controller="test">
-    <test:tab>
-        <test:button ms-attr-str="str"></test:button>
-    </test:tab>
+    </script>
 </body>
 </html>

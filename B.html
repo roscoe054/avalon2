@@ -1,57 +1,30 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <!--<script src="../avalon.js"></script>-->
-        <script src="avalon.js"></script>
-
+        <meta charset="utf-8">
+        <title></title>
         <style>
-            .active{
-                border: 5px outset red ;
-            }
+            div {height:50px;width:200px;background:green;margin:5px;}
         </style>
+        <script src="avalon.js"></script>
         <script>
+            avalon.component('ms:abc',{
+                $template:'<div></div>',
+                onClick:function(){},
+                $ready:function(vm,el){
+                  console.log(vm.$id)
+               //   console.log(el.getAttribute("identifier"))
+                }
+            });
             var vm = avalon.define({
-                $id: "test",
-                arr: ["111", "222", "333"],
-                num: [1, 2, 3],
-                arrtext: "111,222,333",
-                numtext: "1,2,3"
+                $id:'test',
+                arr:[1,2,3]
             })
-            vm.$watch("arr.length", function () {
-                vm.arrtext = vm.arr.join(",")
-            })
-            vm.$watch("num.length", function () {
-                vm.numtext = vm.num.join(",")
-            })
-
         </script>
     </head>
     <body ms-controller="test">
-        <select ms-duplex-string="arr" multiple="multiple">
-            <option>
-                111
-            </option>
-            <option>
-                222
-            </option>
-            <option>
-                333
-            </option>
-        </select>
-        <p>{{arrtext}}</p>
-        <select ms-duplex-number="num" multiple="multiple">
-            <option>
-                1
-            </option>
-            <option>
-                2
-            </option>
-            <option>
-                3
-            </option>
-        </select>
-        <p>{{numtext}}</p>
+        <header>
+            <ms:abc ms-repeat="arr" ms-attr-identifier="abc{{$index}}" ></ms:abc>
+        </header>
     </body>
 </html>

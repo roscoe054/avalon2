@@ -34,7 +34,10 @@ avalon.component = function (name, opts) {
                 var global = avalon.libraries[library] || componentHooks
 
                 //===========收集各种配置=======
-
+                if (elem.getAttribute("ms-attr-identifier")) {
+                    //如果还没有解析完,就延迟一下 #1155
+                    return
+                }
                 var elemOpts = getOptionsFromTag(elem, host.vmodels)
                 var vmOpts = getOptionsFromVM(host.vmodels, elemOpts.config || host.widget)
                 var $id = elemOpts.$id || elemOpts.identifier || generateID(widget)
@@ -110,8 +113,8 @@ avalon.component = function (name, opts) {
                     var className = elem.className
                     elem = host.element = child
                     elem.style.cssText = cssText
-                    if(className){
-                       avalon(elem).addClass(className)
+                    if (className) {
+                        avalon(elem).addClass(className)
                     }
                 }
                 if (keepContainer) {
@@ -135,7 +138,7 @@ avalon.component = function (name, opts) {
                     if (dependencies === 0) {
                         var id1 = setTimeout(function () {
                             clearTimeout(id1)
-                            
+
                             vmodel.$ready(vmodel, elem, host.vmodels)
                             global.$ready(vmodel, elem, host.vmodels)
                         }, children ? Math.max(children * 17, 100) : 17)
@@ -222,18 +225,18 @@ avalon.library = function (name, opts) {
 
 avalon.library("ms")
 /*
-broswer  nodeName  scopeName  localName
-IE9     ONI:BUTTON oni        button
-IE10    ONI:BUTTON undefined  oni:button
-IE8     button     oni        undefined
-chrome  ONI:BUTTON undefined  oni:button
-
-*/
+ broswer  nodeName  scopeName  localName
+ IE9     ONI:BUTTON oni        button
+ IE10    ONI:BUTTON undefined  oni:button
+ IE8     button     oni        undefined
+ chrome  ONI:BUTTON undefined  oni:button
+ 
+ */
 function isWidget(el) { //如果为自定义标签,返回UI库的名字
-    if(el.scopeName && el.scopeName !== "HTML" ){
+    if (el.scopeName && el.scopeName !== "HTML") {
         return el.scopeName
     }
-    var fullName = el.nodeName.toLowerCase() 
+    var fullName = el.nodeName.toLowerCase()
     var index = fullName.indexOf(":")
     if (index > 0) {
         return fullName.slice(0, index)

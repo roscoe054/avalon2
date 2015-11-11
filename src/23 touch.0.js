@@ -29,8 +29,10 @@ function iOSversion() {
 
 var deviceIsAndroid = ua.indexOf('android') > 0
 var deviceIsIOS = iOSversion()
+
 var Recognizer = avalon.gestureHooks = {
     pointers: {},
+    //以AOP切入touchstart, touchmove, touchend, touchcancel回调
     start: function (event, callback) {
       
         //touches是当前屏幕上所有触摸点的列表;
@@ -106,6 +108,7 @@ var Recognizer = avalon.gestureHooks = {
             delete Recognizer.pointers[id]
         }
     },
+    //人工触发合成事件
     fire: function (elem, type, props) {
         if (elem) {
             var event = document.createEvent('Events')
@@ -114,6 +117,7 @@ var Recognizer = avalon.gestureHooks = {
             elem.dispatchEvent(event)
         }
     },
+    //添加各种识别器
     add: function (name, recognizer) {
         function move(event) {
             recognizer.touchmove(event)
