@@ -5592,23 +5592,19 @@ Recognizer.add('press', pressRecognizer)
 
 var swipeRecognizer = {
     events: ['swipe', 'swipeleft', 'swiperight', 'swipeup', 'swipedown'],
-    getAngle: function (x, y) {
-        var r = Math.atan2(y, x) //radians
-        var angle = Math.round(r * 180 / Math.PI) //degrees
-        return angle < 0 ? 360 - Math.abs(angle) : angle
+    getAngle: function (x, y ) {
+       return Math.atan2(y, x) * 180 / Math.PI
     },
     getDirection: function (x, y) {
         var angle = swipeRecognizer.getAngle(x, y)
-        if ((angle <= 45) && (angle >= 0)) {
-            return "left"
-        } else if ((angle <= 360) && (angle >= 315)) {
-            return "left"
-        } else if ((angle >= 135) && (angle <= 225)) {
-            return "right"
-        } else if ((angle > 45) && (angle < 135)) {
-            return "down"
-        } else {
+        if ((angle < -45) && (angle > -135)) {
             return "up"
+        } else if ((angle >= 45) && (angle < 315)) {
+            return "down"
+        } else if ((angle > -45) && (angle <= 45)) {
+            return "right"
+        } else{
+            return "left"
         }
     },
     touchstart: function (event) {

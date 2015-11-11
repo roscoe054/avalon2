@@ -4,27 +4,23 @@
         <meta charset="utf-8">
         <title></title>
         <style>
-            div {height:50px;width:200px;background:green;margin:5px;}
+            div {height:200px;width:200px;background:green;margin:5px;}
         </style>
-        <script src="avalon.js"></script>
+        <script src="dist/avalon.mobile.js"></script>
         <script>
-            avalon.component('ms:abc',{
-                $template:'<div></div>',
-                onClick:function(){},
-                $ready:function(vm,el){
-                  console.log(vm.$id)
-               //   console.log(el.getAttribute("identifier"))
-                }
-            });
+       
             var vm = avalon.define({
                 $id:'test',
-                arr:[1,2,3]
+                arr:[1,2,3],
+                a: function(e){
+                    console.log(e.direction)
+                }
+                
             })
         </script>
     </head>
     <body ms-controller="test">
-        <header>
-            <ms:abc ms-repeat="arr" ms-attr-identifier="abc{{$index}}" ></ms:abc>
-        </header>
+        <div class="box" ms-on-swipe='a'>
+        </div>
     </body>
 </html>
