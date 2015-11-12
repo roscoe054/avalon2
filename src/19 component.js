@@ -28,7 +28,12 @@ avalon.component = function (name, opts) {
             i--;
 
             (function (host, hooks, elem, widget) {
-
+                //如果elem已从Document里移除,直接返回
+                //issuse : https://github.com/RubyLouvre/avalon2/issues/40
+                if (!avalon.contains(DOC, elem)) {
+                    return
+                }
+                
                 var dependencies = 1
                 var library = host.library
                 var global = avalon.libraries[library] || componentHooks
