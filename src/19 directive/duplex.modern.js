@@ -150,6 +150,7 @@ var duplexBinding = avalon.directive("duplex", {
                 })
                 binding.bound("blur", function () {
                     elem.msFocus = false
+                    //IE6-11如果元素绑定了oninput onpropertychange事件会影响onchange事件触发
                     if(IEVersion && beforeFocus !== elem.value ){
                         elem.value = beforeFocus
                         avalon.fireDom(elem, "change")

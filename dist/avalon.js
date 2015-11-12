@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.js 1.5.5 built in 2015.11.11
+ avalon.js 1.5.5 built in 2015.11.12
  support IE6+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -2319,6 +2319,20 @@ avalon.parseJSON = window.JSON ? JSON.parse : function (data) {
     return data
 }
 
+avalon.fireDom = function (elem, type, opts) {
+    if (DOC.createEvent) {
+        var hackEvent = DOC.createEvent("Events");
+        hackEvent.initEvent(type, true, true, opts)
+        avalon.mix(hackEvent, opts)
+
+        elem.dispatchEvent(hackEvent)
+    } else if (root.contains(elem)) {//IE6-8触发事件必须保证在DOM树中,否则报"SCRIPT16389: 未指明的错误"
+        hackEvent = DOC.createEventObject()
+        avalon.mix(hackEvent, opts)
+        elem.fireEvent("on" + type, hackEvent)
+    }
+}
+
 //生成avalon.fn.scrollLeft, avalon.fn.scrollTop方法
 avalon.each({
     scrollLeft: "pageXOffset",
@@ -3407,7 +3421,13 @@ avalon.component = function (name, opts) {
             i--;
 
             (function (host, hooks, elem, widget) {
-
+                //如果elem已从Document里移除,直接返回
+                //issuse : https://github.com/RubyLouvre/avalon2/issues/40
+                if (!avalon.contains(DOC, elem)) {
+                    avalon.Array.remove(componentQueue, host)
+                    return
+                }
+                
                 var dependencies = 1
                 var library = host.library
                 var global = avalon.libraries[library] || componentHooks
@@ -3557,20 +3577,6 @@ avalon.component = function (name, opts) {
 
 
         }
-    }
-}
-
-avalon.fireDom = function (elem, type, opts) {
-    if (DOC.createEvent) {
-        var hackEvent = DOC.createEvent("Events");
-        hackEvent.initEvent(type, true, true, opts)
-        avalon.mix(hackEvent, opts)
-
-        elem.dispatchEvent(hackEvent)
-    } else if (root.contains(elem)) {//IE6-8触发事件必须保证在DOM树中,否则报"SCRIPT16389: 未指明的错误"
-        hackEvent = DOC.createEventObject()
-        avalon.mix(hackEvent, opts)
-        elem.fireEvent("on" + type, hackEvent)
     }
 }
 
@@ -3991,11 +3997,17 @@ var duplexBinding = avalon.directive("duplex", {
         }
         if (binding.xtype === "input" && !rnoduplexInput.test(elem.type)) {
             if (elem.type !== "hidden") {
+                var beforeFocus
                 binding.bound("focus", function () {
                     elem.msFocus = true
+                    beforeFocus = elem.value
                 })
                 binding.bound("blur", function () {
                     elem.msFocus = false
+                    if(IEVersion && beforeFocus !== elem.value ){
+                        elem.value = beforeFocus
+                        avalon.fireDom(elem, "change")
+                    }
                 })
             }
             elem.avalonSetter = updateVModel //#765
