@@ -1,7 +1,10 @@
 #avalon1.5.5
 1. fix 光标问题
-2. fix data-duplex-changed回调在select标签执行两次的BUG
+2. fix data-duplex-changed执行两次的BUG
 3. 启动全新的UI库 [avalon.bootstrap](https://github.com/RubyLouvre/avalon.bootstrap) 欢迎大家踊跃参与
+4. fix IE下onchange与oninput无法共存的BUG
+5. 以 component组件进行增强,现在支持对on-xxx属性在vmodels查找回调的功能
+
 
 #avalon1.5.4(新touch模块)
 

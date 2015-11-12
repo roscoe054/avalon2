@@ -143,11 +143,17 @@ var duplexBinding = avalon.directive("duplex", {
         }
         if (binding.xtype === "input" && !rnoduplexInput.test(elem.type)) {
             if (elem.type !== "hidden") {
+                var beforeFocus
                 binding.bound("focus", function () {
                     elem.msFocus = true
+                    beforeFocus = elem.value
                 })
                 binding.bound("blur", function () {
                     elem.msFocus = false
+                    if(IEVersion && beforeFocus !== elem.value ){
+                        elem.value = beforeFocus
+                        avalon.fireDom(elem, "change")
+                    }
                 })
             }
             elem.avalonSetter = updateVModel //#765

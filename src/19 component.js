@@ -31,6 +31,7 @@ avalon.component = function (name, opts) {
                 //如果elem已从Document里移除,直接返回
                 //issuse : https://github.com/RubyLouvre/avalon2/issues/40
                 if (!avalon.contains(DOC, elem)) {
+                    avalon.Array.remove(componentQueue, host)
                     return
                 }
                 
@@ -183,20 +184,6 @@ avalon.component = function (name, opts) {
 
 
         }
-    }
-}
-
-avalon.fireDom = function (elem, type, opts) {
-    if (DOC.createEvent) {
-        var hackEvent = DOC.createEvent("Events");
-        hackEvent.initEvent(type, true, true, opts)
-        avalon.mix(hackEvent, opts)
-
-        elem.dispatchEvent(hackEvent)
-    } else if (root.contains(elem)) {//IE6-8触发事件必须保证在DOM树中,否则报"SCRIPT16389: 未指明的错误"
-        hackEvent = DOC.createEventObject()
-        avalon.mix(hackEvent, opts)
-        elem.fireEvent("on" + type, hackEvent)
     }
 }
 
