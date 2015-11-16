@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>tab组件</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+        <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
+        <script src="../../avalon.js"></script>
+        <script src="../style/highlight/shCore.js"></script>
+        <script>
+            require(["./component/tab/avalon.tab"], function (avalon) {
+                avalon.define({
+                    $id: "test",
+                    tabs: {
+                        onActivate: function (e) {
+                            avalon.log("user define cc activate callback")
+                        }
+                        , active: 1
+                        , tabs: [{
+                                title: "水果2",
+                                name: "fruit",
+                                removable: false,
+                                href: "http://news.163.com/"
+                            },
+                            {
+                                title: "水果<i>非国产经典品牌</i>十分流弊",
+                                name: "cloth"
+                            },
+                            {
+                                title: "工具2"
+                                , name: "tool"
+                            },
+                            {
+                                title: "电器2"
+                                , name: "tool"
+                            },
+                            {
+                                title: "动物2"
+                                , name: "animal"
+                                , disabled: true
+                            }
+                        ]
+                        , tabpanels: [
+                            {content: "line 1 - <a href=\"#\" ms-click=\"add(peaple)\">点击我添加一个tab!</a>"},
+                            {content: "avalon.tab.ajax.html", contentType: "ajax"},
+                            {content: "line 2 - <a href=\"#\" ms-click=\"enable(4)\">点击我激活动物tab!</a>"},
+                            {content: 'line 3 -  <a href="#" ms-click="add(peaple2)">点击我添加一个不能删除的tab! </a>'},
+                            {content: "line 4"}
+                        ]
+                    },
+                    peaple: {
+                        title: "人类",
+                        content: "我是来搞笑的"
+                    },
+                    peaple2: {
+                        title: "人类"
+                        , removable: false
+                        , content: "我是来搞笑的"
+                    },
+                    $skipArray: ["tabs"]
+                })
+
+                avalon.scan()
+            })
+        </script>
+    </head>
+    <body>
+        <div ms-controller="test">
+            <h1>传参配置数据 - mouseenter切换tab</h1>
+            <oni:tabs removeable="true"></oni:tabs>
+
+        </div>
+    </body>
+</html>

@@ -11,7 +11,7 @@ avalon.define = function (source) {
 }
 
 //一些不需要被监听的属性
-var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors")
+var $$skipArray = oneObject("$id,$watch,$fire,$events,$model,$skipArray,$active,$pathname,$up,$track,$accessors,$ups")
 var defineProperty = Object.defineProperty
 var canHideOwn = true
 //如果浏览器不支持ecma262v5的Object.defineProperties或者存在BUG，比如IE8
@@ -38,7 +38,7 @@ function Component() {
 }
 
 function observeObject(source, options) {
-    if (!source || (source.$id && source.$accessors)) {
+    if (!source || (source.$id && source.$accessors) || (source.nodeName && source.nodeType > 0)) {
         return source
     }
     //source为原对象,不能是元素节点或null
@@ -91,7 +91,7 @@ function observeObject(source, options) {
         var value = source[name]
         if (!$$skipArray[name])
             hasOwn[name] = true
-        if (typeof value === "function" || (value && value.nodeType) ||
+        if (typeof value === "function" || (value && value.nodeName && value.nodeType > 0) ||
                 (!force[name] && (name.charAt(0) === "$" || $$skipArray[name] || $skipArray[name]))) {
             skip.push(name)
         } else if (isComputed(value)) {
@@ -137,6 +137,7 @@ function observeObject(source, options) {
     })
 
     /* jshint ignore:start */
+    hideProperty($vmodel, "$ups", null)
     hideProperty($vmodel, "$id", "anonymous")
     hideProperty($vmodel, "$up", old ? old.$up : null)
     hideProperty($vmodel, "$track", Object.keys(hasOwn))
@@ -161,15 +162,15 @@ function observeObject(source, options) {
         })
     }
     /* jshint ignore:end */
-
     //必须设置了$active,$events
     simple.forEach(function (name) {
+        var oldVal = old && old[name]
         var val = $vmodel[name] = source[name]
         if (val && typeof val === "object") {
             val.$up = $vmodel
             val.$pathname = name
         }
-        $emit.call($vmodel, name)
+        $emit.call($vmodel, name, [val,oldVal])
     })
     for (name in computed) {
         value = $vmodel[name]
@@ -241,7 +242,7 @@ function observe(obj, old, hasReturn, watch) {
     if (Array.isArray(obj)) {
         return observeArray(obj, old, watch)
     } else if (avalon.isPlainObject(obj)) {
-        if (old) {
+        if (old && typeof old === 'object') {
             var keys = getKeys(obj)
             var keys2 = getKeys(old)
             if (keys.join(";") === keys2.join(";")) {
@@ -281,7 +282,6 @@ function observeArray(array, old, watch) {
         for (var i in newProto) {
             array[i] = newProto[i]
         }
-
         hideProperty(array, "$up", null)
         hideProperty(array, "$pathname", "")
         hideProperty(array, "$track", createTrack(array.length))

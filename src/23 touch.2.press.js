@@ -1,20 +1,20 @@
 
-var pressGesture = {
+var pressRecognizer = {
     events: ['longtap', 'doubletap'],
     cancelPress: function (pointer) {
         clearTimeout(pointer.pressingHandler)
         pointer.pressingHandler = null
     },
     touchstart: function (event) {
-        gestureHooks.start(event, function (pointer, touch) {
+        Recognizer.start(event, function (pointer, touch) {
             pointer.pressingHandler = setTimeout(function () {
                 if (pointer.status === 'tapping') {
-                    gestureHooks.fire(event.target, 'longtap', {
+                    Recognizer.fire(event.target, 'longtap', {
                         touch: touch,
                         touchEvent: event
                     })
                 }
-                pressGesture.cancelPress(pointer)
+                pressRecognizer.cancelPress(pointer)
             }, 500)
             if (event.changedTouches.length !== 1) {
                 pointer.status = 0
@@ -23,9 +23,9 @@ var pressGesture = {
 
     },
     touchmove: function (event) {
-        gestureHooks.move(event, function (pointer) {
+        Recognizer.move(event, function (pointer) {
             if (pointer.distance > 10 && pointer.pressingHandler) {
-                pressGesture.cancelPress(pointer)
+                pressRecognizer.cancelPress(pointer)
                 if (pointer.status === 'tapping') {
                     pointer.status = 'panning'
                 }
@@ -33,26 +33,26 @@ var pressGesture = {
         })
     },
     touchend: function (event) {
-        gestureHooks.end(event, function (pointer, touch) {
-            pressGesture.cancelPress(pointer)
+        Recognizer.end(event, function (pointer, touch) {
+            pressRecognizer.cancelPress(pointer)
             if (pointer.status === 'tapping') {
                 pointer.lastTime = Date.now()
-                if (pressGesture.lastTap && pointer.lastTime - pressGesture.lastTap.lastTime < 300) {
-                    gestureHooks.fire(pointer.element, 'doubletap', {
+                if (pressRecognizer.lastTap && pointer.lastTime - pressRecognizer.lastTap.lastTime < 300) {
+                    Recognizer.fire(pointer.element, 'doubletap', {
                         touch: touch,
                         touchEvent: event
                     })
                 }
 
-                pressGesture.lastTap = pointer
+                pressRecognizer.lastTap = pointer
             }
         })
 
     },
     touchcancel: function (event) {
-        gestureHooks.end(event, function (pointer) {
-            pressGesture.cancelPress(pointer)
+        Recognizer.end(event, function (pointer) {
+            pressRecognizer.cancelPress(pointer)
         })
     }
 }
-gestureHooks.add('press', pressGesture)
+Recognizer.add('press', pressRecognizer)

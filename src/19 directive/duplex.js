@@ -1,7 +1,7 @@
 //双工绑定
 var rduplexType = /^(?:checkbox|radio)$/
 var rduplexParam = /^(?:radio|checked)$/
-var rnoduplexInput = /^(file|button|reset|submit|checkbox|radio)$/
+var rnoduplexInput = /^(file|button|reset|submit|checkbox|radio|range)$/
 var duplexBinding = avalon.directive("duplex", {
     priority: 2000,
     init: function (binding, hasCast) {
@@ -70,9 +70,9 @@ var duplexBinding = avalon.directive("duplex", {
         function compositionEnd() {
             composing = false
         }
-        var updateVModel = function () {
+        var updateVModel = function (e) {
             var val = elem.value //防止递归调用形成死循环
-            if (composing || val === binding.oldValue) //处理中文输入法在minlengh下引发的BUG
+            if (composing || val === binding.oldValue || binding.pipe === null) //处理中文输入法在minlengh下引发的BUG
                 return
             var lastValue = binding.pipe(val, binding, "get")
             try {
@@ -150,21 +150,37 @@ var duplexBinding = avalon.directive("duplex", {
                     if (val + "" !== binding.oldValue) {
                         try {
                             binding.setter(val)
-                            callback.call(elem, val)
                         } catch (ex) {
                             log(ex)
                         }
                     }
                 })
+                binding.bound("datasetchanged", function (e) {
+                    if (e.bubble === "selectDuplex") {
+                        var value = binding._value
+                        var curValue = Array.isArray(value) ? value.map(String) : value + ""
+                        avalon(elem).val(curValue)
+                        elem.oldValue = curValue + ""
+                        callback.call(elem, curValue)
+                    }
+                })
                 break
         }
-        binding.bound("focus", function() {
-            elem.msFocus = true
-        })
-        binding.bound("blur", function() {
-            elem.msFocus = false
-        })
         if (binding.xtype === "input" && !rnoduplexInput.test(elem.type)) {
+            if (elem.type !== "hidden") {
+                var beforeFocus
+                binding.bound("focus", function () {
+                    elem.msFocus = true
+                    beforeFocus = elem.value
+                })
+                binding.bound("blur", function () {
+                    elem.msFocus = false
+                    if(IEVersion && beforeFocus !== elem.value ){
+                        elem.value = beforeFocus
+                        avalon.fireDom(elem, "change")
+                    }
+                })
+            }
             elem.avalonSetter = updateVModel //#765
             watchValueInTimer(function () {
                 if (elem.contains(elem)) {
@@ -194,7 +210,21 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set")  //fix #673
                 if (curValue !== this.oldValue) {
+                    var fixCaret = false
+                    if (elem.msFocus) {
+                        try {
+                            var pos = getCaret(elem)
+                            if (pos.start === pos.end) {
+                                pos = pos.start
+                                fixCaret = true
+                            }
+                        } catch (e) {
+                        }
+                    }
                     elem.value = this.oldValue = curValue
+                    if (fixCaret) {
+                        setCaret(elem, pos, pos)
+                    }
                 }
                 break
             case "radio":
@@ -219,22 +249,15 @@ var duplexBinding = avalon.directive("duplex", {
             case "select":
                 //必须变成字符串后才能比较
                 binding._value = value
-                elem.msHasEvent = "selectDuplex"
-                //必须等到其孩子准备好才触发
-                avalon.bind(elem, "datasetchanged", function (e) {
-                    if (e.bubble === "selectDuplex") {
-                        var value = binding._value
-                        var curValue = Array.isArray(value) ? value.map(String) : value + ""
-                        avalon(elem).val(curValue)
-                        elem.oldValue = curValue + ""
-                        binding.changed.call(elem, curValue)
-                    }
-                })
-
+                if (!elem.msHasEvent) {
+                    elem.msHasEvent = "selectDuplex"
+                    //必须等到其孩子准备好才触发
+                } else {
+                    avalon.fireDom(elem, "datasetchanged", {
+                        bubble: elem.msHasEvent
+                    })
+                }
                 break
-        }
-        if (binding.xtype !== "select") {
-            binding.changed.call(elem, curValue)
         }
     }
 })
@@ -328,7 +351,7 @@ new function () { // jshint ignore:line
         var bproto = HTMLTextAreaElement.prototype
         function newSetter(value) { // jshint ignore:line
             setters[this.tagName].call(this, value)
-            if (!this.msFocus &&  this.avalonSetter && this.oldValue !== value) {
+            if (!this.msFocus && this.avalonSetter && this.oldValue !== value) {
                 this.avalonSetter()
             }
         }
@@ -350,3 +373,33 @@ new function () { // jshint ignore:line
         watchValueInTimer = avalon.tick
     }
 } // jshint ignore:line
+function getCaret(ctrl, start, end) {
+    if (ctrl.setSelectionRange) {
+        start = ctrl.selectionStart
+        end = ctrl.selectionEnd
+    } else if (document.selection && document.selection.createRange) {
+        var range = document.selection.createRange()
+        start = 0 - range.duplicate().moveStart('character', -100000)
+        end = start + range.text.length
+    }
+    return {
+        start: start,
+        end: end
+    }
+}
+function setCaret(ctrl, begin, end) {
+    if (!ctrl.value || ctrl.readOnly)
+        return
+    if (ctrl.createTextRange) {//IE6-9
+        setTimeout(function () {
+            var range = ctrl.createTextRange()
+            range.collapse(true);
+            range.moveStart("character", begin)
+            // range.moveEnd("character", end) #1125
+            range.select()
+        }, 17)
+    } else {
+        ctrl.selectionStart = begin
+        ctrl.selectionEnd = end
+    }
+}

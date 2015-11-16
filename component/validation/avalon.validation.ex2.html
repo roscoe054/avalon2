@@ -5,7 +5,8 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width">
         <link type="text/css" rel="stylesheet" href="../style/avalon.doc.css">
-        <script src="../../avalon.js"></script>
+        <!--        <script src="../../avalon.js"></script>-->
+        <script src="../../dist/avalon.modern.js"></script>
         <script src="../style/highlight/shCore.js"></script>
         <style >
             .error{
@@ -23,16 +24,9 @@
         <script>
             if (document.namespace)
                 document.namespaces.add("oni", 'http://www.w3.org/1999/xhtml')
-
-            require(["./component/validation/avalon.validation", "domReady!"], function () {
+            require(["../component/validation/avalon.validation", "domReady!"], function () {
+                //   require(["./component/validation/avalon.validation", "domReady!"], function () {
                 var validationVM
-                avalon.library("oni", {
-                    $ready: function (vm) {
-                        if (vm.$id === "v") {
-                            validationVM = vm
-                        }
-                    }
-                })
 
                 function showError(el, data) {
                     var next = el.nextSibling
@@ -67,6 +61,9 @@
                         validationVM && validationVM.resetAll()
                     },
                     validation: {
+                        onInit: function (vm) {
+                            validationVM = vm
+                        },
                         onReset: function () {
                             avalon(this).removeClass("error success")
                             removeError(this)

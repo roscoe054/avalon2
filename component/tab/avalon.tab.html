@@ -1,0 +1,43 @@
+<div class="oni-tab-slider"
+    ms-visible="toggle">
+    <a href="#" class="oni-tab-slider-button oni-tab-slider-button-left oni-icon" 
+       ms-visible="prevEnable" 
+       ms-click="slider($event,'prev')">&#xf047;</a>
+    <div class="oni-tab-slider-ct oni-tab-slider-enable" 
+         ms-css-margin-left="_computedMarginLeft">
+        <ul class="oni-tab-nav oni-helper-clearfix oni-widget-header oni-helper-reset" 
+        ms-attr-id="'tabs' + tabs.$id">
+            <li class="oni-state-default" 
+                data-repeat-rendered="computeSlider" 
+                ms-repeat-tab2015="tabs" 
+                ms-class="oni-tab-item"  
+                ms-class-1="oni-state-active:!!_canActive(tab2015, $index)" 
+                ms-class-2="oni-state-disabled:tab2015.disabled" 
+                ms-class-3="oni-tab-last:$last" 
+                ms-class-4="oni-tab-removable:!!_canRemove(tab2015)" 
+                ms-hover="oni-state-hover:!tab2015.disabled" 
+                ms-MS_OPTION_EVENT="activate($event, $index)" 
+                > 
+                <a ms-href="tab2015.href?tab2015.href:'#'" ms-attr-target="tab2015.target||target||'_self'">
+                    {{_tabTitle(tab2015.title, tab2015, _cutCounter(), cutEnd) | sanitize | html}}</a>
+                {{MS_OPTION_REMOVABLE}}
+            </li>
+        </ul>
+    </div>
+    <a href="#" class="oni-tab-slider-button oni-icon" 
+       ms-visible="nextEnable"
+       ms-click="slider($event,'next')">&#xf03e;</a>
+</div>
+MS_OPTION_SPLIT
+<div class="oni-tab-panel-container" ms-each-panel="tabpanels"
+	 ms-visible="toggle"
+	 ms-if="tabpanels.size()">
+     <div class="oni-tab-panel oni-widget-content" 
+          ms-visible="_shallPanelAlwaysShow($index)" 
+          ms-if-loop="_isAjax(panel)">{{panel.content | sanitize | html }}</div>
+     <div class="oni-tab-panel oni-widget-content"
+          ms-visible="_shallPanelAlwaysShow($index)" 
+          ms-include-src="panel.content" 
+          ms-if-loop="!_isAjax(panel)" data-include-rendered="onAjaxCallback">
+     </div>
+</div>

@@ -16,7 +16,7 @@ Buffer.prototype = {
     },
     flush: function () {
         for (var i = 0, sub; sub = this.queue[i++]; ) {
-            sub.update()
+            sub.update && sub.update()
         }
         this.locked = 0
         this.queue = []

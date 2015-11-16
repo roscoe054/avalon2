@@ -1,7 +1,7 @@
 define(['avalon'], function (avalon) {
-    var gestureHooks = avalon.gestureHooks
+    var Recognizer = avalon.gestureHooks
 
-    var rotateGesture = {
+    var rotateRecognizer = {
         events: ['rotate', 'rotatestart', 'rotateend'],
         getAngle180: function (p1, p2) {
             // 角度， 范围在{0-180}， 用来识别旋转角度
@@ -9,9 +9,9 @@ define(['avalon'], function (avalon) {
             return parseInt((agl < 0 ? (agl + 180) : agl), 10)
         },
         rotate: function (event, status) {
-            var finger = rotateGesture.finger
-            var endAngel = rotateGesture.getAngle180(rotateGesture.center, finger.lastTouch)
-            var diff = rotateGesture.startAngel - endAngel
+            var finger = rotateRecognizer.finger
+            var endAngel = rotateRecognizer.getAngle180(rotateRecognizer.center, finger.lastTouch)
+            var diff = rotateRecognizer.startAngel - endAngel
             var direction = (diff > 0 ? 'right' : 'left')
             var count = 0;
             var __rotation = ~~finger.element.__rotation
@@ -23,7 +23,7 @@ define(['avalon'], function (avalon) {
                 }
             }
             var rotation = finger.element.__rotation = __rotation = diff
-            rotateGesture.endAngel = endAngel
+            rotateRecognizer.endAngel = endAngel
             var extra = {
                 touch: event.changedTouches[0],
                 touchEvent: event,
@@ -31,18 +31,18 @@ define(['avalon'], function (avalon) {
                 direction: direction
             }
             if (status === "end") {
-                gestureHooks.fire(finger.element, 'rotateend', extra)
+                Recognizer.fire(finger.element, 'rotateend', extra)
                 finger.element.__rotation = 0
             } else if (finger.status === 'tapping' && diff) {
                 finger.status = "panning"
-                gestureHooks.fire(finger.element, 'rotatestart', extra)
+                Recognizer.fire(finger.element, 'rotatestart', extra)
             } else {
-                gestureHooks.fire(finger.element, 'rotate', extra)
+                Recognizer.fire(finger.element, 'rotate', extra)
             }
         },
         touchstart: function (event) {
-            var pointers = gestureHooks.pointers
-            gestureHooks.start(event, avalon.noop)
+            var pointers = Recognizer.pointers
+            Recognizer.start(event, avalon.noop)
             var finger
             for (var p in pointers) {
                 if (pointers[p].startTime) {
@@ -53,28 +53,28 @@ define(['avalon'], function (avalon) {
                     }
                 }
             }
-            rotateGesture.finger = finger
+            rotateRecognizer.finger = finger
             var el = finger.element
             var docOff = avalon(el).offset()
-            rotateGesture.center = {//求得元素的中心
+            rotateRecognizer.center = {//求得元素的中心
                 pageX: docOff.left + el.offsetWidth / 2,
                 pageY: docOff.top + el.offsetHeight / 2
             }
-            rotateGesture.startAngel = rotateGesture.getAngle180(rotateGesture.center, finger.startTouch)
+            rotateRecognizer.startAngel = rotateRecognizer.getAngle180(rotateRecognizer.center, finger.startTouch)
         },
         touchmove: function (event) {
-            gestureHooks.move(event, avalon.noop)
-            rotateGesture.rotate(event)
+            Recognizer.move(event, avalon.noop)
+            rotateRecognizer.rotate(event)
         },
         touchend: function (event) {
-            rotateGesture.rotate(event, "end")
-            gestureHooks.end(event, avalon.noop)
+            rotateRecognizer.rotate(event, "end")
+            Recognizer.end(event, avalon.noop)
         }
     }
 
-    rotateGesture.touchcancel = rotateGesture.touchend
+    rotateRecognizer.touchcancel = rotateRecognizer.touchend
 
-    gestureHooks.add('rotate', rotateGesture)
+    Recognizer.add('rotate', rotateRecognizer)
     return avalon
 })
 //https://github.com/Clouda-team/touch.code.baidu.com/blob/master/touch-0.2.10.js

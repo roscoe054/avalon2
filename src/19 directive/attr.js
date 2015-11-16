@@ -30,7 +30,7 @@ var attrDir = avalon.directive("attr", {
     init: function (binding) {
         //{{aaa}} --> aaa
         //{{aaa}}/bbb.html --> (aaa) + "/bbb.html"
-        binding.expr = stringifyExpr(binding.expr.trim())
+        binding.expr = normalizeExpr(binding.expr.trim())
         if (binding.type === "include") {
             var elem = binding.element
             effectBinding(elem, binding)

@@ -1,7 +1,7 @@
 //双工绑定
 var rduplexType = /^(?:checkbox|radio)$/
 var rduplexParam = /^(?:radio|checked)$/
-var rnoduplexInput = /^(file|button|reset|submit|checkbox|radio)$/
+var rnoduplexInput = /^(file|button|reset|submit|checkbox|radio|range)$/
 var duplexBinding = avalon.directive("duplex", {
     priority: 2000,
     init: function (binding, hasCast) {
@@ -13,7 +13,6 @@ var duplexBinding = avalon.directive("duplex", {
         if (elem.type === "radio" && binding.param === "") {
             binding.param = "checked"
         }
-
 
         binding.param.replace(rw20g, function (name) {
             if (rduplexType.test(elem.type) && rduplexParam.test(name)) {
@@ -66,9 +65,9 @@ var duplexBinding = avalon.directive("duplex", {
         function compositionEnd() {
             composing = false
         }
-        var updateVModel = function () {
+        var updateVModel = function (e) {
             var val = elem.value //防止递归调用形成死循环
-            if (composing || val === binding.oldValue) //处理中文输入法在minlengh下引发的BUG
+            if (composing || val === binding.oldValue || binding.pipe === null) //处理中文输入法在minlengh下引发的BUG
                 return
             var lastValue = binding.pipe(val, binding, "get")
             binding.setter(lastValue)
@@ -124,19 +123,40 @@ var duplexBinding = avalon.directive("duplex", {
                         val = binding.pipe(val, binding, "get")
                     }
                     if (val + "" !== binding.oldValue) {
-                        binding.setter(val)
-                        callback.call(elem, val)
+                        try {
+                            binding.setter(val)
+                        } catch (ex) {
+                            log(ex)
+                        }
+                    }
+                })
+                binding.bound("datasetchanged", function (e) {
+                    if (e.bubble === "selectDuplex") {
+                        var value = binding._value
+                        var curValue = Array.isArray(value) ? value.map(String) : value + ""
+                        avalon(elem).val(curValue)
+                        elem.oldValue = curValue + ""
+                        callback.call(elem, curValue)
                     }
                 })
                 break
         }
-        binding.bound("focus", function () {
-            elem.msFocus = true
-        })
-        binding.bound("blur", function () {
-            elem.msFocus = false
-        })
         if (binding.xtype === "input" && !rnoduplexInput.test(elem.type)) {
+            if (elem.type !== "hidden") {
+                var beforeFocus
+                binding.bound("focus", function () {
+                    elem.msFocus = true
+                    beforeFocus = elem.value
+                })
+                binding.bound("blur", function () {
+                    elem.msFocus = false
+                    //IE6-11如果元素绑定了oninput onpropertychange事件会影响onchange事件触发
+                    if(IEVersion && beforeFocus !== elem.value ){
+                        elem.value = beforeFocus
+                        avalon.fireDom(elem, "change")
+                    }
+                })
+            }
             elem.avalonSetter = updateVModel //#765
             watchValueInTimer(function () {
                 if (root.contains(elem)) {
@@ -166,7 +186,22 @@ var duplexBinding = avalon.directive("duplex", {
             case "change":
                 curValue = this.pipe(value, this, "set")  //fix #673
                 if (curValue !== this.oldValue) {
+                    var fixCaret = false
+                    if (elem.msFocus) {
+                        try {
+                            var start = elem.selectionStart
+                            var end = elem.selectionEnd
+                            if (start === end) {
+                                var pos = start
+                                fixCaret = true
+                            }
+                        } catch (e) {
+                        }
+                    }
                     elem.value = this.oldValue = curValue
+                    if (fixCaret) {
+                        elem.selectionStart = elem.selectionEnd = pos
+                    }
                 }
                 break
             case "radio":
@@ -181,21 +216,15 @@ var duplexBinding = avalon.directive("duplex", {
             case "select":
                 //必须变成字符串后才能比较
                 binding._value = value
-                elem.msHasEvent = "selectDuplex"
-                //必须等到其孩子准备好才触发
-                avalon.bind(elem, "datasetchanged", function (e) {
-                    if (e.bubble === "selectDuplex") {
-                        var value = binding._value
-                        var curValue = Array.isArray(value) ? value.map(String) : value + ""
-                        avalon(elem).val(curValue)
-                        elem.oldValue = curValue + ""
-                        binding.changed.call(elem, curValue)
-                    }
-                })
+                if (!elem.msHasEvent) {
+                    elem.msHasEvent = "selectDuplex"
+                    //必须等到其孩子准备好才触发
+                } else {
+                    avalon.fireDom(elem, "datasetchanged", {
+                        bubble: elem.msHasEvent
+                    })
+                }
                 break
-        }
-        if (binding.xtype !== "select") {
-            binding.changed.call(elem, curValue)
         }
     }
 })
@@ -280,7 +309,7 @@ new function () { // jshint ignore:line
         var bproto = HTMLTextAreaElement.prototype
         function newSetter(value) { // jshint ignore:line
             setters[this.tagName].call(this, value)
-            if (!this.msFocus &&  this.avalonSetter) {
+            if (!this.msFocus && this.avalonSetter) {
                 this.avalonSetter()
             }
         }

@@ -1,38 +1,29 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>使用CSS</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="utf-8">
+        <title></title>
         <style>
-            .box { width:100px; height:100px; overflow:hidden;background: red; }
-            .toggle{ transition: all 1s ease; }
-            .toggle-enter, .toggle-leave{ width:0; height:0; }
-
+            div {height:50px;width:200px;background:green;margin:5px;}
         </style>
         <script src="avalon.js"></script>
-        <script src="jquery.js"></script>
-    </head>
-    <body>
         <script>
-
-            avalon.effect('toggle', {enterClass: 'toggle-enter', leaveClass: 'toggle-leave'});
-
-          //在leave动画还没有结束时,强制结束时可能出BUG
-
-            var vm = avalon.define({
-                $id: 'xxx',
-                toggle: false,
-                click: function () {
-                    vm.toggle = !vm.toggle;
+            avalon.component('ms:abc',{
+                $template:'<div></div>',
+                onClick:function(){},
+                $ready:function(vm,el){
+                  console.log(vm.$id)
                 }
             });
-
+            var vm = avalon.define({
+                $id:'test',
+                arr:[1,2,3,4,5]
+            })
         </script>
-        <div ms-controller="xxx">
-            <div class="box toggle" ms-effect="toggle" ms-visible="toggle">hello</div>
-            <button ms-click="click" type="button">btn</button>
-        </div>
-
+    </head>
+    <body ms-controller="test">
+        <header>
+            <ms:abc ms-repeat="arr" ms-if-loop='$index > 1' ms-attr-identifier="abc{{$index}}" ></ms:abc>
+        </header>
     </body>
 </html>

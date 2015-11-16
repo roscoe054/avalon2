@@ -1,193 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
     <head>
-        <meta charset="UTF-8">
-        <title>touch</title>
-        <script src="dist/avalon.mobile.js"></script>
-        <meta id="viewport" name="viewport" content="initial-scale=1.0,user-scalable=no,
-              minimum-scale=1.0, maximum-scale=1.0">
-        <style>
-            html{
-                width:100%;
-            }
-            body{
-                width:96%;
-                margin: 0 auto;
-            }
-            .tap{
-                width:200px;
-                height:200px;
-                display: inline-block;
-                overflow: hidden;
-                background: yellowgreen;
-            }
-            .longtap{
-                width:200px;
-                height:200px;
-                overflow: hidden;
-                display: inline-block;
-                background: rosybrown
-            }
-            .swipeleft{
-                width:200px;
-                height:200px;
-                overflow: hidden;
-                display: inline-block;
-                background:aqua;
-            }
-            .swiperight{
-                width:200px;
-                height:200px;
-                overflow: hidden;
-                display: inline-block;
-                background:khaki;
-            }
-            .swipeup{
-                width:200px;
-                height:200px;
-                overflow: hidden;
-                display: inline-block;
-                background:blueviolet;
-            }
-            .swipedown{
-                width:200px;
-                height:200px;
-                overflow: hidden;
-                display: inline-block;
-                background:lawngreen;
-            }
-            .doubletap{
-                width:200px;
-                height:200px;
-                overflow: hidden;
-                display: inline-block;
-                background:gold;
-            }
-            .pinch{
-                width:230px;
-                height:230px;
-                overflow: hidden;
-                display: inline-block;
-                background:red;
-            }
-            .drag, .touch{
-                width:230px;
-                height:230px;
-                overflow: hidden;
-                display: inline-block;
-                background:yellow
-            }
-            label{
-                display: inline-block;
-                background: green;
-            }
+        <title>简单</title>
+
+        <style type="text/css">
+            [ms-controller],[ms-important],.ms-controller, .ms-important{visibility:hidden;}
         </style>
+
     </head>
     <body>
-        <div ms-controller="test" >
-            <form action="/">
-                <p>xxxxxxxxx<label for="eee" ms-on-tap="label">label<input id="eee" ms-on-tap="label2"></label></p>
-                <p><select ms-on-tap="tap"><option>aaa</option><option>bbbb</option><option>cccc</option></select></p>
-                <button ms-on-tap="aaa" type="submit">{{a|uppercase}}</button>
-            </form>
-            <div class="tap" ms-on-tap="tap">
 
-            </div>
-            <div class="longtap" ms-on-longtap="tap">
 
-            </div>
-             <div class="doubletap" ms-on-doubletap="tap">
-                双击
-            </div>
-            <div class="swipeleft" ms-on-swipeleft="tap">
-                left
-            </div>
-            <div class="swiperight" ms-on-swiperight="tap">
-                right
-            </div>
-            <div class="swipeup" ms-on-swipeup="tap">
-                up
-            </div>
-            <div class="swipedown" ms-on-swipedown="tap">
-                down
-            </div>
-           
-            <div class="pinch" id="xxx"
-                 ms-on-pinchin="pinchin" 
-                 ms-on-pinchout="pinchout"
-                 ms-on-pinchstart="tap"
-                 ms-on-pinchend="tap"
-                 >
-                pinch
-            </div>
-            <div class="drag" 
-                 ms-on-drag="drag" 
-                 ms-on-dragstart="dragstart"
-                 ms-on-dragend="tap"
-                 >
-                drag
-            </div>
-            <div class="touch"
-                 ms-on-touchstart="tap" 
-                 ms-on-touchmove="tap"
-                 ms-on-touchend="tap"
-                 ms-on-mousedown="tap"
-                 ms-on-mousemove="tap"
-                 ms-on-mouseup="tap"
-                 ms-on-click="tap"
-                 >touch</div>
 
-            <p>{{a|gende}}</p>
-        </div>
-        <h1>不要滚动条</h1>
+
+        <script type="text/javascript" src="avalon.js"></script>
+
         <script type="text/javascript">
-avalon.filters.gende = function (a) {
-    return a === "aaa" ? "男" : "女"
-}
-require(['../component/gesture/touch.pinch', '../component/gesture/touch.drag'], function (a) {
-    var vm = avalon.define({
-        $id: "test",
-        a: "aaa",
-        label: function (e) {
-            console.log(new Date - 0)
-            console.log("这是label事件")
-
-        },
-        label2: function (e) {
-            console.log(new Date - 0, "-----")
-            this.value += " label2"
-        },
-        tap: function (e) {
-            console.log(e)
-            this.innerHTML = e.type + " " + (new Date - 0)
-        },
-        dragstart: function (e) {
-            this.innerHTML = e.type + " " + (new Date - 0)
-            this.style.backgroundColor = 'blue'
-        },
-        drag: function (e) {
-          
-            this.innerHTML = this.innerHTML.slice(0, 22) + " " + e.type + " " + (new Date - 0)
-        },
-        pinchin: function (e) {
-            console.log(e.type)
-            this.innerHTML = e.type + " " + (new Date - 0)
-            this.style.width = this.style.height = "190px"
-        },
-        pinchout: function (e) {
-            console.log(e.type)
-            this.innerHTML = e.type + " " + (new Date - 0)
-            this.style.width = this.style.height = "270px"
-        },
-        aaa: function (e) {
-            this.innerHTML = e.type + " " + (new Date - 0)
-        }
-    })
-    avalon.scan(document.body, vm)
-})
-
-
+            avalon.ready(function () {
+                var model = avalon.define({
+                    $id: "test",
+                    arr: [{a: 33
+                        }],
+                    change: function (el) {
+                        el.a = new Date - 0
+                    }
+                });
+                avalon.scan(document.body);
+            });
 
         </script>
+        <div ms-controller="test" ms-repeat="arr" ms-click="change(el)">{{el.a}}</div>
     </body>
 </html>

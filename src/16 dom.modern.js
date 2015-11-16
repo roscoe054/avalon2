@@ -20,7 +20,7 @@ function camelize(target) {
 "add,remove".replace(rword, function (method) {
     avalon.fn[method + "Class"] = function (cls) {
         var el = this[0]
-            //https://developer.mozilla.org/zh-CN/docs/Mozilla/Firefox/Releases/26
+        //https://developer.mozilla.org/zh-CN/docs/Mozilla/Firefox/Releases/26
         if (cls && typeof cls === "string" && el && el.nodeType === 1) {
             cls.replace(/\S+/g, function (c) {
                 el.classList[method](c)
@@ -56,24 +56,24 @@ avalon.fn.mix({
     data: function (name, value) {
         name = "data-" + hyphen(name || "")
         switch (arguments.length) {
-        case 2:
-            this.attr(name, value)
-            return this
-        case 1:
-            var val = this.attr(name)
-            return parseData(val)
-        case 0:
-            var ret = {}
-            ap.forEach.call(this[0].attributes, function (attr) {
-                if (attr) {
-                    name = attr.name
-                    if (!name.indexOf("data-")) {
-                        name = camelize(name.slice(5))
-                        ret[name] = parseData(attr.value)
+            case 2:
+                this.attr(name, value)
+                return this
+            case 1:
+                var val = this.attr(name)
+                return parseData(val)
+            case 0:
+                var ret = {}
+                ap.forEach.call(this[0].attributes, function (attr) {
+                    if (attr) {
+                        name = attr.name
+                        if (!name.indexOf("data-")) {
+                            name = camelize(name.slice(5))
+                            ret[name] = parseData(attr.value)
+                        }
                     }
-                }
-            })
-            return ret
+                })
+                return ret
         }
     },
     removeData: function (name) {
@@ -93,11 +93,11 @@ avalon.fn.mix({
     },
     position: function () {
         var offsetParent, offset,
-            elem = this[0],
-            parentOffset = {
-                top: 0,
-                left: 0
-            };
+                elem = this[0],
+                parentOffset = {
+                    top: 0,
+                    left: 0
+                };
         if (!elem) {
             return
         }
@@ -111,7 +111,7 @@ avalon.fn.mix({
             }
             parentOffset.top += avalon.css(offsetParent[0], "borderTopWidth", true)
             parentOffset.left += avalon.css(offsetParent[0], "borderLeftWidth", true)
-                // Subtract offsetParent scroll positions
+            // Subtract offsetParent scroll positions
             parentOffset.top -= offsetParent.scrollTop()
             parentOffset.left -= offsetParent.scrollLeft()
         }
@@ -161,18 +161,18 @@ if (root.dataset) {
         name = name && camelize(name)
         var dataset = this[0].dataset
         switch (arguments.length) {
-        case 2:
-            dataset[name] = val
-            return this
-        case 1:
-            val = dataset[name]
-            return parseData(val)
-        case 0:
-            var ret = createMap()
-            for (name in dataset) {
-                ret[name] = parseData(dataset[name])
-            }
-            return ret
+            case 2:
+                dataset[name] = val
+                return this
+            case 1:
+                val = dataset[name]
+                return parseData(val)
+            case 0:
+                var ret = createMap()
+                for (name in dataset) {
+                    ret[name] = parseData(dataset[name])
+                }
+                return ret
         }
     }
 }
@@ -184,19 +184,28 @@ function parseData(data) {
         if (typeof data === "object")
             return data
         data = data === "true" ? true :
-            data === "false" ? false :
-            data === "null" ? null : +data + "" === data ? +data : rbrace.test(data) ? JSON.parse(data) : data
-    } catch (e) {}
+                data === "false" ? false :
+                data === "null" ? null : +data + "" === data ? +data : rbrace.test(data) ? JSON.parse(data) : data
+    } catch (e) {
+    }
     return data
 }
+
+avalon.fireDom = function (elem, type, opts) {
+    var hackEvent = DOC.createEvent("Events");
+    hackEvent.initEvent(type, true, true)
+    avalon.mix(hackEvent, opts)
+    elem.dispatchEvent(hackEvent)
+}
+
 avalon.each({
     scrollLeft: "pageXOffset",
     scrollTop: "pageYOffset"
 }, function (method, prop) {
     avalon.fn[method] = function (val) {
         var node = this[0] || {},
-            win = getWindow(node),
-            top = method === "scrollTop"
+                win = getWindow(node),
+                top = method === "scrollTop"
         if (!arguments.length) {
             return win ? win[prop] : node[method]
         } else {
@@ -260,7 +269,7 @@ cssHooks["opacity:get"] = function (node) {
     cssHooks[name + ":get"] = function (node) {
         var computed = cssHooks["@:get"](node, name)
         return /px$/.test(computed) ? computed :
-            avalon(node).position()[name] + "px"
+                avalon(node).position()[name] + "px"
     }
 })
 var cssShow = {
@@ -293,9 +302,9 @@ function showHidden(node, array) {
 
 "Width,Height".replace(rword, function (name) { //fix 481
     var method = name.toLowerCase(),
-        clientProp = "client" + name,
-        scrollProp = "scroll" + name,
-        offsetProp = "offset" + name
+            clientProp = "client" + name,
+            scrollProp = "scroll" + name,
+            offsetProp = "offset" + name
     cssHooks[method + ":get"] = function (node, which, override) {
         var boxSizing = -4
         if (typeof override === "number") {
@@ -318,7 +327,7 @@ function showHidden(node, array) {
         var hidden = [];
         showHidden(node, hidden);
         var val = cssHooks[method + ":get"](node)
-        for (var i = 0, obj; obj = hidden[i++];) {
+        for (var i = 0, obj; obj = hidden[i++]; ) {
             node = obj.node
             for (var n in obj) {
                 if (typeof obj[n] === "string") {
@@ -336,9 +345,9 @@ function showHidden(node, array) {
             }
             if (node.nodeType === 9) { //取得页面尺寸
                 var doc = node.documentElement
-                    //FF chrome    html.scrollHeight< body.scrollHeight
-                    //IE 标准模式 : html.scrollHeight> body.scrollHeight
-                    //IE 怪异模式 : html.scrollHeight 最大等于可视窗口多一点？
+                //FF chrome    html.scrollHeight< body.scrollHeight
+                //IE 标准模式 : html.scrollHeight> body.scrollHeight
+                //IE 怪异模式 : html.scrollHeight 最大等于可视窗口多一点？
                 return Math.max(node.body[scrollProp], doc[scrollProp], node.body[offsetProp], doc[offsetProp], doc[clientProp])
             }
             return cssHooks[method + "&get"](node)
@@ -354,28 +363,28 @@ function showHidden(node, array) {
     }
 })
 avalon.fn.offset = function () { //取得距离页面左右角的坐标
-        var node = this[0]
-        try {
-            var rect = node.getBoundingClientRect()
-                // Make sure element is not hidden (display: none) or disconnected
-                // https://github.com/jquery/jquery/pull/2043/files#r23981494
-            if (rect.width || rect.height || node.getClientRects().length) {
-                var doc = node.ownerDocument
-                var root = doc.documentElement
-                var win = doc.defaultView
-                return {
-                    top: rect.top + win.pageYOffset - root.clientTop,
-                    left: rect.left + win.pageXOffset - root.clientLeft
-                }
-            }
-        } catch (e) {
+    var node = this[0]
+    try {
+        var rect = node.getBoundingClientRect()
+        // Make sure element is not hidden (display: none) or disconnected
+        // https://github.com/jquery/jquery/pull/2043/files#r23981494
+        if (rect.width || rect.height || node.getClientRects().length) {
+            var doc = node.ownerDocument
+            var root = doc.documentElement
+            var win = doc.defaultView
             return {
-                left: 0,
-                top: 0
+                top: rect.top + win.pageYOffset - root.clientTop,
+                left: rect.left + win.pageXOffset - root.clientLeft
             }
         }
+    } catch (e) {
+        return {
+            left: 0,
+            top: 0
+        }
     }
-    //=============================val相关=======================
+}
+//=============================val相关=======================
 
 function getValType(elem) {
     var ret = elem.tagName.toLowerCase()
@@ -384,16 +393,16 @@ function getValType(elem) {
 var valHooks = {
     "select:get": function (node, value) {
         var option, options = node.options,
-            index = node.selectedIndex,
-            one = node.type === "select-one" || index < 0,
-            values = one ? null : [],
-            max = one ? index + 1 : options.length,
-            i = index < 0 ? max : one ? index : 0
+                index = node.selectedIndex,
+                one = node.type === "select-one" || index < 0,
+                values = one ? null : [],
+                max = one ? index + 1 : options.length,
+                i = index < 0 ? max : one ? index : 0
         for (; i < max; i++) {
             option = options[i]
-                //旧式IE在reset后不会改变selected，需要改用i === index判定
-                //我们过滤所有disabled的option元素，但在safari5下，如果设置select为disable，那么其所有孩子都disable
-                //因此当一个元素为disable，需要检测其是否显式设置了disable及其父节点的disable情况
+            //旧式IE在reset后不会改变selected，需要改用i === index判定
+            //我们过滤所有disabled的option元素，但在safari5下，如果设置select为disable，那么其所有孩子都disable
+            //因此当一个元素为disable，需要检测其是否显式设置了disable及其父节点的disable情况
             if ((option.selected || i === index) && !option.disabled) {
                 value = option.value
                 if (one) {
@@ -407,7 +416,7 @@ var valHooks = {
     },
     "select:set": function (node, values, optionSet) {
         values = [].concat(values) //强制转换为数组
-        for (var i = 0, el; el = node.options[i++];) {
+        for (var i = 0, el; el = node.options[i++]; ) {
             if ((el.selected = values.indexOf(el.value) > -1)) {
                 optionSet = true
             }

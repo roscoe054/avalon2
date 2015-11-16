@@ -35,7 +35,7 @@ gulp.task('combo', function () {
             return !/\$\$|noop|modern|next|observe|touch/.test(f)
         })
 
-        var version = '1.5.4' //当前版本号
+        var version = '1.5.5' //当前版本号
         var now = new Date  //构建日期
         var date = now.getFullYear() + "." + (now.getMonth() + 1) + "." + now.getDate()
         gulp.src(compatibleFiles)
